@@ -2,7 +2,10 @@ using Joint.Mobile.Features.Auth;
 
 namespace Joint.Mobile.Features.Start;
 
-/// <summary>Shown briefly at launch while the saved session is checked.</summary>
+/// <summary>
+/// Shown at launch while the saved session is checked. It repeats the system splash
+/// (same logo, same place, same background) so the hand-over is not visible.
+/// </summary>
 public class StartPage : ContentPage
 {
     private readonly AuthService _auth;
@@ -11,9 +14,17 @@ public class StartPage : ContentPage
     {
         _auth = auth;
         Shell.SetNavBarIsVisible(this, false);
-        Content = new ActivityIndicator
+        Shell.SetTabBarIsVisible(this, false);
+        this.SetAppThemeColor(
+            BackgroundColorProperty,
+            (Color)Application.Current!.Resources["PageBackground"],
+            (Color)Application.Current.Resources["PageBackgroundDark"]);
+
+        Content = new Image
         {
-            IsRunning = true,
+            Source = "logo.png",
+            WidthRequest = 192,
+            HeightRequest = 192,
             HorizontalOptions = LayoutOptions.Center,
             VerticalOptions = LayoutOptions.Center,
         };

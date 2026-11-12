@@ -73,10 +73,17 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
     // ----- Connections card -----
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsConnectClosed))]
-    public partial bool IsConnectOpen { get; set; }
+    [NotifyPropertyChangedFor(nameof(IsConnectClosed), nameof(IsChoosingProvider), nameof(IsLunchFlowOpen))]
+    public partial ConnectStep ConnectStep { get; set; }
 
-    public bool IsConnectClosed => !IsConnectOpen;
+    public bool IsConnectClosed => ConnectStep == ConnectStep.Closed;
+
+    public bool IsChoosingProvider => ConnectStep == ConnectStep.ChoosingProvider;
+
+    public bool IsLunchFlowOpen => ConnectStep == ConnectStep.LunchFlow;
+
+    /// <summary>The connectors offered after tapping "Connect".</summary>
+    public IReadOnlyList<ProviderOption> Providers { get; } = ProviderOption.All;
 
     /// <summary>What the user is pasting into the connect panel.</summary>
     [ObservableProperty]
@@ -190,18 +197,26 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
     [RelayCommand]
     private void CloseHouseholdPanel() => Panel = HouseholdPanel.None;
 
-    // ----- Connect Lunch Flow -----
+    // ----- Connect -----
 
+    /// <summary>Shows the list of connectors to pick from.</summary>
     [RelayCommand]
-    private void StartConnect()
+    private void StartConnect() => ConnectStep = ConnectStep.ChoosingProvider;
+
+    /// <summary>Opens the chosen connector's own form.</summary>
+    [RelayCommand]
+    private void ChooseProvider(ProviderOption provider)
     {
-        LunchFlowKey = null;
-        ConnectError = null;
-        IsConnectOpen = true;
+        if (provider.Key == ProviderOption.LunchFlowKey)
+        {
+            LunchFlowKey = null;
+            ConnectError = null;
+            ConnectStep = ConnectStep.LunchFlow;
+        }
     }
 
     [RelayCommand]
-    private void CancelConnect() => IsConnectOpen = false;
+    private void CancelConnect() => ConnectStep = ConnectStep.Closed;
 
     [RelayCommand]
     private async Task ConfirmConnectAsync()
@@ -217,7 +232,7 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
             ConnectError = await api.ConnectLunchFlowAsync(LunchFlowKey);
             if (ConnectError is null)
             {
-                IsConnectOpen = false;
+                ConnectStep = ConnectStep.Closed;
                 LunchFlowKey = null;
                 await LoadAsync();
             }

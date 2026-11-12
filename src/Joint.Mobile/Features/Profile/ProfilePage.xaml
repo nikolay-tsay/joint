@@ -115,6 +115,7 @@
                                 Style="{StaticResource Caption}" />
                             <Border Style="{StaticResource Field}">
                                 <Entry
+                                    x:Name="JoinCodeEntry"
                                     Text="{Binding JoinCode}"
                                     Placeholder="ABCD-EFGH"
                                     FontSize="18"
@@ -153,7 +154,7 @@
                 <Border Style="{StaticResource Card}">
                     <VerticalStackLayout Spacing="12">
                         <Label
-                            Text="No bank is connected yet. Connect your banks in Lunch Flow, then paste its API key here."
+                            Text="Nothing is connected yet. Connect a bank to see your accounts and transactions."
                             Style="{StaticResource Caption}"
                             IsVisible="{Binding HasNoConnections}" />
                         <VerticalStackLayout BindableLayout.ItemsSource="{Binding Connections}" Spacing="12">
@@ -206,18 +207,50 @@
                         </VerticalStackLayout>
 
                         <Button
-                            Text="Connect Lunch Flow"
+                            Text="Connect"
                             Style="{StaticResource SecondaryButton}"
                             Command="{Binding StartConnectCommand}"
                             IsVisible="{Binding IsConnectClosed}" />
 
-                        <!-- Connect: a field for the key. -->
-                        <VerticalStackLayout Spacing="12" IsVisible="{Binding IsConnectOpen}">
+                        <!-- Connect, step 1: pick where the data comes from. -->
+                        <VerticalStackLayout Spacing="8" IsVisible="{Binding IsChoosingProvider}">
+                            <Label Text="Choose what to connect" Style="{StaticResource Caption}" />
+                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Providers}" Spacing="8">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="profile:ProviderOption">
+                                        <Border Style="{StaticResource InsetRow}">
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding ChooseProviderCommand, Source={RelativeSource AncestorType={x:Type profile:ProfileViewModel}}, x:DataType=profile:ProfileViewModel}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Border.GestureRecognizers>
+                                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="2">
+                                                <Label Text="{Binding Name}" Style="{StaticResource RowTitle}" />
+                                                <Label Grid.Row="1" Text="{Binding Description}" Style="{StaticResource Caption}" />
+                                                <Label
+                                                    Grid.Column="1"
+                                                    Grid.RowSpan="2"
+                                                    Text="›"
+                                                    FontSize="22"
+                                                    VerticalOptions="Center"
+                                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                            <Button Text="Cancel" Style="{StaticResource QuietButton}" Command="{Binding CancelConnectCommand}" />
+                        </VerticalStackLayout>
+
+                        <!-- Connect, step 2 for Lunch Flow: a field for the key. -->
+                        <VerticalStackLayout Spacing="12" IsVisible="{Binding IsLunchFlowOpen}">
+                            <Label Text="Lunch Flow" Style="{StaticResource RowTitle}" />
                             <Label
                                 Text="Paste the API key from your Lunch Flow API destination. It is stored encrypted and only used to read your accounts."
                                 Style="{StaticResource Caption}" />
                             <Border Style="{StaticResource Field}">
                                 <Entry
+                                    x:Name="LunchFlowKeyEntry"
                                     Text="{Binding LunchFlowKey}"
                                     Placeholder="Lunch Flow API key"
                                     IsPassword="True"

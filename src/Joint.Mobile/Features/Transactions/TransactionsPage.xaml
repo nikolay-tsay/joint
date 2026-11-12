@@ -20,17 +20,18 @@
                 <VerticalStackLayout Padding="16,8,16,0" Spacing="8">
 
                     <!-- Household tab: which kind of accounts to list. -->
-                    <FlexLayout
-                        BindableLayout.ItemsSource="{Binding Filters}"
-                        Wrap="Wrap"
+                    <!-- One line; scrolls sideways if the chips ever outgrow the screen. -->
+                    <ScrollView
+                        Orientation="Horizontal"
+                        HorizontalScrollBarVisibility="Never"
                         IsVisible="{Binding IsHouseholdView}">
+                    <HorizontalStackLayout BindableLayout.ItemsSource="{Binding Filters}" Spacing="6">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="transactions:ChoiceItem">
                                 <Border
-                                    Margin="0,0,8,8"
-                                    Padding="14,7"
+                                    Padding="11,5"
                                     StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 18"
+                                    StrokeShape="RoundRectangle 15"
                                     BackgroundColor="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}">
                                     <Border.Triggers>
                                         <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
@@ -42,7 +43,7 @@
                                             Command="{Binding SelectFilterCommand, Source={RelativeSource AncestorType={x:Type transactions:TransactionsViewModel}}, x:DataType=transactions:TransactionsViewModel}"
                                             CommandParameter="{Binding .}" />
                                     </Border.GestureRecognizers>
-                                    <Label Text="{Binding Label}" FontSize="14" FontFamily="OpenSansSemibold">
+                                    <Label Text="{Binding Label}" FontSize="13" FontFamily="OpenSansSemibold">
                                         <Label.Triggers>
                                             <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
                                                 <Setter Property="TextColor" Value="White" />
@@ -52,7 +53,8 @@
                                 </Border>
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
-                    </FlexLayout>
+                    </HorizontalStackLayout>
+                    </ScrollView>
 
                     <!-- One account: its type, as a dropdown that opens in place. -->
                     <Border Style="{StaticResource Card}" Padding="16,12" IsVisible="{Binding IsAccountView}">

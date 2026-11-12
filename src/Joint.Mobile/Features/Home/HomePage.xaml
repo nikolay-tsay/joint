@@ -54,15 +54,17 @@
                                             HorizontalTextAlignment="End" />
                                     </Grid>
 
-                                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Accounts}" Spacing="12">
+                                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Accounts}" Spacing="8">
                                         <BindableLayout.ItemTemplate>
                                             <DataTemplate x:DataType="home:AccountItem">
+                                                <!-- Set slightly into the tile, so accounts read apart from its total. -->
+                                                <Border Style="{StaticResource InsetRow}">
+                                                <Border.GestureRecognizers>
+                                                    <TapGestureRecognizer
+                                                        Command="{Binding OpenAccountCommand, Source={RelativeSource AncestorType={x:Type home:HomeViewModel}}, x:DataType=home:HomeViewModel}"
+                                                        CommandParameter="{Binding .}" />
+                                                </Border.GestureRecognizers>
                                                 <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="2">
-                                                    <Grid.GestureRecognizers>
-                                                        <TapGestureRecognizer
-                                                            Command="{Binding OpenAccountCommand, Source={RelativeSource AncestorType={x:Type home:HomeViewModel}}, x:DataType=home:HomeViewModel}"
-                                                            CommandParameter="{Binding .}" />
-                                                    </Grid.GestureRecognizers>
                                                     <Label Text="{Binding Title}" Style="{StaticResource RowTitle}" />
                                                     <Label
                                                         Grid.Column="1"
@@ -75,6 +77,7 @@
                                                         Text="{Binding Subtitle}"
                                                         Style="{StaticResource Caption}" />
                                                 </Grid>
+                                                </Border>
                                             </DataTemplate>
                                         </BindableLayout.ItemTemplate>
                                     </VerticalStackLayout>

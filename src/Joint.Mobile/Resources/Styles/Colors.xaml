@@ -37,6 +37,8 @@
     <Color x:Key="NegativeDark">#F87171</Color>
 
     <Color x:Key="Accent">#F97316</Color>
+    <Color x:Key="InsetStroke">#E9E5F1</Color>
+    <Color x:Key="InsetStrokeDark">#2A2634</Color>
     <Color x:Key="AvatarBackground">#EDE9FE</Color>
     <Color x:Key="AvatarBackgroundDark">#2E2640</Color>
 
