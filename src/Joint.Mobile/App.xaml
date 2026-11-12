@@ -1,4 +1,4 @@
-﻿<Application xmlns:local="clr-namespace:Joint.Mobile"
+﻿<Application xmlns:common="clr-namespace:Joint.Mobile.Common"
              x:Class="Joint.Mobile.App">
     <Application.Resources>
         <ResourceDictionary>
@@ -6,6 +6,7 @@
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <common:HasTextConverter x:Key="HasText" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

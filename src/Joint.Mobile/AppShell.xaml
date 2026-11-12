@@ -1,11 +1,14 @@
 <Shell
     x:Class="Joint.Mobile.AppShell"
-    xmlns:local="clr-namespace:Joint.Mobile"
-    Title="Joint.Mobile">
+    xmlns:start="clr-namespace:Joint.Mobile.Features.Start"
+    xmlns:auth="clr-namespace:Joint.Mobile.Features.Auth"
+    xmlns:home="clr-namespace:Joint.Mobile.Features.Home"
+    Title="Joint"
+    FlyoutBehavior="Disabled">
 
-    <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+    <!-- Start decides between login and home, depending on whether a session exists. -->
+    <ShellContent Route="start" ContentTemplate="{DataTemplate start:StartPage}" />
+    <ShellContent Route="login" ContentTemplate="{DataTemplate auth:LoginPage}" />
+    <ShellContent Route="home" ContentTemplate="{DataTemplate home:HomePage}" />
 
 </Shell>

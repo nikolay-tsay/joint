@@ -112,6 +112,18 @@ dotnet workload install maui-android
 dotnet build src/Joint.Mobile
 ```
 
+### Sign-in setup
+
+The app signs in with Google through Supabase Auth. Per Supabase project:
+
+1. In Google Cloud, create an OAuth client of type "Web application" and add
+   `https://<project-ref>.supabase.co/auth/v1/callback` as an authorized redirect URI.
+2. In Supabase, enable the Google provider under Authentication and paste the client id
+   and secret.
+3. In Supabase's URL configuration, add `joint://auth-callback` to Redirect URLs.
+4. Fill in `src/Joint.Mobile/Config/AppConfig.cs`: the Supabase URL, the publishable key
+   and the backend URL. Debug builds use the development values, Release builds production.
+
 ### Releasing the APK
 
 Pushing a tag such as `v0.1.0` runs the `Release mobile` workflow, which builds a signed APK

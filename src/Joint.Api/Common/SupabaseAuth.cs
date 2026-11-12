@@ -1,3 +1,4 @@
+using Joint.Api.Common.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace Joint.Api.Common;
@@ -21,6 +22,7 @@ public static class SupabaseAuth
                 options.MapInboundClaims = false;
             });
         services.AddAuthorization();
+        services.AddScoped<CurrentUserService>();
 
         return services;
     }

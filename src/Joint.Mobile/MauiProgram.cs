@@ -1,3 +1,7 @@
+using Joint.Mobile.Api;
+using Joint.Mobile.Features.Auth;
+using Joint.Mobile.Features.Home;
+using Joint.Mobile.Features.Start;
 using Microsoft.Extensions.Logging;
 
 namespace Joint.Mobile;
@@ -14,6 +18,16 @@ public static class MauiProgram
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
 				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
 			});
+
+		builder.Services.AddSingleton<SupabaseAuthClient>();
+		builder.Services.AddSingleton<AuthService>();
+		builder.Services.AddSingleton<ApiClient>();
+
+		builder.Services.AddTransient<StartPage>();
+		builder.Services.AddTransient<LoginPage>();
+		builder.Services.AddTransient<LoginViewModel>();
+		builder.Services.AddTransient<HomePage>();
+		builder.Services.AddTransient<HomeViewModel>();
 
 #if DEBUG
 		builder.Logging.AddDebug();
