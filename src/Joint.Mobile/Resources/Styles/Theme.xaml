@@ -66,6 +66,16 @@
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}" />
     </Style>
 
+    <!-- A row set slightly into its card: a faint shade and hairline, so rows read as
+         separate items under the card's heading. -->
+    <Style x:Key="InsetRow" TargetType="Border">
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+        <Setter Property="Padding" Value="12,10" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource InsetStroke}, Dark={StaticResource InsetStrokeDark}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}" />
+    </Style>
+
     <!-- Low-emphasis text button, for "Done" and the like. -->
     <Style x:Key="QuietButton" TargetType="Button">
         <Setter Property="CornerRadius" Value="12" />
