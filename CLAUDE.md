@@ -22,6 +22,7 @@ reference for screens and flows.
 - Joining works by invitation (`HouseholdInvitation`, code stored only as a hash): accepting moves the user into the inviter's household (`Features/Households`). Codes are single-use and expire after 48 hours. Leaving puts the user back in a new household of one. A household left empty is deleted; `HouseholdCleanup` handles that for both paths.
 - `BankConnection.OwnerUserId` ties a connection to a person, not a household, so connections follow their owner if they change household.
 - `Account.Visibility` exists for per-account privacy later; nothing enforces it yet.
+- `Account.Kind` (Current, Savings, Investment) is the household's choice, set through `PATCH /api/accounts/{id}` by any member. Sync sets it only when an account is first created and must never overwrite it afterwards. The app shows these as Everyday, Savings and Investments tiles on Home.
 
 ## Commands
 

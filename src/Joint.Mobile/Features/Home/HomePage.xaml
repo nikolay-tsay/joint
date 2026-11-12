@@ -28,41 +28,67 @@
                     Style="{StaticResource ErrorText}"
                     IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
 
-                <Label Text="Accounts" Style="{StaticResource SectionTitle}" />
-
                 <Border Style="{StaticResource Card}" IsVisible="{Binding HasNoAccounts}">
                     <Label
                         Text="No accounts yet. Connect a bank from the Profile tab, then pull down here to refresh."
                         Style="{StaticResource Caption}" />
                 </Border>
 
-                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Accounts}" Spacing="8">
+                <!-- One tile per kind of account: Everyday, Savings, Investments. -->
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Sections}" Spacing="12">
                     <BindableLayout.ItemTemplate>
-                        <DataTemplate x:DataType="home:AccountItem">
+                        <DataTemplate x:DataType="home:AccountSection">
                             <Border Style="{StaticResource Card}">
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer
-                                        Command="{Binding OpenAccountCommand, Source={RelativeSource AncestorType={x:Type home:HomeViewModel}}, x:DataType=home:HomeViewModel}"
-                                        CommandParameter="{Binding .}" />
-                                </Border.GestureRecognizers>
-                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="2">
-                                    <Label Text="{Binding Title}" Style="{StaticResource RowTitle}" />
-                                    <Label
-                                        Grid.Column="1"
-                                        Text="{Binding Balance}"
-                                        FontSize="16"
-                                        FontFamily="OpenSansSemibold"
-                                        VerticalOptions="Center" />
-                                    <Label
-                                        Grid.Row="1"
-                                        Grid.ColumnSpan="2"
-                                        Text="{Binding Subtitle}"
-                                        Style="{StaticResource Caption}" />
-                                </Grid>
+                                <VerticalStackLayout Spacing="12">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <Label
+                                            Text="{Binding Title}"
+                                            Style="{StaticResource SectionTitle}"
+                                            Margin="0"
+                                            VerticalOptions="Center" />
+                                        <Label
+                                            Grid.Column="1"
+                                            Text="{Binding Total}"
+                                            FontSize="18"
+                                            FontFamily="OpenSansSemibold"
+                                            HorizontalTextAlignment="End" />
+                                    </Grid>
+
+                                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Accounts}" Spacing="12">
+                                        <BindableLayout.ItemTemplate>
+                                            <DataTemplate x:DataType="home:AccountItem">
+                                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="2">
+                                                    <Grid.GestureRecognizers>
+                                                        <TapGestureRecognizer
+                                                            Command="{Binding OpenAccountCommand, Source={RelativeSource AncestorType={x:Type home:HomeViewModel}}, x:DataType=home:HomeViewModel}"
+                                                            CommandParameter="{Binding .}" />
+                                                    </Grid.GestureRecognizers>
+                                                    <Label Text="{Binding Title}" Style="{StaticResource RowTitle}" />
+                                                    <Label
+                                                        Grid.Column="1"
+                                                        Text="{Binding Balance}"
+                                                        FontSize="15"
+                                                        VerticalOptions="Center" />
+                                                    <Label
+                                                        Grid.Row="1"
+                                                        Grid.ColumnSpan="2"
+                                                        Text="{Binding Subtitle}"
+                                                        Style="{StaticResource Caption}" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </BindableLayout.ItemTemplate>
+                                    </VerticalStackLayout>
+                                </VerticalStackLayout>
                             </Border>
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
                 </VerticalStackLayout>
+
+                <Label
+                    Text="To move an account to Savings or Investments, open it and tap Type."
+                    Style="{StaticResource Caption}"
+                    Margin="4,0"
+                    IsVisible="{Binding HasAccounts}" />
             </VerticalStackLayout>
         </ScrollView>
     </RefreshView>

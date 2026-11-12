@@ -125,6 +125,58 @@ public class ConnectionSyncerTests
     }
 
     [Fact]
+    public async Task An_account_type_set_by_the_household_survives_later_syncs()
+    {
+        await using var db = NewDb();
+        var connector = new FakeConnector(ProviderKind.LunchFlow) { Snapshot = Snapshot(1000, "t1") };
+        var connection = await ConnectAsync(db, Ana);
+        var syncer = Syncer(db, connector);
+        await syncer.SyncAsync(connection.Id, CancellationToken.None);
+        var accountId = (await db.Accounts.SingleAsync()).Id;
+        await JoinAsync(db, inviter: Ana, joiner: Ben);
+
+        // Ben is in the household, so he may recategorize Ana's account.
+        var result = await SetKindAsync(db, Ben, accountId, "savings");
+        Assert.IsType<NoContent>(result.Result);
+
+        await syncer.SyncAsync(connection.Id, CancellationToken.None);
+
+        Assert.Equal("Savings", Assert.Single(await AccountsAsync(db, Ana)).Kind);
+    }
+
+    [Theory]
+    [InlineData("Pension")]
+    [InlineData("1")]
+    [InlineData("")]
+    public async Task An_unknown_account_type_is_rejected(string kind)
+    {
+        await using var db = NewDb();
+        var connection = await ConnectAsync(db, Ana);
+        await Syncer(db, new FakeConnector(ProviderKind.LunchFlow) { Snapshot = Snapshot(1, "t1") })
+            .SyncAsync(connection.Id, CancellationToken.None);
+        var accountId = (await db.Accounts.SingleAsync()).Id;
+
+        var result = await SetKindAsync(db, Ana, accountId, kind);
+
+        Assert.Equal(400, Assert.IsType<ProblemHttpResult>(result.Result).StatusCode);
+    }
+
+    [Fact]
+    public async Task Someone_outside_the_household_cannot_change_an_account()
+    {
+        await using var db = NewDb();
+        var connection = await ConnectAsync(db, Ana);
+        await Syncer(db, new FakeConnector(ProviderKind.LunchFlow) { Snapshot = Snapshot(1, "t1") })
+            .SyncAsync(connection.Id, CancellationToken.None);
+        var accountId = (await db.Accounts.SingleAsync()).Id;
+
+        var result = await SetKindAsync(db, Ben, accountId, "Savings");
+
+        Assert.IsType<NotFound>(result.Result);
+        Assert.Equal(AccountKind.Current, (await db.Accounts.SingleAsync()).Kind);
+    }
+
+    [Fact]
     public async Task Transactions_come_newest_first_and_page_with_skip_and_limit()
     {
         await using var db = NewDb();
@@ -184,6 +236,11 @@ public class ConnectionSyncerTests
         var result = await ListAccounts.HandleAsync(principal, new CurrentUserService(db), db, CancellationToken.None);
         return Assert.IsType<Ok<List<AccountResponse>>>(result.Result).Value!;
     }
+
+    private static Task<Results<NoContent, UnauthorizedHttpResult, NotFound, ProblemHttpResult>> SetKindAsync(
+        JointDbContext db, ClaimsPrincipal principal, Guid accountId, string kind) =>
+        UpdateAccount.HandleAsync(
+            accountId, new UpdateAccountRequest(kind), principal, new CurrentUserService(db), db, CancellationToken.None);
 
     private static async Task<List<TransactionResponse>> TransactionsAsync(
         JointDbContext db, ClaimsPrincipal principal, Guid? accountId = null, int? skip = null, int? limit = null)

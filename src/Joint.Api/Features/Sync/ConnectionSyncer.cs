@@ -77,6 +77,8 @@ public class ConnectionSyncer(
                 ExternalId = fetched.ExternalId,
                 Name = fetched.Name,
                 Currency = fetched.Currency,
+                // The provider's guess is only a starting point; after this the user decides.
+                Kind = fetched.Kind,
             };
             connection.Accounts.Add(account);
             db.Accounts.Add(account);
@@ -84,7 +86,6 @@ public class ConnectionSyncer(
 
         account.Name = fetched.Name;
         account.Institution = fetched.Institution;
-        account.Kind = fetched.Kind;
         account.Currency = fetched.Currency;
         account.Balance = fetched.Balance;
 

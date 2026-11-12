@@ -47,6 +47,16 @@ public class ApiClient(AuthService auth)
         return await ReadAsync<List<AccountResponse>>(response, cancellationToken);
     }
 
+    /// <summary>Sets whether an account counts as everyday, savings or investment.</summary>
+    /// <returns>False when the account is not in the caller's household.</returns>
+    public async Task<bool> SetAccountKindAsync(Guid accountId, string kind, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Patch, $"api/accounts/{accountId}", new UpdateAccountRequest(kind),
+            cancellationToken, HttpStatusCode.NotFound);
+        return response.IsSuccessStatusCode;
+    }
+
     /// <summary>The household's provider connections and their sync state.</summary>
     public async Task<List<ConnectionResponse>> GetConnectionsAsync(CancellationToken cancellationToken = default)
     {
