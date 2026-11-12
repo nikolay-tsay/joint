@@ -39,10 +39,10 @@ public class GetMe : IEndpoint
                 h.Name,
                 h.Members
                     .OrderBy(m => m.CreatedAt)
-                    .Select(m => new HouseholdMemberResponse(m.Id, m.DisplayName))
+                    .Select(m => new HouseholdMemberResponse(m.Id, m.DisplayName, m.AvatarUrl))
                     .ToList()))
             .SingleAsync(cancellationToken);
 
-        return Results.Ok(new MeResponse(user.Id, user.Email, user.DisplayName, household));
+        return Results.Ok(new MeResponse(user.Id, user.Email, user.DisplayName, user.AvatarUrl, household));
     }
 }

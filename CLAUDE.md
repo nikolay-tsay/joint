@@ -17,6 +17,7 @@ reference for screens and flows.
 
 - Sign-up and sign-in happen in Supabase Auth, driven by the client. The backend never sees passwords; it validates the access token and keeps its own `User` row whose id is the token's `sub`.
 - There is no sign-up endpoint. `CurrentUserService.GetOrCreateAsync` (`Common/Auth`) creates the `User` and a household of one on a person's first authenticated request; clients call `GET /api/me` right after sign-in. Slices that need the caller go through this service.
+- `User.AvatarUrl` is the Google profile picture link from the token's `user_metadata`, refreshed when a token carries a different one. Only the link is stored; clients load the image from Google. Avatars in the app are an initial with the picture laid over it, so a missing picture needs no special case.
 - Every user belongs to exactly one `Household` (`User.HouseholdId`). A "joint account" is a household with more than one user, and all members see the same data. Scope every data query by the caller's `HouseholdId`, never by user id alone.
 - Joining works by invitation (`HouseholdInvitation`, code stored only as a hash): accepting moves the user into the inviter's household (`Features/Households`). Codes are single-use and expire after 48 hours. Leaving puts the user back in a new household of one. A household left empty is deleted; `HouseholdCleanup` handles that for both paths.
 - `BankConnection.OwnerUserId` ties a connection to a person, not a household, so connections follow their owner if they change household.

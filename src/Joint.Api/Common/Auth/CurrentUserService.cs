@@ -22,6 +22,13 @@ public class CurrentUserService(JointDbContext db)
         var existing = await db.Users.FirstOrDefaultAsync(u => u.Id == identity.UserId, cancellationToken);
         if (existing is not null)
         {
+            // The picture can change at the provider; follow it when a token brings a new one.
+            if (identity.AvatarUrl is not null && identity.AvatarUrl != existing.AvatarUrl)
+            {
+                existing.AvatarUrl = identity.AvatarUrl;
+                await db.SaveChangesAsync(cancellationToken);
+            }
+
             return existing;
         }
 
@@ -38,6 +45,7 @@ public class CurrentUserService(JointDbContext db)
             HouseholdId = household.Id,
             Email = identity.Email,
             DisplayName = identity.DisplayName,
+            AvatarUrl = identity.AvatarUrl,
             CreatedAt = now,
         };
         db.Households.Add(household);

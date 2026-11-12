@@ -46,13 +46,17 @@
                                     StrokeShape="Ellipse"
                                     VerticalOptions="Center"
                                     BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackground}, Dark={StaticResource AvatarBackgroundDark}}">
-                                    <Label
-                                        Text="{Binding OwnerInitial}"
-                                        FontSize="15"
-                                        FontFamily="OpenSansSemibold"
-                                        HorizontalOptions="Center"
-                                        VerticalOptions="Center"
-                                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                    <Grid>
+                                        <Label
+                                            Text="{Binding OwnerInitial}"
+                                            FontSize="15"
+                                            FontFamily="OpenSansSemibold"
+                                            HorizontalOptions="Center"
+                                            VerticalOptions="Center"
+                                            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                        <!-- Covers the initial once the picture has loaded. -->
+                                        <Image Source="{Binding OwnerAvatarUrl}" Aspect="AspectFill" />
+                                    </Grid>
                                 </Border>
                                 <Label Grid.Column="1" Text="{Binding Title}" Style="{StaticResource RowTitle}" />
                                 <Label

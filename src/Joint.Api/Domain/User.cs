@@ -8,5 +8,8 @@ public class User
     public Guid HouseholdId { get; set; }
     public required string Email { get; set; }
     public required string DisplayName { get; set; }
+
+    /// <summary>Link to the profile picture at the sign-in provider; the image itself is not stored.</summary>
+    public string? AvatarUrl { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 }
