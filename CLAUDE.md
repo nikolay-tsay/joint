@@ -33,6 +33,7 @@ variables). `dotnet ef` needs both set too; dummy values are enough for `migrati
 
 - `Features/<Feature>/` holds one file per use case: endpoint, handler and anything only that use case needs. Name files after the use case (`GetMe`, `ConnectFio`).
 - An endpoint is a class implementing `IEndpoint` (`Common/IEndpoint.cs`) and is registered with one `app.MapEndpoint<T>()` line in `Program.cs`. No MediatR, no assembly scanning.
+- Scalar UI is served at `/scalar` in every environment except Production (`Common/ApiDocs.cs`). New endpoints show up there automatically; give them a name and typed results so the document is useful.
 - A feature that needs services exposes its own `AddX` extension (see `Features/Sync/SyncSetup.cs`). `Program.cs` stays composition only.
 - Shared code lives outside slices only when several features use it: `Domain` (entities), `Data` (DbContext, migrations), `Connectors`, `Common`. Don't add service or repository layers; slices use `JointDbContext` directly.
 - Request and response types that a client consumes go in `Joint.Contracts`; everything else stays in the slice.

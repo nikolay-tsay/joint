@@ -56,6 +56,10 @@ dotnet ef database update --project src/Joint.Api
 dotnet run --project src/Joint.Api
 ```
 
+Outside production the API serves a Scalar UI at `/scalar` for trying endpoints by hand
+(OpenAPI document at `/openapi/v1.json`). For endpoints that need sign-in, paste a Supabase
+access token into its Bearer authentication field.
+
 App tables live in the `joint` schema; Hangfire creates its own `hangfire` schema on first start.
 Sign-in is handled by Supabase Auth; the API validates the tokens it issues.
 
@@ -70,6 +74,7 @@ configured in the dashboard. Set these per environment:
 | Variable `RAILWAY_DOCKERFILE_PATH` | `src/Joint.Api/Dockerfile` (root directory stays the repo root) |
 | Variable `ConnectionStrings__Database` | That environment's Supabase session pooler string, Npgsql format |
 | Variable `Supabase__Url` | `https://<project-ref>.supabase.co` |
+| Variable `ASPNETCORE_ENVIRONMENT` | `Development` in the development environment only, to expose `/scalar` there |
 | Watch paths | `src/Joint.Api/**`, `src/Joint.Contracts/**`, `Directory.Build.props`, `global.json` |
 | Healthcheck path | `/health` |
 | Serverless / app sleeping | Off, or scheduled sync stops running |

@@ -19,14 +19,11 @@ var connectionString = builder.Configuration.GetConnectionString("Database")
 builder.Services.AddDbContext<JointDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddSupabaseAuth(builder.Configuration);
 builder.Services.AddSync(connectionString);
-builder.Services.AddOpenApi();
+builder.Services.AddApiDocs();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+app.MapApiDocs();
 
 app.UseAuthentication();
 app.UseAuthorization();
