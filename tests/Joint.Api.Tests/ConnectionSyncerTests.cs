@@ -121,6 +121,7 @@ public class ConnectionSyncerTests
         Assert.Equal("ana", shared.OwnerDisplayName);
         var transaction = Assert.Single(await TransactionsAsync(db, Ben, accountId));
         Assert.Equal("Current account", transaction.AccountName);
+        Assert.Equal("ana", transaction.OwnerDisplayName);
     }
 
     [Fact]

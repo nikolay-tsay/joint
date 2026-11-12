@@ -42,12 +42,15 @@ public class ListTransactions : IEndpoint
         var transactions = await (
             from transaction in db.Transactions
             join account in db.AccountsOf(user.HouseholdId) on transaction.AccountId equals account.Id
+            join connection in db.BankConnections on account.ConnectionId equals connection.Id
+            join owner in db.Users on connection.OwnerUserId equals owner.Id
             where accountId == null || account.Id == accountId
             orderby transaction.BookedOn descending, transaction.Id
             select new TransactionResponse(
                 transaction.Id,
                 account.Id,
                 account.Name,
+                owner.DisplayName,
                 transaction.BookedOn,
                 transaction.Amount,
                 transaction.Currency,

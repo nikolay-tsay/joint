@@ -2,12 +2,12 @@
 
     <!-- Note: For Android please see also Platforms\Android\Resources\values\colors.xml -->
 
-    <Color x:Key="Primary">#0F766E</Color>
-    <Color x:Key="PrimaryDark">#5EEAD4</Color>
+    <Color x:Key="Primary">#6D28D9</Color>
+    <Color x:Key="PrimaryDark">#C4B5FD</Color>
     <Color x:Key="PrimaryDarkText">#242424</Color>
-    <Color x:Key="Secondary">#CCFBF1</Color>
-    <Color x:Key="SecondaryDarkText">#5EEAD4</Color>
-    <Color x:Key="Tertiary">#115E59</Color>
+    <Color x:Key="Secondary">#EDE9FE</Color>
+    <Color x:Key="SecondaryDarkText">#C4B5FD</Color>
+    <Color x:Key="Tertiary">#4C1D95</Color>
 
     <Color x:Key="White">White</Color>
     <Color x:Key="Black">Black</Color>
@@ -25,16 +25,27 @@
     <Color x:Key="Gray950">#141414</Color>
 
     <!-- App palette: light and dark pairs, used through AppThemeBinding. -->
-    <Color x:Key="PageBackground">#F3F5F4</Color>
-    <Color x:Key="PageBackgroundDark">#121413</Color>
+    <Color x:Key="PageBackground">#F6F4FA</Color>
+    <Color x:Key="PageBackgroundDark">#131118</Color>
     <Color x:Key="Surface">#FFFFFF</Color>
-    <Color x:Key="SurfaceDark">#1E2221</Color>
-    <Color x:Key="TextSecondary">#5F6B68</Color>
-    <Color x:Key="TextSecondaryDark">#A3B0AC</Color>
+    <Color x:Key="SurfaceDark">#1E1B26</Color>
+    <Color x:Key="TextSecondary">#655F73</Color>
+    <Color x:Key="TextSecondaryDark">#ABA5B8</Color>
     <Color x:Key="Positive">#15803D</Color>
     <Color x:Key="PositiveDark">#4ADE80</Color>
     <Color x:Key="Negative">#B91C1C</Color>
     <Color x:Key="NegativeDark">#F87171</Color>
+
+    <Color x:Key="Accent">#F97316</Color>
+    <Color x:Key="AvatarBackground">#EDE9FE</Color>
+    <Color x:Key="AvatarBackgroundDark">#2E2640</Color>
+
+    <!-- The brand: purple into orange, through pink so the middle stays vivid. -->
+    <LinearGradientBrush x:Key="BrandGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#6D28D9" Offset="0" />
+        <GradientStop Color="#DB2777" Offset="0.55" />
+        <GradientStop Color="#F97316" Offset="1" />
+    </LinearGradientBrush>
 
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
     <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
