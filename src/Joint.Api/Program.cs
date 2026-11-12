@@ -6,6 +6,7 @@ using Joint.Api.Features.Health;
 using Joint.Api.Features.Households;
 using Joint.Api.Features.Me;
 using Joint.Api.Features.Sync;
+using Joint.Api.Features.Transactions;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -42,7 +43,7 @@ app.MapEndpoint<ConnectLunchFlow>();
 app.MapEndpoint<ListConnections>();
 app.MapEndpoint<DeleteConnection>();
 app.MapEndpoint<ListAccounts>();
-app.MapEndpoint<ListAccountTransactions>();
+app.MapEndpoint<ListTransactions>();
 
 app.ScheduleSync();
 app.ScheduleInvitationPurge();

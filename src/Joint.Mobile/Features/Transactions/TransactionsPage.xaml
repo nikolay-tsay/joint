@@ -1,0 +1,68 @@
+<ContentPage
+    x:Class="Joint.Mobile.Features.Transactions.TransactionsPage"
+    xmlns:transactions="clr-namespace:Joint.Mobile.Features.Transactions"
+    x:DataType="transactions:TransactionsViewModel"
+    Title="{Binding Title}"
+    BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
+
+    <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
+        <CollectionView
+            ItemsSource="{Binding Groups}"
+            IsGrouped="True"
+            SelectionMode="None"
+            RemainingItemsThreshold="10"
+            RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}">
+
+            <CollectionView.Header>
+                <VerticalStackLayout Padding="16,8,16,0" Spacing="8">
+                    <Label
+                        Text="{Binding Error}"
+                        Style="{StaticResource ErrorText}"
+                        IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
+                    <Label
+                        Text="No transactions yet. They appear here after your bank has synced."
+                        Style="{StaticResource Caption}"
+                        IsVisible="{Binding IsEmpty}" />
+                </VerticalStackLayout>
+            </CollectionView.Header>
+
+            <CollectionView.GroupHeaderTemplate>
+                <DataTemplate x:DataType="transactions:TransactionGroup">
+                    <Label Text="{Binding Title}" Style="{StaticResource SectionTitle}" Margin="20,16,20,6" />
+                </DataTemplate>
+            </CollectionView.GroupHeaderTemplate>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="transactions:TransactionItem">
+                    <Grid Padding="16,3">
+                        <Border Style="{StaticResource Card}" Padding="16,12">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="2">
+                                <Label Text="{Binding Title}" Style="{StaticResource RowTitle}" />
+                                <Label
+                                    Grid.Column="1"
+                                    Text="{Binding Amount}"
+                                    FontSize="16"
+                                    FontFamily="OpenSansSemibold"
+                                    VerticalOptions="Center">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsIncome}" Value="True">
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Positive}, Dark={StaticResource PositiveDark}}" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                                <Label
+                                    Grid.Row="1"
+                                    Grid.ColumnSpan="2"
+                                    Text="{Binding Subtitle}"
+                                    Style="{StaticResource Caption}"
+                                    LineBreakMode="TailTruncation"
+                                    IsVisible="{Binding Subtitle, Converter={StaticResource HasText}}" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </RefreshView>
+
+</ContentPage>
