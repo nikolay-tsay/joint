@@ -26,6 +26,13 @@
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
                 </VerticalStackLayout>
+
+                <Button Text="Invite someone" Margin="0,16,0,0" Command="{Binding InviteCommand}" />
+                <Button Text="Join a household" Command="{Binding JoinCommand}" />
+                <Button
+                    Text="Leave household"
+                    Command="{Binding LeaveCommand}"
+                    IsVisible="{Binding IsShared}" />
             </VerticalStackLayout>
         </ScrollView>
     </RefreshView>
