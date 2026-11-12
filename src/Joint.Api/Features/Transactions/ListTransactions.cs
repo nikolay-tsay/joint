@@ -51,6 +51,7 @@ public class ListTransactions : IEndpoint
                 account.Id,
                 account.Name,
                 owner.DisplayName,
+                owner.AvatarUrl,
                 transaction.BookedOn,
                 transaction.Amount,
                 transaction.Currency,

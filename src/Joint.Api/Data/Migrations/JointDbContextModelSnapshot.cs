@@ -247,6 +247,9 @@ namespace Joint.Api.Data.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AvatarUrl")
+                        .HasColumnType("text");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 

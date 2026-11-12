@@ -18,13 +18,17 @@
                             StrokeThickness="0"
                             StrokeShape="Ellipse"
                             Background="{StaticResource BrandGradient}">
-                            <Label
-                                Text="{Binding Initial}"
-                                TextColor="White"
-                                FontSize="24"
-                                FontFamily="OpenSansSemibold"
-                                HorizontalOptions="Center"
-                                VerticalOptions="Center" />
+                            <Grid>
+                                <Label
+                                    Text="{Binding Initial}"
+                                    TextColor="White"
+                                    FontSize="24"
+                                    FontFamily="OpenSansSemibold"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center" />
+                                <!-- Covers the initial once the picture has loaded. -->
+                                <Image Source="{Binding AvatarUrl}" Aspect="AspectFill" />
+                            </Grid>
                         </Border>
                         <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
                             <Label Text="{Binding DisplayName}" FontSize="20" FontFamily="OpenSansSemibold" />
@@ -44,10 +48,29 @@
                 <Border Style="{StaticResource Card}">
                     <VerticalStackLayout Spacing="12">
                         <Label Text="{Binding HouseholdName}" Style="{StaticResource RowTitle}" />
-                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Members}" Spacing="4">
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Members}" Spacing="8">
                             <BindableLayout.ItemTemplate>
-                                <DataTemplate x:DataType="x:String">
-                                    <Label Text="{Binding .}" Style="{StaticResource Caption}" FontSize="15" />
+                                <DataTemplate x:DataType="profile:MemberItem">
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                        <Border
+                                            WidthRequest="32"
+                                            HeightRequest="32"
+                                            StrokeThickness="0"
+                                            StrokeShape="Ellipse"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackground}, Dark={StaticResource AvatarBackgroundDark}}">
+                                            <Grid>
+                                                <Label
+                                                    Text="{Binding Initial}"
+                                                    FontSize="14"
+                                                    FontFamily="OpenSansSemibold"
+                                                    HorizontalOptions="Center"
+                                                    VerticalOptions="Center"
+                                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                                <Image Source="{Binding AvatarUrl}" Aspect="AspectFill" />
+                                            </Grid>
+                                        </Border>
+                                        <Label Grid.Column="1" Text="{Binding Name}" FontSize="15" VerticalOptions="Center" />
+                                    </Grid>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>
                         </VerticalStackLayout>

@@ -30,7 +30,11 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
     [ObservableProperty]
     public partial bool HasNoConnections { get; set; }
 
-    public ObservableCollection<string> Members { get; } = [];
+    /// <summary>The Google profile picture; the initial shows when there is none.</summary>
+    [ObservableProperty]
+    public partial string? AvatarUrl { get; set; }
+
+    public ObservableCollection<MemberItem> Members { get; } = [];
 
     public ObservableCollection<ConnectionItem> Connections { get; } = [];
 
@@ -41,12 +45,13 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
         DisplayName = me.DisplayName;
         Email = me.Email;
         Initial = me.DisplayName.Length > 0 ? me.DisplayName[..1].ToUpperInvariant() : "?";
+        AvatarUrl = me.AvatarUrl;
         HouseholdName = me.Household.Name;
 
         Members.Clear();
         foreach (var member in me.Household.Members)
         {
-            Members.Add(member.UserId == me.UserId ? $"{member.DisplayName} (you)" : member.DisplayName);
+            Members.Add(MemberItem.From(member, isCurrentUser: member.UserId == me.UserId));
         }
 
         IsShared = Members.Count > 1;

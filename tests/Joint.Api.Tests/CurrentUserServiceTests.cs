@@ -78,6 +78,39 @@ public class CurrentUserServiceTests
         Assert.Equal(expected, identity.DisplayName);
     }
 
+    [Fact]
+    public async Task The_profile_picture_is_stored_and_follows_changes_at_the_provider()
+    {
+        await using var db = NewDb();
+        var service = new CurrentUserService(db);
+
+        var created = await service.GetOrCreateAsync(
+            Principal(UserId, "ana@example.com", """{"avatar_url":"https://lh3.googleusercontent.com/a/one"}"""),
+            CancellationToken.None);
+        Assert.Equal("https://lh3.googleusercontent.com/a/one", created!.AvatarUrl);
+
+        await service.GetOrCreateAsync(
+            Principal(UserId, "ana@example.com", """{"picture":"https://lh3.googleusercontent.com/a/two"}"""),
+            CancellationToken.None);
+        Assert.Equal("https://lh3.googleusercontent.com/a/two", (await db.Users.SingleAsync()).AvatarUrl);
+
+        // A token without a picture does not wipe the one already known.
+        await service.GetOrCreateAsync(Principal(UserId, "ana@example.com"), CancellationToken.None);
+        Assert.Equal("https://lh3.googleusercontent.com/a/two", (await db.Users.SingleAsync()).AvatarUrl);
+    }
+
+    [Theory]
+    [InlineData("http://example.com/a.png")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("not a url")]
+    public void A_picture_link_that_is_not_plain_https_is_ignored(string avatarUrl)
+    {
+        var metadata = $$"""{"avatar_url":"{{avatarUrl}}"}""";
+
+        Assert.True(SupabaseIdentity.TryRead(Principal(UserId, "ana@example.com", metadata), out var identity));
+        Assert.Null(identity.AvatarUrl);
+    }
+
     private static JointDbContext NewDb() =>
         new(new DbContextOptionsBuilder<JointDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
