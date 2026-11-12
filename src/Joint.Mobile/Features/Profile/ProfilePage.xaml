@@ -17,7 +17,7 @@
                             HeightRequest="56"
                             StrokeThickness="0"
                             StrokeShape="Ellipse"
-                            BackgroundColor="{StaticResource Primary}">
+                            Background="{StaticResource BrandGradient}">
                             <Label
                                 Text="{Binding Initial}"
                                 TextColor="White"

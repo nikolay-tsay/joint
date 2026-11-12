@@ -4,7 +4,9 @@ using Joint.Mobile.Common;
 namespace Joint.Mobile.Features.Transactions;
 
 /// <summary>One transaction row, already formatted for display.</summary>
-public record TransactionItem(string Title, string? Subtitle, string Amount, bool IsIncome)
+/// <param name="OwnerInitial">First letter of the person who made it, for the avatar.</param>
+/// <param name="Subtitle">Who made it, then the bank's detail and the account where useful.</param>
+public record TransactionItem(string Title, string Subtitle, string OwnerInitial, string Amount, bool IsIncome)
 {
     /// <param name="showAccount">Name the account when the list mixes several.</param>
     public static TransactionItem From(TransactionResponse transaction, bool showAccount)
@@ -12,16 +14,14 @@ public record TransactionItem(string Title, string? Subtitle, string Amount, boo
         // Lead with who the money went to or came from; fall back to the bank's description.
         var title = transaction.Counterparty ?? transaction.Description ?? "Transaction";
         var detail = transaction.Counterparty is null ? null : transaction.Description;
-        var subtitle = (detail, showAccount) switch
-        {
-            (null, true) => transaction.AccountName,
-            (not null, true) => $"{detail} · {transaction.AccountName}",
-            _ => detail,
-        };
+
+        string?[] parts = [transaction.OwnerDisplayName, detail, showAccount ? transaction.AccountName : null];
+        var owner = transaction.OwnerDisplayName;
 
         return new TransactionItem(
             title,
-            subtitle,
+            string.Join(" · ", parts.Where(part => !string.IsNullOrWhiteSpace(part))),
+            owner.Length > 0 ? owner[..1].ToUpperInvariant() : "?",
             Money.FormatSigned(transaction.Amount, transaction.Currency),
             transaction.Amount > 0);
     }

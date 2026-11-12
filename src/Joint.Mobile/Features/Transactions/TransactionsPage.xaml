@@ -36,10 +36,27 @@
                 <DataTemplate x:DataType="transactions:TransactionItem">
                     <Grid Padding="16,3">
                         <Border Style="{StaticResource Card}" Padding="16,12">
-                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="2">
-                                <Label Text="{Binding Title}" Style="{StaticResource RowTitle}" />
+                            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="2">
+                                <!-- Who made it -->
+                                <Border
+                                    Grid.RowSpan="2"
+                                    WidthRequest="36"
+                                    HeightRequest="36"
+                                    StrokeThickness="0"
+                                    StrokeShape="Ellipse"
+                                    VerticalOptions="Center"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackground}, Dark={StaticResource AvatarBackgroundDark}}">
+                                    <Label
+                                        Text="{Binding OwnerInitial}"
+                                        FontSize="15"
+                                        FontFamily="OpenSansSemibold"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center"
+                                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                </Border>
+                                <Label Grid.Column="1" Text="{Binding Title}" Style="{StaticResource RowTitle}" />
                                 <Label
-                                    Grid.Column="1"
+                                    Grid.Column="2"
                                     Text="{Binding Amount}"
                                     FontSize="16"
                                     FontFamily="OpenSansSemibold"
@@ -52,11 +69,11 @@
                                 </Label>
                                 <Label
                                     Grid.Row="1"
+                                    Grid.Column="1"
                                     Grid.ColumnSpan="2"
                                     Text="{Binding Subtitle}"
                                     Style="{StaticResource Caption}"
-                                    LineBreakMode="TailTruncation"
-                                    IsVisible="{Binding Subtitle, Converter={StaticResource HasText}}" />
+                                    LineBreakMode="TailTruncation" />
                             </Grid>
                         </Border>
                     </Grid>
