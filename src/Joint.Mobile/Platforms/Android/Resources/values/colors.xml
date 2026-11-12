@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="colorPrimary">#6D28D9</color>
-    <color name="colorPrimaryDark">#4C1D95</color>
-    <color name="colorAccent">#4C1D95</color>
+    <!-- Android paints the status bar (clock, battery) with this; keep it equal to
+         PageBackground in Colors.xaml. The dark value is in values-night. -->
+    <color name="colorPrimaryDark">#F6F4FA</color>
+    <color name="colorAccent">#6D28D9</color>
 </resources>

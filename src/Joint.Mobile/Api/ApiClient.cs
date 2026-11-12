@@ -66,12 +66,17 @@ public class ApiClient(AuthService auth)
 
     /// <summary>The household's transactions, newest first; pass an account to narrow them.</summary>
     public async Task<List<TransactionResponse>> GetTransactionsAsync(
-        Guid? accountId, int skip, int limit, CancellationToken cancellationToken = default)
+        Guid? accountId, string? kind, int skip, int limit, CancellationToken cancellationToken = default)
     {
         var path = $"api/transactions?skip={skip}&limit={limit}";
         if (accountId is { } id)
         {
             path += $"&accountId={id}";
+        }
+
+        if (!string.IsNullOrEmpty(kind))
+        {
+            path += $"&kind={kind}";
         }
 
         using var response = await SendAsync(HttpMethod.Get, path, null, cancellationToken);

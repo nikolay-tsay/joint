@@ -8,7 +8,7 @@
     Shell.ForegroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
     BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
 
-    <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
+    <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
         <CollectionView
             ItemsSource="{Binding Groups}"
             IsGrouped="True"
@@ -18,13 +18,90 @@
 
             <CollectionView.Header>
                 <VerticalStackLayout Padding="16,8,16,0" Spacing="8">
+
+                    <!-- Household tab: which kind of accounts to list. -->
+                    <FlexLayout
+                        BindableLayout.ItemsSource="{Binding Filters}"
+                        Wrap="Wrap"
+                        IsVisible="{Binding IsHouseholdView}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="transactions:ChoiceItem">
+                                <Border
+                                    Margin="0,0,8,8"
+                                    Padding="14,7"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 18"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding SelectFilterCommand, Source={RelativeSource AncestorType={x:Type transactions:TransactionsViewModel}}, x:DataType=transactions:TransactionsViewModel}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Label Text="{Binding Label}" FontSize="14" FontFamily="OpenSansSemibold">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                                <Setter Property="TextColor" Value="White" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </FlexLayout>
+
+                    <!-- One account: its type, as a dropdown that opens in place. -->
+                    <Border Style="{StaticResource Card}" Padding="16,12" IsVisible="{Binding IsAccountView}">
+                        <VerticalStackLayout Spacing="4">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ToggleTypeMenuCommand}" />
+                                </Grid.GestureRecognizers>
+                                <Label Text="Account type" Style="{StaticResource Caption}" VerticalOptions="Center" />
+                                <Label
+                                    Grid.Column="1"
+                                    Text="{Binding AccountTypeSummary}"
+                                    FontSize="16"
+                                    FontFamily="OpenSansSemibold"
+                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                            </Grid>
+                            <VerticalStackLayout
+                                BindableLayout.ItemsSource="{Binding AccountTypes}"
+                                IsVisible="{Binding IsTypeMenuOpen}">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="transactions:ChoiceItem">
+                                        <Grid ColumnDefinitions="*,Auto" Padding="0,12,0,4">
+                                            <Grid.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding SelectAccountTypeCommand, Source={RelativeSource AncestorType={x:Type transactions:TransactionsViewModel}}, x:DataType=transactions:TransactionsViewModel}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Grid.GestureRecognizers>
+                                            <Label Text="{Binding Label}" FontSize="16" />
+                                            <Label
+                                                Grid.Column="1"
+                                                Text="✓"
+                                                FontSize="16"
+                                                IsVisible="{Binding IsSelected}"
+                                                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
                     <Label
                         Text="{Binding Error}"
                         Style="{StaticResource ErrorText}"
                         IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
                     <Label
-                        Text="No transactions yet. They appear here after your bank has synced."
+                        Text="No transactions here yet."
                         Style="{StaticResource Caption}"
+                        Margin="4,0"
                         IsVisible="{Binding IsEmpty}" />
                 </VerticalStackLayout>
             </CollectionView.Header>

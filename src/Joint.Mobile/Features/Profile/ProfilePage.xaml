@@ -5,7 +5,7 @@
     Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
 
-    <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
+    <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
         <ScrollView>
             <VerticalStackLayout Padding="16,24,16,24" Spacing="12">
 
@@ -77,13 +77,74 @@
                         <Label
                             Text="Everyone in a household sees the same accounts and transactions."
                             Style="{StaticResource Caption}" />
-                        <Button Text="Invite someone" Style="{StaticResource PrimaryButton}" Command="{Binding InviteCommand}" />
-                        <Button Text="Join with a code" Style="{StaticResource SecondaryButton}" Command="{Binding JoinCommand}" />
-                        <Button
-                            Text="Leave household"
-                            Style="{StaticResource DangerButton}"
-                            Command="{Binding LeaveCommand}"
-                            IsVisible="{Binding IsShared}" />
+
+                        <!-- The card's buttons, swapped for one of the panels below while it is open. -->
+                        <VerticalStackLayout Spacing="8" IsVisible="{Binding IsHouseholdMenuOpen}">
+                            <Button Text="Invite someone" Style="{StaticResource PrimaryButton}" Command="{Binding InviteCommand}" />
+                            <Button Text="Join with a code" Style="{StaticResource SecondaryButton}" Command="{Binding StartJoinCommand}" />
+                            <Button
+                                Text="Leave household"
+                                Style="{StaticResource DangerButton}"
+                                Command="{Binding StartLeaveCommand}"
+                                IsVisible="{Binding IsShared}" />
+                        </VerticalStackLayout>
+
+                        <!-- Invite: the code, shown in place. -->
+                        <VerticalStackLayout Spacing="12" IsVisible="{Binding IsInviteOpen}">
+                            <Border Style="{StaticResource Field}" Padding="16">
+                                <Label
+                                    Text="{Binding InvitationCode}"
+                                    FontSize="28"
+                                    FontFamily="OpenSansSemibold"
+                                    CharacterSpacing="3"
+                                    HorizontalOptions="Center"
+                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                            </Border>
+                            <Label Text="{Binding InvitationHint}" Style="{StaticResource Caption}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Text="Share" Style="{StaticResource PrimaryButton}" Command="{Binding ShareInvitationCommand}" />
+                                <Button Grid.Column="1" Text="Copy" Style="{StaticResource SecondaryButton}" Command="{Binding CopyInvitationCommand}" />
+                            </Grid>
+                            <Button Text="Done" Style="{StaticResource QuietButton}" Command="{Binding CloseHouseholdPanelCommand}" />
+                        </VerticalStackLayout>
+
+                        <!-- Join: a field for the code. -->
+                        <VerticalStackLayout Spacing="12" IsVisible="{Binding IsJoinOpen}">
+                            <Label
+                                Text="Enter the invitation code you were given. You will leave your current household and see everything in theirs; they will see your accounts too."
+                                Style="{StaticResource Caption}" />
+                            <Border Style="{StaticResource Field}">
+                                <Entry
+                                    Text="{Binding JoinCode}"
+                                    Placeholder="ABCD-EFGH"
+                                    FontSize="18"
+                                    CharacterSpacing="2"
+                                    Keyboard="Text"
+                                    IsSpellCheckEnabled="False"
+                                    IsTextPredictionEnabled="False"
+                                    ReturnType="Done"
+                                    ReturnCommand="{Binding ConfirmJoinCommand}" />
+                            </Border>
+                            <Label
+                                Text="{Binding JoinError}"
+                                Style="{StaticResource ErrorText}"
+                                IsVisible="{Binding JoinError, Converter={StaticResource HasText}}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Text="Join" Style="{StaticResource PrimaryButton}" Command="{Binding ConfirmJoinCommand}" />
+                                <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding CloseHouseholdPanelCommand}" />
+                            </Grid>
+                        </VerticalStackLayout>
+
+                        <!-- Leave: confirm in place. -->
+                        <VerticalStackLayout Spacing="12" IsVisible="{Binding IsLeaveOpen}">
+                            <Label
+                                Text="Leave this household? You will go back to one of your own. The others will no longer see your accounts, and you will no longer see theirs."
+                                Style="{StaticResource Caption}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Text="Leave" Style="{StaticResource DangerOutlineButton}" Command="{Binding ConfirmLeaveCommand}" />
+                                <Button Grid.Column="1" Text="Stay" Style="{StaticResource SecondaryButton}" Command="{Binding CloseHouseholdPanelCommand}" />
+                            </Grid>
+                        </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>
 
@@ -98,33 +159,82 @@
                         <VerticalStackLayout BindableLayout.ItemsSource="{Binding Connections}" Spacing="12">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="profile:ConnectionItem">
-                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="2">
-                                        <Label Text="{Binding Title}" Style="{StaticResource RowTitle}" />
-                                        <Label Grid.Row="1" Text="{Binding Status}" Style="{StaticResource Caption}">
-                                            <Label.Triggers>
-                                                <DataTrigger TargetType="Label" Binding="{Binding HasProblem}" Value="True">
-                                                    <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}" />
-                                                </DataTrigger>
-                                            </Label.Triggers>
-                                        </Label>
-                                        <Button
-                                            Grid.Column="1"
-                                            Grid.RowSpan="2"
-                                            Text="Remove"
-                                            Style="{StaticResource DangerButton}"
-                                            Padding="8,0"
-                                            VerticalOptions="Center"
-                                            IsVisible="{Binding IsMine}"
-                                            Command="{Binding RemoveConnectionCommand, Source={RelativeSource AncestorType={x:Type profile:ProfileViewModel}}, x:DataType=profile:ProfileViewModel}"
-                                            CommandParameter="{Binding .}" />
-                                    </Grid>
+                                    <VerticalStackLayout Spacing="8">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="2">
+                                            <Label Text="{Binding Title}" Style="{StaticResource RowTitle}" />
+                                            <Label Grid.Row="1" Text="{Binding Status}" Style="{StaticResource Caption}">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding HasProblem}" Value="True">
+                                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}" />
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
+                                            <Button
+                                                Grid.Column="1"
+                                                Grid.RowSpan="2"
+                                                Text="Remove"
+                                                Style="{StaticResource DangerButton}"
+                                                Padding="8,0"
+                                                VerticalOptions="Center"
+                                                IsVisible="{Binding CanStartRemove}"
+                                                Command="{Binding StartRemoveCommand, Source={RelativeSource AncestorType={x:Type profile:ProfileViewModel}}, x:DataType=profile:ProfileViewModel}"
+                                                CommandParameter="{Binding .}" />
+                                        </Grid>
+
+                                        <!-- Remove: confirm in place, under the row. -->
+                                        <VerticalStackLayout Spacing="8" IsVisible="{Binding IsConfirmingRemove}">
+                                            <Label
+                                                Text="Remove this connection? Its accounts and transactions will be deleted from Joint for everyone in your household. Nothing changes at your bank."
+                                                Style="{StaticResource Caption}" />
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                                <Button
+                                                    Text="Remove"
+                                                    Style="{StaticResource DangerOutlineButton}"
+                                                    Command="{Binding ConfirmRemoveCommand, Source={RelativeSource AncestorType={x:Type profile:ProfileViewModel}}, x:DataType=profile:ProfileViewModel}"
+                                                    CommandParameter="{Binding .}" />
+                                                <Button
+                                                    Grid.Column="1"
+                                                    Text="Keep"
+                                                    Style="{StaticResource SecondaryButton}"
+                                                    Command="{Binding CancelRemoveCommand, Source={RelativeSource AncestorType={x:Type profile:ProfileViewModel}}, x:DataType=profile:ProfileViewModel}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Grid>
+                                        </VerticalStackLayout>
+                                    </VerticalStackLayout>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>
                         </VerticalStackLayout>
+
                         <Button
                             Text="Connect Lunch Flow"
                             Style="{StaticResource SecondaryButton}"
-                            Command="{Binding ConnectLunchFlowCommand}" />
+                            Command="{Binding StartConnectCommand}"
+                            IsVisible="{Binding IsConnectClosed}" />
+
+                        <!-- Connect: a field for the key. -->
+                        <VerticalStackLayout Spacing="12" IsVisible="{Binding IsConnectOpen}">
+                            <Label
+                                Text="Paste the API key from your Lunch Flow API destination. It is stored encrypted and only used to read your accounts."
+                                Style="{StaticResource Caption}" />
+                            <Border Style="{StaticResource Field}">
+                                <Entry
+                                    Text="{Binding LunchFlowKey}"
+                                    Placeholder="Lunch Flow API key"
+                                    IsPassword="True"
+                                    IsSpellCheckEnabled="False"
+                                    IsTextPredictionEnabled="False"
+                                    ReturnType="Done"
+                                    ReturnCommand="{Binding ConfirmConnectCommand}" />
+                            </Border>
+                            <Label
+                                Text="{Binding ConnectError}"
+                                Style="{StaticResource ErrorText}"
+                                IsVisible="{Binding ConnectError, Converter={StaticResource HasText}}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Text="Connect" Style="{StaticResource PrimaryButton}" Command="{Binding ConfirmConnectCommand}" />
+                                <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding CancelConnectCommand}" />
+                            </Grid>
+                        </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>
 

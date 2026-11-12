@@ -7,7 +7,10 @@ using Joint.Mobile.Features.Auth;
 
 namespace Joint.Mobile.Features.Profile;
 
-/// <summary>Who you are, who you share with, and where your data comes from.</summary>
+/// <summary>
+/// Who you are, who you share with, and where your data comes from. Every action happens
+/// in place on the page: a card swaps its buttons for a small panel instead of opening a dialog.
+/// </summary>
 public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageViewModel(auth)
 {
     [ObservableProperty]
@@ -20,6 +23,10 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
     [ObservableProperty]
     public partial string? Initial { get; set; }
 
+    /// <summary>The Google profile picture; the initial shows when there is none.</summary>
+    [ObservableProperty]
+    public partial string? AvatarUrl { get; set; }
+
     [ObservableProperty]
     public partial string? HouseholdName { get; set; }
 
@@ -30,16 +37,56 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
     [ObservableProperty]
     public partial bool HasNoConnections { get; set; }
 
-    /// <summary>The Google profile picture; the initial shows when there is none.</summary>
-    [ObservableProperty]
-    public partial string? AvatarUrl { get; set; }
-
     public ObservableCollection<MemberItem> Members { get; } = [];
 
     public ObservableCollection<ConnectionItem> Connections { get; } = [];
 
+    // ----- Household card -----
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsHouseholdMenuOpen), nameof(IsInviteOpen), nameof(IsJoinOpen), nameof(IsLeaveOpen))]
+    public partial HouseholdPanel Panel { get; set; }
+
+    public bool IsHouseholdMenuOpen => Panel == HouseholdPanel.None;
+
+    public bool IsInviteOpen => Panel == HouseholdPanel.Invite;
+
+    public bool IsJoinOpen => Panel == HouseholdPanel.Join;
+
+    public bool IsLeaveOpen => Panel == HouseholdPanel.Leave;
+
+    [ObservableProperty]
+    public partial string? InvitationCode { get; set; }
+
+    /// <summary>What to do with the code and when it stops working.</summary>
+    [ObservableProperty]
+    public partial string? InvitationHint { get; set; }
+
+    /// <summary>What the user is typing into the join panel.</summary>
+    [ObservableProperty]
+    public partial string? JoinCode { get; set; }
+
+    /// <summary>Why the last join attempt failed, shown under the field.</summary>
+    [ObservableProperty]
+    public partial string? JoinError { get; set; }
+
+    // ----- Connections card -----
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsConnectClosed))]
+    public partial bool IsConnectOpen { get; set; }
+
+    public bool IsConnectClosed => !IsConnectOpen;
+
+    /// <summary>What the user is pasting into the connect panel.</summary>
+    [ObservableProperty]
+    public partial string? LunchFlowKey { get; set; }
+
+    [ObservableProperty]
+    public partial string? ConnectError { get; set; }
+
     [RelayCommand]
-    private Task LoadAsync() => RunAsync(async () =>
+    private Task LoadAsync() => ReloadAsync(async () =>
     {
         var me = await api.GetMeAsync();
         DisplayName = me.DisplayName;
@@ -56,8 +103,10 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
 
         IsShared = Members.Count > 1;
 
+        // Fetch first, then swap: clearing before the await lets two loads interleave and double up.
+        var connections = await api.GetConnectionsAsync();
         Connections.Clear();
-        foreach (var connection in await api.GetConnectionsAsync())
+        foreach (var connection in connections)
         {
             Connections.Add(ConnectionItem.From(connection));
         }
@@ -65,113 +114,138 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
         HasNoConnections = Connections.Count == 0;
     });
 
+    // ----- Invite -----
+
+    /// <summary>Creates a code and shows it in the card.</summary>
     [RelayCommand]
     private Task InviteAsync() => RunAsync(async () =>
     {
         var invitation = await api.CreateInvitationAsync();
-        var expires = invitation.ExpiresAt.ToLocalTime().ToString("g");
-        var share = await Shell.Current.DisplayAlertAsync(
-            "Invitation code",
-            $"{invitation.Code}\n\nGive this code to the person you want to share your finances with. "
-            + $"It works once and expires {expires}.",
-            "Share",
-            "Close");
-        if (share)
-        {
-            await Share.Default.RequestAsync(new ShareTextRequest(
-                $"Join my household in Joint with this code: {invitation.Code}", "Joint invitation"));
-        }
+        InvitationCode = invitation.Code;
+        InvitationHint =
+            "Give this code to the person you want to share your finances with. "
+            + $"It works once and expires {invitation.ExpiresAt.ToLocalTime():g}.";
+        Panel = HouseholdPanel.Invite;
     });
 
     [RelayCommand]
-    private async Task JoinAsync()
+    private Task ShareInvitationAsync() =>
+        Share.Default.RequestAsync(new ShareTextRequest(
+            $"Join my household in Joint with this code: {InvitationCode}", "Joint invitation"));
+
+    [RelayCommand]
+    private async Task CopyInvitationAsync()
     {
-        var code = await Shell.Current.DisplayPromptAsync(
-            "Join a household",
-            "Enter the invitation code you were given. You will leave your current household "
-            + "and see everything in theirs; they will see your accounts too.",
-            "Join",
-            "Cancel",
-            placeholder: "ABCD-EFGH");
-        if (string.IsNullOrWhiteSpace(code))
+        await Clipboard.Default.SetTextAsync(InvitationCode);
+        InvitationHint = "Copied. The code works once.";
+    }
+
+    // ----- Join -----
+
+    [RelayCommand]
+    private void StartJoin()
+    {
+        JoinCode = null;
+        JoinError = null;
+        Panel = HouseholdPanel.Join;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmJoinAsync()
+    {
+        if (string.IsNullOrWhiteSpace(JoinCode))
         {
+            JoinError = "Enter the code first.";
             return;
         }
 
         await RunAsync(async () =>
         {
-            var joined = await api.AcceptInvitationAsync(code);
-            await LoadAsync();
-            if (!joined)
+            if (await api.AcceptInvitationAsync(JoinCode))
             {
-                Error = "That code is invalid, already used or expired.";
+                Panel = HouseholdPanel.None;
+                await LoadAsync();
+            }
+            else
+            {
+                JoinError = "That code is invalid, already used or expired.";
             }
         });
     }
 
+    // ----- Leave -----
+
     [RelayCommand]
-    private async Task LeaveAsync()
+    private void StartLeave() => Panel = HouseholdPanel.Leave;
+
+    [RelayCommand]
+    private Task ConfirmLeaveAsync() => RunAsync(async () =>
     {
-        var confirmed = await Shell.Current.DisplayAlertAsync(
-            "Leave household",
-            "You will go back to a household of your own. The others will no longer see your "
-            + "accounts, and you will no longer see theirs.",
-            "Leave",
-            "Cancel");
-        if (!confirmed)
+        await api.LeaveHouseholdAsync();
+        Panel = HouseholdPanel.None;
+        await LoadAsync();
+    });
+
+    /// <summary>Back to the household buttons from any panel.</summary>
+    [RelayCommand]
+    private void CloseHouseholdPanel() => Panel = HouseholdPanel.None;
+
+    // ----- Connect Lunch Flow -----
+
+    [RelayCommand]
+    private void StartConnect()
+    {
+        LunchFlowKey = null;
+        ConnectError = null;
+        IsConnectOpen = true;
+    }
+
+    [RelayCommand]
+    private void CancelConnect() => IsConnectOpen = false;
+
+    [RelayCommand]
+    private async Task ConfirmConnectAsync()
+    {
+        if (string.IsNullOrWhiteSpace(LunchFlowKey))
         {
+            ConnectError = "Paste the API key first.";
             return;
         }
 
         await RunAsync(async () =>
         {
-            await api.LeaveHouseholdAsync();
-            await LoadAsync();
+            ConnectError = await api.ConnectLunchFlowAsync(LunchFlowKey);
+            if (ConnectError is null)
+            {
+                IsConnectOpen = false;
+                LunchFlowKey = null;
+                await LoadAsync();
+            }
         });
+    }
+
+    // ----- Remove a connection -----
+
+    [RelayCommand]
+    private void StartRemove(ConnectionItem connection)
+    {
+        foreach (var other in Connections)
+        {
+            other.IsConfirmingRemove = false;
+        }
+
+        connection.IsConfirmingRemove = true;
     }
 
     [RelayCommand]
-    private async Task ConnectLunchFlowAsync()
-    {
-        var apiKey = await Shell.Current.DisplayPromptAsync(
-            "Connect Lunch Flow",
-            "Paste the API key from your Lunch Flow API destination. It is stored encrypted "
-            + "and only used to read your accounts.",
-            "Connect",
-            "Cancel");
-        if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            return;
-        }
-
-        await RunAsync(async () =>
-        {
-            var problem = await api.ConnectLunchFlowAsync(apiKey);
-            await LoadAsync();
-            Error = problem;
-        });
-    }
+    private static void CancelRemove(ConnectionItem connection) => connection.IsConfirmingRemove = false;
 
     [RelayCommand]
-    private async Task RemoveConnectionAsync(ConnectionItem connection)
+    private Task ConfirmRemoveAsync(ConnectionItem connection) => RunAsync(async () =>
     {
-        var confirmed = await Shell.Current.DisplayAlertAsync(
-            "Remove connection",
-            "Its accounts and transactions will be deleted from Joint for everyone in your "
-            + "household. Nothing changes at your bank.",
-            "Remove",
-            "Cancel");
-        if (!confirmed)
-        {
-            return;
-        }
-
-        await RunAsync(async () =>
-        {
-            await api.DeleteConnectionAsync(connection.Id);
-            await LoadAsync();
-        });
-    }
+        await api.DeleteConnectionAsync(connection.Id);
+        await LoadAsync();
+    });
 
     [RelayCommand]
     private Task SignOutNowAsync() => SignOutAsync();
