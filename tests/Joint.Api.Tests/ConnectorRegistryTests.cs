@@ -20,7 +20,7 @@ public class ConnectorRegistryTests
     {
         var registry = new ConnectorRegistry([new FakeConnector(ProviderKind.Fio)]);
 
-        Assert.False(registry.TryGet(ProviderKind.AirBank, out _));
+        Assert.False(registry.TryGet(ProviderKind.LunchFlow, out _));
     }
 
     [Fact]
@@ -28,17 +28,5 @@ public class ConnectorRegistryTests
     {
         Assert.Throws<InvalidOperationException>(() =>
             new ConnectorRegistry([new FakeConnector(ProviderKind.Fio), new FakeConnector(ProviderKind.Fio)]));
-    }
-
-    private sealed class FakeConnector(ProviderKind provider) : IProviderConnector
-    {
-        public ProviderKind Provider => provider;
-
-        public async Task<ProviderSnapshot> FetchAsync(
-            string credential, DateOnly since, CancellationToken cancellationToken)
-        {
-            await Task.Yield();
-            return new ProviderSnapshot([]);
-        }
     }
 }

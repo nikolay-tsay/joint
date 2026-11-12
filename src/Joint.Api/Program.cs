@@ -1,5 +1,7 @@
 using Joint.Api.Common;
 using Joint.Api.Data;
+using Joint.Api.Features.Accounts;
+using Joint.Api.Features.Connections;
 using Joint.Api.Features.Health;
 using Joint.Api.Features.Households;
 using Joint.Api.Features.Me;
@@ -20,7 +22,7 @@ var connectionString = builder.Configuration.GetConnectionString("Database")
 builder.Services.AddDbContext<JointDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddSupabaseAuth(builder.Configuration);
 builder.Services.AddBackgroundJobs(connectionString);
-builder.Services.AddSync();
+builder.Services.AddSync(builder.Configuration);
 builder.Services.AddHouseholds();
 builder.Services.AddApiDocs();
 
@@ -36,6 +38,11 @@ app.MapEndpoint<GetMe>();
 app.MapEndpoint<CreateInvitation>();
 app.MapEndpoint<AcceptInvitation>();
 app.MapEndpoint<LeaveHousehold>();
+app.MapEndpoint<ConnectLunchFlow>();
+app.MapEndpoint<ListConnections>();
+app.MapEndpoint<DeleteConnection>();
+app.MapEndpoint<ListAccounts>();
+app.MapEndpoint<ListAccountTransactions>();
 
 app.ScheduleSync();
 app.ScheduleInvitationPurge();

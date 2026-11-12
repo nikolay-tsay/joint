@@ -24,7 +24,16 @@ public partial class HomeViewModel(ApiClient api, AuthService auth) : Observable
     [ObservableProperty]
     public partial bool IsShared { get; set; }
 
+    /// <summary>True when no account has been synced yet, to show a hint instead of an empty list.</summary>
+    [ObservableProperty]
+    public partial bool HasNoAccounts { get; set; }
+
     public ObservableCollection<string> Members { get; } = [];
+
+    public ObservableCollection<AccountItem> Accounts { get; } = [];
+
+    /// <summary>One line per connection, saying who owns it and how its last sync went.</summary>
+    public ObservableCollection<string> Connections { get; } = [];
 
     [RelayCommand]
     private Task LoadAsync() => RunAsync(async () =>
@@ -39,7 +48,50 @@ public partial class HomeViewModel(ApiClient api, AuthService auth) : Observable
         }
 
         IsShared = Members.Count > 1;
+
+        Accounts.Clear();
+        foreach (var account in await api.GetAccountsAsync())
+        {
+            Accounts.Add(AccountItem.From(account));
+        }
+
+        HasNoAccounts = Accounts.Count == 0;
+
+        Connections.Clear();
+        foreach (var connection in await api.GetConnectionsAsync())
+        {
+            var state = connection.Status switch
+            {
+                "Active" when connection.LastSyncedAt is { } synced => $"synced {synced.ToLocalTime():g}",
+                "Pending" => "first sync in progress",
+                "Failing" => connection.LastError ?? "last sync failed",
+                var other => other,
+            };
+            Connections.Add($"{connection.Provider} ({connection.OwnerDisplayName}): {state}");
+        }
     });
+
+    [RelayCommand]
+    private async Task ConnectLunchFlowAsync()
+    {
+        var apiKey = await Shell.Current.DisplayPromptAsync(
+            "Connect Lunch Flow",
+            "Paste the API key from your Lunch Flow API destination. It is stored encrypted "
+            + "and only used to read your accounts.",
+            "Connect",
+            "Cancel");
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            var problem = await api.ConnectLunchFlowAsync(apiKey);
+            await LoadAsync();
+            Error = problem;
+        });
+    }
 
     [RelayCommand]
     private Task InviteAsync() => RunAsync(async () =>

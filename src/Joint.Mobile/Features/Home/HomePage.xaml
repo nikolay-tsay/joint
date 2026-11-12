@@ -17,7 +17,32 @@
                     TextColor="Red"
                     IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
 
-                <Label Text="{Binding HouseholdName}" FontSize="18" Margin="0,16,0,0" />
+                <Label Text="Accounts" FontSize="18" FontAttributes="Bold" Margin="0,16,0,0" />
+                <Label
+                    Text="No accounts yet. Connect Lunch Flow, then pull down to refresh after a minute."
+                    IsVisible="{Binding HasNoAccounts}" />
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Accounts}" Spacing="12">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="home:AccountItem">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                <Label Text="{Binding Title}" FontAttributes="Bold" />
+                                <Label Grid.Column="1" Text="{Binding Balance}" FontAttributes="Bold" />
+                                <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Subtitle}" FontSize="12" />
+                            </Grid>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Connections}" Spacing="4">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <Label Text="{Binding .}" FontSize="12" />
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+                <Button Text="Connect Lunch Flow" Command="{Binding ConnectLunchFlowCommand}" />
+
+                <Label Text="{Binding HouseholdName}" FontSize="18" FontAttributes="Bold" Margin="0,16,0,0" />
                 <Label Text="Members" FontAttributes="Bold" />
                 <VerticalStackLayout BindableLayout.ItemsSource="{Binding Members}" Spacing="4">
                     <BindableLayout.ItemTemplate>
