@@ -54,6 +54,16 @@ variables). `dotnet ef` needs both set too; dummy values are enough for `migrati
 - Each provider is an `IProviderConnector` returning the normalized `ProviderSnapshot`. Adding a provider must not require changes to other slices.
 - Provider credentials are stored encrypted and never returned to clients or logged.
 
+## Data retention
+
+The database must stay small (Supabase bills by size). Before adding a table or column, decide when its rows die.
+
+- Store only what a screen shows. Never store raw provider responses, request logs or audit trails in the database.
+- Transient rows get a purge. Invitations are deleted daily once expired or accepted (`PurgeInvitationsJob`); follow that pattern for anything else short-lived.
+- Holdings are current state: replace them on each sync, don't append.
+- Transactions are the only table that grows without bound, and are kept in full because history is the point of the app. If a history table is ever added (balances, portfolio value), keep at most one row per account per day.
+- A feature that needs a recurring job registers and schedules it itself (`AddX` / `ScheduleX` next to the job); Hangfire setup lives in `Common/BackgroundJobs.cs`. Hangfire prunes its own finished-job records after a day; don't extend that.
+
 ## Mobile conventions
 
 - Organized by feature like the backend: `Features/<Feature>/` holds the page, its view model and feature-only services. MVVM with CommunityToolkit.Mvvm; pages and view models are registered in `MauiProgram.cs` and resolved by Shell.
