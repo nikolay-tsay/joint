@@ -8,6 +8,7 @@ using Joint.Api.Domain;
 using Joint.Api.Features.Accounts;
 using Joint.Api.Features.Households;
 using Joint.Api.Features.Sync;
+using Joint.Api.Features.Transactions;
 using Joint.Contracts;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -110,14 +111,42 @@ public class ConnectionSyncerTests
         var accountId = (await db.Accounts.SingleAsync()).Id;
 
         Assert.Empty(await AccountsAsync(db, Ben));
-        Assert.IsType<NotFound>((await TransactionsAsync(db, Ben, accountId)).Result);
+        Assert.Empty(await TransactionsAsync(db, Ben));
+        // Naming someone else's account must not open it either.
+        Assert.Empty(await TransactionsAsync(db, Ben, accountId));
 
         await JoinAsync(db, inviter: Ana, joiner: Ben);
 
         var shared = Assert.Single(await AccountsAsync(db, Ben));
         Assert.Equal("ana", shared.OwnerDisplayName);
-        var transactions = Assert.IsType<Ok<List<TransactionResponse>>>((await TransactionsAsync(db, Ben, accountId)).Result);
-        Assert.Single(transactions.Value!);
+        var transaction = Assert.Single(await TransactionsAsync(db, Ben, accountId));
+        Assert.Equal("Current account", transaction.AccountName);
+    }
+
+    [Fact]
+    public async Task Transactions_come_newest_first_and_page_with_skip_and_limit()
+    {
+        await using var db = NewDb();
+        var connector = new FakeConnector(ProviderKind.LunchFlow)
+        {
+            Snapshot = new ProviderSnapshot([
+                new ProviderAccount(
+                    "7", "Current account", "Air Bank", AccountKind.Current, "CZK", 0,
+                    Enumerable.Range(1, 5)
+                        .Select(day => new ProviderTransaction(
+                            $"t{day}", new DateOnly(2026, 11, day), -day, "CZK", null, null))
+                        .ToList(),
+                    []),
+            ]),
+        };
+        var connection = await ConnectAsync(db, Ana);
+        await Syncer(db, connector).SyncAsync(connection.Id, CancellationToken.None);
+
+        var firstPage = await TransactionsAsync(db, Ana, skip: 0, limit: 2);
+        var secondPage = await TransactionsAsync(db, Ana, skip: 2, limit: 2);
+
+        Assert.Equal([5, 4], firstPage.Select(t => t.BookedOn.Day));
+        Assert.Equal([3, 2], secondPage.Select(t => t.BookedOn.Day));
     }
 
     private static ProviderSnapshot Snapshot(decimal balance, params string[] transactionIds) =>
@@ -155,10 +184,13 @@ public class ConnectionSyncerTests
         return Assert.IsType<Ok<List<AccountResponse>>>(result.Result).Value!;
     }
 
-    private static Task<Results<Ok<List<TransactionResponse>>, UnauthorizedHttpResult, NotFound>> TransactionsAsync(
-        JointDbContext db, ClaimsPrincipal principal, Guid accountId) =>
-        ListAccountTransactions.HandleAsync(
-            accountId, null, null, principal, new CurrentUserService(db), db, CancellationToken.None);
+    private static async Task<List<TransactionResponse>> TransactionsAsync(
+        JointDbContext db, ClaimsPrincipal principal, Guid? accountId = null, int? skip = null, int? limit = null)
+    {
+        var result = await ListTransactions.HandleAsync(
+            accountId, skip, limit, principal, new CurrentUserService(db), db, CancellationToken.None);
+        return Assert.IsType<Ok<List<TransactionResponse>>>(result.Result).Value!;
+    }
 
     private static async Task JoinAsync(JointDbContext db, ClaimsPrincipal inviter, ClaimsPrincipal joiner)
     {

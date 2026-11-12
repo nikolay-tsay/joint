@@ -1,8 +1,11 @@
 namespace Joint.Mobile;
 
-/// <summary>Shell routes, as declared in AppShell.xaml.</summary>
+/// <summary>Shell routes, as declared in AppShell.</summary>
 public static class Routes
 {
     public const string Login = "//login";
-    public const string Home = "//home";
+    public const string Home = "//main/home";
+
+    /// <summary>One account's transactions; takes <c>accountId</c> and <c>title</c>.</summary>
+    public const string AccountTransactions = "account-transactions";
 }

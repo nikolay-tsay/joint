@@ -1,0 +1,117 @@
+<ContentPage
+    x:Class="Joint.Mobile.Features.Profile.ProfilePage"
+    xmlns:profile="clr-namespace:Joint.Mobile.Features.Profile"
+    x:DataType="profile:ProfileViewModel"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
+
+    <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
+        <ScrollView>
+            <VerticalStackLayout Padding="16,24,16,24" Spacing="12">
+
+                <!-- Who you are -->
+                <Border Style="{StaticResource Card}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                        <Border
+                            WidthRequest="56"
+                            HeightRequest="56"
+                            StrokeThickness="0"
+                            StrokeShape="Ellipse"
+                            BackgroundColor="{StaticResource Primary}">
+                            <Label
+                                Text="{Binding Initial}"
+                                TextColor="White"
+                                FontSize="24"
+                                FontFamily="OpenSansSemibold"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                            <Label Text="{Binding DisplayName}" FontSize="20" FontFamily="OpenSansSemibold" />
+                            <Label Text="{Binding Email}" Style="{StaticResource Caption}" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <Label
+                    Text="{Binding Error}"
+                    Style="{StaticResource ErrorText}"
+                    Margin="4,0"
+                    IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
+
+                <!-- Who you share with -->
+                <Label Text="Household" Style="{StaticResource SectionTitle}" />
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="{Binding HouseholdName}" Style="{StaticResource RowTitle}" />
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Members}" Spacing="4">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <Label Text="{Binding .}" Style="{StaticResource Caption}" FontSize="15" />
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                        <Label
+                            Text="Everyone in a household sees the same accounts and transactions."
+                            Style="{StaticResource Caption}" />
+                        <Button Text="Invite someone" Style="{StaticResource PrimaryButton}" Command="{Binding InviteCommand}" />
+                        <Button Text="Join with a code" Style="{StaticResource SecondaryButton}" Command="{Binding JoinCommand}" />
+                        <Button
+                            Text="Leave household"
+                            Style="{StaticResource DangerButton}"
+                            Command="{Binding LeaveCommand}"
+                            IsVisible="{Binding IsShared}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Where the data comes from -->
+                <Label Text="Connections" Style="{StaticResource SectionTitle}" />
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label
+                            Text="No bank is connected yet. Connect your banks in Lunch Flow, then paste its API key here."
+                            Style="{StaticResource Caption}"
+                            IsVisible="{Binding HasNoConnections}" />
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Connections}" Spacing="12">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="profile:ConnectionItem">
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="2">
+                                        <Label Text="{Binding Title}" Style="{StaticResource RowTitle}" />
+                                        <Label Grid.Row="1" Text="{Binding Status}" Style="{StaticResource Caption}">
+                                            <Label.Triggers>
+                                                <DataTrigger TargetType="Label" Binding="{Binding HasProblem}" Value="True">
+                                                    <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}" />
+                                                </DataTrigger>
+                                            </Label.Triggers>
+                                        </Label>
+                                        <Button
+                                            Grid.Column="1"
+                                            Grid.RowSpan="2"
+                                            Text="Remove"
+                                            Style="{StaticResource DangerButton}"
+                                            Padding="8,0"
+                                            VerticalOptions="Center"
+                                            IsVisible="{Binding IsMine}"
+                                            Command="{Binding RemoveConnectionCommand, Source={RelativeSource AncestorType={x:Type profile:ProfileViewModel}}, x:DataType=profile:ProfileViewModel}"
+                                            CommandParameter="{Binding .}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                        <Button
+                            Text="Connect Lunch Flow"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding ConnectLunchFlowCommand}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Button
+                    Text="Sign out"
+                    Style="{StaticResource DangerButton}"
+                    Margin="0,12,0,0"
+                    Command="{Binding SignOutNowCommand}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+
+</ContentPage>

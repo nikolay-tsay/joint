@@ -72,6 +72,9 @@ The database must stay small (Supabase bills by size). Before adding a table or 
 ## Mobile conventions
 
 - Organized by feature like the backend: `Features/<Feature>/` holds the page, its view model and feature-only services. MVVM with CommunityToolkit.Mvvm; pages and view models are registered in `MauiProgram.cs` and resolved by Shell.
+- Three tabs, declared in `AppShell.xaml`: Home (total balance and accounts), Transactions (whole household, by day), Profile (identity, household, connections, sign out). Household and connection management belongs in Profile, never on Home. Tapping an account on Home pushes `TransactionsPage` filtered to it.
+- Page view models derive from `Common/PageViewModel` (busy flag, error line, shared handling of lost sessions and network failures). Rows shown in lists are small pre-formatted records (`AccountItem`, `TransactionItem`, `ConnectionItem`) built from the contract types; amounts go through `Common/Money`.
+- Look and feel: colors live in `Resources/Styles/Colors.xaml` (light/dark pairs, used with `AppThemeBinding`), app styles in `Resources/Styles/Theme.xaml` (`Card`, `HeroCard`, `SectionTitle`, `RowTitle`, `Caption`, `PrimaryButton`, `SecondaryButton`, `DangerButton`). Use those instead of inline colors and sizes. Tab icons are hand-written SVGs in `Resources/Images`.
 - Sign-in is Google through Supabase Auth using the browser and PKCE (`Features/Auth/AuthService.cs`), talking to Supabase's HTTP API directly; there is no Supabase SDK dependency. The session lives in SecureStorage.
 - All backend calls go through `Api/ApiClient.cs`, which attaches a fresh access token. A `SignedOutException` means send the user to the login page.
 - Environment values (Supabase URL, publishable key, backend URL) are constants in `Config/AppConfig.cs`, switched by build configuration. They are public values; never put a secret there.
@@ -101,5 +104,6 @@ through `/api/me`.
 - The Release mobile workflow is untested (no keystore secrets yet).
 - The Lunch Flow connector is written from its API reference and tested only against canned responses. Unconfirmed against the real service: that transaction ids are stable between fetches, that negative amounts mean money out, whether long histories are paginated, and its rate limits.
 - Lunch Flow holdings (brokerage accounts) are not read yet.
+- The redesigned app (tabs, theme, Transactions and Profile screens) compiles but was written without seeing it run; layout, dark mode and the tab icons need a look on a device.
 
 Update this section as these get verified, and keep this file current when a decision above changes.

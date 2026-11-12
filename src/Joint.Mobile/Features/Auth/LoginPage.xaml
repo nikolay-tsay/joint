@@ -2,24 +2,33 @@
     x:Class="Joint.Mobile.Features.Auth.LoginPage"
     xmlns:auth="clr-namespace:Joint.Mobile.Features.Auth"
     x:DataType="auth:LoginViewModel"
-    Shell.NavBarIsVisible="False">
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
 
-    <VerticalStackLayout Padding="32" Spacing="16" VerticalOptions="Center">
-        <Label Text="Joint" FontSize="40" FontAttributes="Bold" HorizontalOptions="Center" />
+    <VerticalStackLayout Padding="32" Spacing="12" VerticalOptions="Center">
+        <Label
+            Text="Joint"
+            FontSize="44"
+            FontFamily="OpenSansSemibold"
+            HorizontalOptions="Center"
+            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
         <Label
             Text="Your household's finances in one place."
+            Style="{StaticResource Caption}"
+            FontSize="15"
             HorizontalOptions="Center"
             HorizontalTextAlignment="Center" />
 
         <Button
             Text="Continue with Google"
-            Margin="0,24,0,0"
+            Style="{StaticResource PrimaryButton}"
+            Margin="0,32,0,0"
             Command="{Binding SignInWithGoogleCommand}" />
 
         <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
         <Label
             Text="{Binding Error}"
-            TextColor="Red"
+            Style="{StaticResource ErrorText}"
             HorizontalTextAlignment="Center"
             IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
     </VerticalStackLayout>

@@ -3,12 +3,35 @@
     xmlns:start="clr-namespace:Joint.Mobile.Features.Start"
     xmlns:auth="clr-namespace:Joint.Mobile.Features.Auth"
     xmlns:home="clr-namespace:Joint.Mobile.Features.Home"
+    xmlns:transactions="clr-namespace:Joint.Mobile.Features.Transactions"
+    xmlns:profile="clr-namespace:Joint.Mobile.Features.Profile"
     Title="Joint"
-    FlyoutBehavior="Disabled">
+    FlyoutBehavior="Disabled"
+    Shell.TabBarBackgroundColor="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}"
+    Shell.TabBarForegroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+    Shell.TabBarTitleColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+    Shell.TabBarUnselectedColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}">
 
-    <!-- Start decides between login and home, depending on whether a session exists. -->
+    <!-- Start decides between login and the tabs, depending on whether a session exists. -->
     <ShellContent Route="start" ContentTemplate="{DataTemplate start:StartPage}" />
     <ShellContent Route="login" ContentTemplate="{DataTemplate auth:LoginPage}" />
-    <ShellContent Route="home" ContentTemplate="{DataTemplate home:HomePage}" />
+
+    <TabBar Route="main">
+        <ShellContent
+            Title="Home"
+            Icon="tab_home.png"
+            Route="home"
+            ContentTemplate="{DataTemplate home:HomePage}" />
+        <ShellContent
+            Title="Transactions"
+            Icon="tab_transactions.png"
+            Route="transactions"
+            ContentTemplate="{DataTemplate transactions:TransactionsPage}" />
+        <ShellContent
+            Title="Profile"
+            Icon="tab_profile.png"
+            Route="profile"
+            ContentTemplate="{DataTemplate profile:ProfilePage}" />
+    </TabBar>
 
 </Shell>

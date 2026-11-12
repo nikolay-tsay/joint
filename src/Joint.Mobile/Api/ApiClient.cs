@@ -54,6 +54,27 @@ public class ApiClient(AuthService auth)
         return await ReadAsync<List<ConnectionResponse>>(response, cancellationToken);
     }
 
+    /// <summary>The household's transactions, newest first; pass an account to narrow them.</summary>
+    public async Task<List<TransactionResponse>> GetTransactionsAsync(
+        Guid? accountId, int skip, int limit, CancellationToken cancellationToken = default)
+    {
+        var path = $"api/transactions?skip={skip}&limit={limit}";
+        if (accountId is { } id)
+        {
+            path += $"&accountId={id}";
+        }
+
+        using var response = await SendAsync(HttpMethod.Get, path, null, cancellationToken);
+        return await ReadAsync<List<TransactionResponse>>(response, cancellationToken);
+    }
+
+    /// <summary>Removes one of the caller's connections with its accounts and transactions.</summary>
+    public async Task DeleteConnectionAsync(Guid connectionId, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Delete, $"api/connections/{connectionId}", null, cancellationToken, HttpStatusCode.NotFound);
+    }
+
     /// <returns>Null on success, otherwise a message to show the user.</returns>
     public async Task<string?> ConnectLunchFlowAsync(string apiKey, CancellationToken cancellationToken = default)
     {
