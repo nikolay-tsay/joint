@@ -18,7 +18,7 @@ reference for screens and flows.
 - Sign-up and sign-in happen in Supabase Auth, driven by the client. The backend never sees passwords; it validates the access token and keeps its own `User` row whose id is the token's `sub`.
 - There is no sign-up endpoint. `CurrentUserService.GetOrCreateAsync` (`Common/Auth`) creates the `User` and a household of one on a person's first authenticated request; clients call `GET /api/me` right after sign-in. Slices that need the caller go through this service.
 - Every user belongs to exactly one `Household` (`User.HouseholdId`). A "joint account" is a household with more than one user, and all members see the same data. Scope every data query by the caller's `HouseholdId`, never by user id alone.
-- Joining works by invitation (`HouseholdInvitation`, code stored only as a hash): accepting moves the user into the inviter's household. The table exists; the invite, accept and leave endpoints are not built yet.
+- Joining works by invitation (`HouseholdInvitation`, code stored only as a hash): accepting moves the user into the inviter's household (`Features/Households`). Codes are single-use and expire after 48 hours. Leaving puts the user back in a new household of one. A household left empty is deleted; `HouseholdCleanup` handles that for both paths.
 - `BankConnection.OwnerUserId` ties a connection to a person, not a household, so connections follow their owner if they change household.
 - `Account.Visibility` exists for per-account privacy later; nothing enforces it yet.
 
@@ -76,10 +76,14 @@ variables). `dotnet ef` needs both set too; dummy values are enough for `migrati
 
 ## Not verified yet
 
-- The backend has never been run against a real database.
-- The Dockerfile, the Railway deployment and the GitHub workflows (CI, Deploy database, Release mobile) are untested.
-- The mobile app builds but has not been run on a device. The Google sign-in flow (browser redirect, code exchange, token refresh) is untested, and `AppConfig.cs` still has placeholder values.
-- `/api/me` and user provisioning are covered by unit tests but have not been called with a real Supabase token.
+Verified on 2026-11-12 in the development environment: Google sign-in on a phone, the
+backend on Railway against Supabase, the Deploy database workflow, and user creation
+through `/api/me`.
+
+- The production environment has not been deployed or signed in to.
+- Token refresh after the access token expires, and session restore after an app restart, have not been observed.
+- Household invite, join and leave are unit-tested but have not been run against the real database or with two real accounts.
+- The Release mobile workflow is untested (no keystore secrets yet).
 - `SyncJob` is a stub until the first connector exists.
 
 Update this section as these get verified, and keep this file current when a decision above changes.

@@ -1,6 +1,7 @@
 using Joint.Api.Common;
 using Joint.Api.Data;
 using Joint.Api.Features.Health;
+using Joint.Api.Features.Households;
 using Joint.Api.Features.Me;
 using Joint.Api.Features.Sync;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,9 @@ app.UseAuthorization();
 
 app.MapEndpoint<GetHealth>();
 app.MapEndpoint<GetMe>();
+app.MapEndpoint<CreateInvitation>();
+app.MapEndpoint<AcceptInvitation>();
+app.MapEndpoint<LeaveHousehold>();
 
 app.ScheduleSync();
 
