@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Equal to PageBackgroundDark in Colors.xaml. -->
+    <color name="colorPrimaryDark">#131118</color>
+</resources>

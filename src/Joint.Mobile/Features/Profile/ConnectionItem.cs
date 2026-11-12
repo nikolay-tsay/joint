@@ -1,12 +1,29 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using Joint.Contracts;
 
 namespace Joint.Mobile.Features.Profile;
 
 /// <summary>One provider connection on the profile page, already formatted for display.</summary>
-/// <param name="IsMine">Only the owner can remove a connection.</param>
-/// <param name="HasProblem">The last sync failed; the status line says why.</param>
-public record ConnectionItem(Guid Id, string Title, string Status, bool IsMine, bool HasProblem)
+public partial class ConnectionItem(Guid id, string title, string status, bool isMine, bool hasProblem)
+    : ObservableObject
 {
+    public Guid Id { get; } = id;
+
+    public string Title { get; } = title;
+
+    public string Status { get; } = status;
+
+    /// <summary>The last sync failed; the status line says why.</summary>
+    public bool HasProblem { get; } = hasProblem;
+
+    /// <summary>True while the row is asking "really remove?" in place.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanStartRemove))]
+    public partial bool IsConfirmingRemove { get; set; }
+
+    /// <summary>Only the owner can remove a connection, and not while already being asked.</summary>
+    public bool CanStartRemove => isMine && !IsConfirmingRemove;
+
     public static ConnectionItem From(ConnectionResponse connection)
     {
         var provider = connection.Provider == "LunchFlow" ? "Lunch Flow" : connection.Provider;

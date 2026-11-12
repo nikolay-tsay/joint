@@ -32,7 +32,7 @@ public partial class HomeViewModel(ApiClient api, AuthService auth) : PageViewMo
     public ObservableCollection<AccountSection> Sections { get; } = [];
 
     [RelayCommand]
-    private Task LoadAsync() => RunAsync(async () =>
+    private Task LoadAsync() => ReloadAsync(async () =>
     {
         var me = await api.GetMeAsync();
         Greeting = $"Hello, {me.DisplayName}";

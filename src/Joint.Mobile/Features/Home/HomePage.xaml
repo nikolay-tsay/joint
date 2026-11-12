@@ -5,7 +5,7 @@
     Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
 
-    <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
+    <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
         <ScrollView>
             <VerticalStackLayout Padding="16,24,16,24" Spacing="12">
                 <Label Text="{Binding Greeting}" FontSize="24" FontFamily="OpenSansSemibold" Margin="4,0" />
@@ -85,7 +85,7 @@
                 </VerticalStackLayout>
 
                 <Label
-                    Text="To move an account to Savings or Investments, open it and tap Type."
+                    Text="To move an account to Savings or Investments, open it and change its account type."
                     Style="{StaticResource Caption}"
                     Margin="4,0"
                     IsVisible="{Binding HasAccounts}" />

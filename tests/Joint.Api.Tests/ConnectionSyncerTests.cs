@@ -144,6 +144,46 @@ public class ConnectionSyncerTests
         Assert.Equal("Savings", Assert.Single(await AccountsAsync(db, Ana)).Kind);
     }
 
+    [Fact]
+    public async Task Transactions_can_be_narrowed_to_one_kind_of_account()
+    {
+        await using var db = NewDb();
+        var connector = new FakeConnector(ProviderKind.LunchFlow)
+        {
+            Snapshot = new ProviderSnapshot([
+                new ProviderAccount(
+                    "everyday", "Current account", "Air Bank", AccountKind.Current, "CZK", 0,
+                    [new ProviderTransaction("groceries", new DateOnly(2026, 11, 2), -100, "CZK", null, null)], []),
+                new ProviderAccount(
+                    "pot", "Rainy day", "Air Bank", AccountKind.Current, "CZK", 0,
+                    [new ProviderTransaction("deposit", new DateOnly(2026, 11, 1), 500, "CZK", null, null)], []),
+            ]),
+        };
+        var connection = await ConnectAsync(db, Ana);
+        await Syncer(db, connector).SyncAsync(connection.Id, CancellationToken.None);
+        var pot = await db.Accounts.SingleAsync(a => a.ExternalId == "pot");
+        await SetKindAsync(db, Ana, pot.Id, "Savings");
+
+        var everyday = await TransactionsAsync(db, Ana, kind: "Current");
+        var savings = await TransactionsAsync(db, Ana, kind: "savings");
+        var all = await TransactionsAsync(db, Ana);
+
+        Assert.Equal("Current account", Assert.Single(everyday).AccountName);
+        Assert.Equal("Rainy day", Assert.Single(savings).AccountName);
+        Assert.Equal(2, all.Count);
+    }
+
+    [Fact]
+    public async Task An_unknown_kind_filter_is_rejected()
+    {
+        await using var db = NewDb();
+
+        var result = await ListTransactions.HandleAsync(
+            null, "Pension", null, null, Ana, new CurrentUserService(db), db, CancellationToken.None);
+
+        Assert.Equal(400, Assert.IsType<ProblemHttpResult>(result.Result).StatusCode);
+    }
+
     [Theory]
     [InlineData("Pension")]
     [InlineData("1")]
@@ -243,10 +283,11 @@ public class ConnectionSyncerTests
             accountId, new UpdateAccountRequest(kind), principal, new CurrentUserService(db), db, CancellationToken.None);
 
     private static async Task<List<TransactionResponse>> TransactionsAsync(
-        JointDbContext db, ClaimsPrincipal principal, Guid? accountId = null, int? skip = null, int? limit = null)
+        JointDbContext db, ClaimsPrincipal principal, Guid? accountId = null, int? skip = null, int? limit = null,
+        string? kind = null)
     {
         var result = await ListTransactions.HandleAsync(
-            accountId, skip, limit, principal, new CurrentUserService(db), db, CancellationToken.None);
+            accountId, kind, skip, limit, principal, new CurrentUserService(db), db, CancellationToken.None);
         return Assert.IsType<Ok<List<TransactionResponse>>>(result.Result).Value!;
     }
 
