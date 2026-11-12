@@ -19,7 +19,9 @@ var connectionString = builder.Configuration.GetConnectionString("Database")
 
 builder.Services.AddDbContext<JointDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddSupabaseAuth(builder.Configuration);
-builder.Services.AddSync(connectionString);
+builder.Services.AddBackgroundJobs(connectionString);
+builder.Services.AddSync();
+builder.Services.AddHouseholds();
 builder.Services.AddApiDocs();
 
 var app = builder.Build();
@@ -36,5 +38,6 @@ app.MapEndpoint<AcceptInvitation>();
 app.MapEndpoint<LeaveHousehold>();
 
 app.ScheduleSync();
+app.ScheduleInvitationPurge();
 
 app.Run();
