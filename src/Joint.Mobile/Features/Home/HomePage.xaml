@@ -7,7 +7,7 @@
 
     <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
         <ScrollView>
-            <VerticalStackLayout Padding="16,24,16,24" Spacing="12">
+            <VerticalStackLayout Padding="12,24,12,24" Spacing="12">
                 <Label Text="{Binding Greeting}" FontSize="24" FontFamily="OpenSansSemibold" Margin="4,0" />
 
                 <Border Style="{StaticResource HeroCard}">
@@ -38,9 +38,11 @@
                 <VerticalStackLayout BindableLayout.ItemsSource="{Binding Sections}" Spacing="12">
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="home:AccountSection">
-                            <Border Style="{StaticResource Card}">
-                                <VerticalStackLayout Spacing="12">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <!-- Tight padding, so the account rows inside get nearly the tile's full width;
+                                 the heading keeps its own margin to stay aligned with other cards. -->
+                            <Border Style="{StaticResource Card}" Padding="8">
+                                <VerticalStackLayout Spacing="10">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="8,8,8,0">
                                         <Label
                                             Text="{Binding Title}"
                                             Style="{StaticResource SectionTitle}"
