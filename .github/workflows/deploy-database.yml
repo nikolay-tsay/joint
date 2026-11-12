@@ -1,0 +1,41 @@
+name: Deploy database
+
+# Applies EF migrations. A push to `development` migrates the development database,
+# a push to `main` migrates production. A manual run targets the environment you pick,
+# using the migrations on the branch you run it from.
+#
+# Each GitHub environment (development, production) provides:
+#   secret   DATABASE_CONNECTION_STRING  Supabase session pooler string, Npgsql format
+#   variable SUPABASE_URL                https://<project-ref>.supabase.co
+
+on:
+  push:
+    branches: [development, main]
+    paths:
+      - src/Joint.Api/Data/Migrations/**
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to migrate
+        type: choice
+        options: [development, production]
+        default: development
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || (github.ref_name == 'main' && 'production' || 'development') }}
+    # Never run two migration deploys against the same database at once.
+    concurrency:
+      group: deploy-database-${{ inputs.environment || (github.ref_name == 'main' && 'production' || 'development') }}
+      cancel-in-progress: false
+    env:
+      ConnectionStrings__Database: ${{ secrets.DATABASE_CONNECTION_STRING }}
+      Supabase__Url: ${{ vars.SUPABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet tool restore
+      - run: dotnet ef database update --project src/Joint.Api

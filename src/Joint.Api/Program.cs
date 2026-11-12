@@ -1,0 +1,39 @@
+using Joint.Api.Common;
+using Joint.Api.Data;
+using Joint.Api.Features.Health;
+using Joint.Api.Features.Me;
+using Joint.Api.Features.Sync;
+using Microsoft.EntityFrameworkCore;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Railway tells the container which port to listen on through PORT.
+if (Environment.GetEnvironmentVariable("PORT") is { Length: > 0 } port)
+{
+    builder.WebHost.UseUrls($"http://*:{port}");
+}
+
+var connectionString = builder.Configuration.GetConnectionString("Database")
+    ?? throw new InvalidOperationException("ConnectionStrings:Database is not configured.");
+
+builder.Services.AddDbContext<JointDbContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddSupabaseAuth(builder.Configuration);
+builder.Services.AddSync(connectionString);
+builder.Services.AddOpenApi();
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapEndpoint<GetHealth>();
+app.MapEndpoint<GetMe>();
+
+app.ScheduleSync();
+
+app.Run();

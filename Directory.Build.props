@@ -1,0 +1,11 @@
+<Project>
+
+  <PropertyGroup>
+    <LangVersion>15.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Runtime async: the runtime handles await instead of compiler-generated state machines. -->
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
+
+</Project>
