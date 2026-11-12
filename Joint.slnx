@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Joint.Api/Joint.Api.csproj" />
+    <Project Path="src/Joint.Contracts/Joint.Contracts.csproj" />
+    <Project Path="src/Joint.Mobile/Joint.Mobile.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Joint.Api.Tests/Joint.Api.Tests.csproj" />
+  </Folder>
+</Solution>
