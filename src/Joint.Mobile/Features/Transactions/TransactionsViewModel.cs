@@ -31,11 +31,21 @@ public partial class TransactionsViewModel(ApiClient api, AuthService auth)
 
     public bool HasLoaded { get; private set; }
 
+    /// <summary>True when showing one account, where its type can be changed.</summary>
+    public bool IsAccountView => _accountId is not null;
+
+    private string _kind = AccountKinds.Current;
+
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         if (query.TryGetValue("accountId", out var id) && Guid.TryParse(id?.ToString(), out var accountId))
         {
             _accountId = accountId;
+        }
+
+        if (query.TryGetValue("kind", out var kind) && kind?.ToString() is { Length: > 0 } kindText)
+        {
+            _kind = kindText;
         }
 
         if (query.TryGetValue("title", out var title) && title?.ToString() is { Length: > 0 } text)
@@ -55,6 +65,38 @@ public partial class TransactionsViewModel(ApiClient api, AuthService auth)
         HasLoaded = true;
         IsEmpty = Groups.Count == 0;
     });
+
+    /// <summary>Lets the user file this account under Everyday, Savings or Investments.</summary>
+    [RelayCommand]
+    private async Task ChangeTypeAsync()
+    {
+        if (_accountId is not { } accountId)
+        {
+            return;
+        }
+
+        var picked = await Shell.Current.DisplayActionSheetAsync(
+            $"Account type (now {AccountKinds.Label(_kind)})",
+            "Cancel",
+            null,
+            AccountKinds.All.Select(AccountKinds.Label).ToArray());
+        if (AccountKinds.FromLabel(picked) is not { } kind || kind == _kind)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            if (await api.SetAccountKindAsync(accountId, kind))
+            {
+                _kind = kind;
+            }
+            else
+            {
+                Error = "This account is no longer available.";
+            }
+        });
+    }
 
     /// <summary>Fetches the next page when the list is scrolled near its end.</summary>
     [RelayCommand]

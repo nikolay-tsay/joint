@@ -43,6 +43,7 @@ app.MapEndpoint<ConnectLunchFlow>();
 app.MapEndpoint<ListConnections>();
 app.MapEndpoint<DeleteConnection>();
 app.MapEndpoint<ListAccounts>();
+app.MapEndpoint<UpdateAccount>();
 app.MapEndpoint<ListTransactions>();
 
 app.ScheduleSync();
