@@ -40,6 +40,34 @@ public class ApiClient(AuthService auth)
         using var response = await SendAsync(HttpMethod.Post, "api/household/leave", null, cancellationToken);
     }
 
+    /// <summary>Every account in the household, with current balances.</summary>
+    public async Task<List<AccountResponse>> GetAccountsAsync(CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(HttpMethod.Get, "api/accounts", null, cancellationToken);
+        return await ReadAsync<List<AccountResponse>>(response, cancellationToken);
+    }
+
+    /// <summary>The household's provider connections and their sync state.</summary>
+    public async Task<List<ConnectionResponse>> GetConnectionsAsync(CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(HttpMethod.Get, "api/connections", null, cancellationToken);
+        return await ReadAsync<List<ConnectionResponse>>(response, cancellationToken);
+    }
+
+    /// <returns>Null on success, otherwise a message to show the user.</returns>
+    public async Task<string?> ConnectLunchFlowAsync(string apiKey, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Post, "api/connections/lunch-flow", new ConnectLunchFlowRequest(apiKey),
+            cancellationToken, HttpStatusCode.BadRequest, HttpStatusCode.BadGateway);
+        return response.StatusCode switch
+        {
+            HttpStatusCode.BadRequest => "Lunch Flow rejected this API key.",
+            HttpStatusCode.BadGateway => "Lunch Flow could not be reached. Try again shortly.",
+            _ => null,
+        };
+    }
+
     /// <param name="expected">Non-success statuses the caller handles itself; any other failure throws.</param>
     private async Task<HttpResponseMessage> SendAsync(
         HttpMethod method, string path, object? body, CancellationToken cancellationToken,

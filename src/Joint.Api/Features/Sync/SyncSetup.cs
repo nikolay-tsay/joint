@@ -1,21 +1,34 @@
 using Hangfire;
+using Joint.Api.Common.Security;
 using Joint.Api.Connectors;
+using Joint.Api.Connectors.LunchFlow;
 
 namespace Joint.Api.Features.Sync;
 
 public static class SyncSetup
 {
-    public static IServiceCollection AddSync(this IServiceCollection services)
+    public static IServiceCollection AddSync(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<ConnectorRegistry>();
+        // Created on first use, so a missing key fails the request that needs it, not startup.
+        services.AddSingleton(_ => CredentialProtector.FromConfiguration(configuration));
+
+        services.AddHttpClient<LunchFlowConnector>(http => http.BaseAddress = new Uri(LunchFlowConnector.BaseUrl));
+        services.AddScoped<IProviderConnector>(provider => provider.GetRequiredService<LunchFlowConnector>());
+
+        services.AddScoped<ConnectorRegistry>();
+        services.AddScoped<ConnectionSyncer>();
         services.AddScoped<SyncJob>();
 
         return services;
     }
 
+    /// <summary>
+    /// Every six hours. Lunch Flow refreshes about once a day, and banks commonly allow only
+    /// a handful of unattended reads a day, so a tighter schedule would only burn quota.
+    /// </summary>
     public static void ScheduleSync(this IHost app) =>
         app.Services.GetRequiredService<IRecurringJobManager>().AddOrUpdate<SyncJob>(
             "sync-all",
             job => job.RunAsync(CancellationToken.None),
-            Cron.Hourly());
+            "0 */6 * * *");
 }

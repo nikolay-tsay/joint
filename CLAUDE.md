@@ -11,7 +11,7 @@ reference for screens and flows.
 - Auth and database: Supabase. The backend only validates Supabase-issued JWTs. Clients never query the Supabase database directly; all data goes through the backend.
 - Mobile: .NET MAUI, Android only, distributed as a sideloaded APK. No iOS, no store publishing.
 - A web client is planned later; `src/Joint.Contracts` holds the DTOs shared between backend and clients.
-- Providers are read-only: Fio (token API), Trading 212 (read-only API key), Air Bank (via Enable Banking, not yet confirmed to work; fallback is statement import).
+- Providers are read-only. Lunch Flow (an aggregator, built) carries Air Bank and can carry other banks; each user pastes the API key of their own Lunch Flow "API destination". Fio (token API) and Trading 212 (read-only API key) are planned as direct connectors. Enable Banking was rejected: it does not serve Czech residents on its own licence.
 
 ## Users, households and sharing
 
@@ -34,6 +34,9 @@ dotnet ef migrations add <Name> --project src/Joint.Api --output-dir Data/Migrat
 dotnet ef database update --project src/Joint.Api
 ```
 
+Connecting a provider and syncing also need `Credentials:EncryptionKey` (32 random bytes,
+base64); without it those requests fail, but the backend still starts.
+
 The backend refuses to start without `ConnectionStrings:Database` and `Supabase:Url`
 (user secrets locally, `ConnectionStrings__Database` and `Supabase__Url` as environment
 variables). `dotnet ef` needs both set too; dummy values are enough for `migrations add`.
@@ -51,8 +54,10 @@ variables). `dotnet ef` needs both set too; dummy values are enough for `migrati
 - EF migrations are the source of truth for the schema (Supabase's declarative schemas and GitHub integration were considered and rejected). `.github/workflows/deploy-database.yml` applies them on pushes that touch `Data/Migrations`; the backend does not migrate at startup.
 - Two environments: the `development` branch deploys to development, `main` to production. Work lands on `development` first. Each has its own Supabase project, Railway environment and GitHub environment (secret `DATABASE_CONNECTION_STRING`, variable `SUPABASE_URL`).
 - App tables live in the `joint` schema, owned by EF migrations. Hangfire owns the `hangfire` schema. Don't touch Supabase's own schemas.
-- Each provider is an `IProviderConnector` returning the normalized `ProviderSnapshot`. Adding a provider must not require changes to other slices.
-- Provider credentials are stored encrypted and never returned to clients or logged.
+- Each provider is an `IProviderConnector` (`Connectors/<Provider>/`) returning the normalized `ProviderSnapshot`, registered in `SyncSetup`. Adding a provider must not require changes to other slices; `ConnectionSyncer` stores whatever a connector returns.
+- Sync rules (`Features/Sync/ConnectionSyncer.cs`): accounts match on the provider's id, transactions are deduplicated on `ExternalId` and only booked ones are stored, holdings are replaced. A failed sync saves nothing and records a user-safe message in `BankConnection.LastError`. Connecting enqueues an immediate sync; the recurring job runs every six hours.
+- Read household data through `Data/HouseholdQueries.cs` (`ConnectionsOf`, `AccountsOf`); that is the single place deciding what a household sees.
+- Provider credentials are encrypted with `CredentialProtector` (AES-GCM, key from `Credentials:EncryptionKey`) before storage and never returned to clients or logged. Changing that key makes every stored credential unreadable.
 
 ## Data retention
 
@@ -94,6 +99,7 @@ through `/api/me`.
 - Token refresh after the access token expires, and session restore after an app restart, have not been observed.
 - Household invite, join and leave are unit-tested but have not been run against the real database or with two real accounts.
 - The Release mobile workflow is untested (no keystore secrets yet).
-- `SyncJob` is a stub until the first connector exists.
+- The Lunch Flow connector is written from its API reference and tested only against canned responses. Unconfirmed against the real service: that transaction ids are stable between fetches, that negative amounts mean money out, whether long histories are paginated, and its rate limits.
+- Lunch Flow holdings (brokerage accounts) are not read yet.
 
 Update this section as these get verified, and keep this file current when a decision above changes.

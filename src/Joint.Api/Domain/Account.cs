@@ -8,6 +8,9 @@ public class Account
     /// <summary>The provider's own identifier for the account, used to match on re-sync.</summary>
     public required string ExternalId { get; set; }
     public required string Name { get; set; }
+
+    /// <summary>The bank or broker holding the account, when the provider is an aggregator.</summary>
+    public string? Institution { get; set; }
     public AccountKind Kind { get; set; }
     public required string Currency { get; set; }
     public decimal Balance { get; set; }

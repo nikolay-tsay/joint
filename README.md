@@ -74,6 +74,7 @@ configured in the dashboard. Set these per environment:
 | Variable `RAILWAY_DOCKERFILE_PATH` | `src/Joint.Api/Dockerfile` (root directory stays the repo root) |
 | Variable `ConnectionStrings__Database` | That environment's Supabase session pooler string, Npgsql format |
 | Variable `Supabase__Url` | `https://<project-ref>.supabase.co` |
+| Variable `Credentials__EncryptionKey` | 32 random bytes, base64 (`openssl rand -base64 32`). Different per environment; never change it once connections exist |
 | Variable `ASPNETCORE_ENVIRONMENT` | `Development` in the development environment only, to expose `/scalar` there |
 | Watch paths | `src/Joint.Api/**`, `src/Joint.Contracts/**`, `Directory.Build.props`, `global.json` |
 | Healthcheck path | `/health` |
@@ -81,6 +82,30 @@ configured in the dashboard. Set these per environment:
 
 The backend listens on the `PORT` Railway provides. Railway deploys on every push to the
 branch the environment tracks; database migrations are deployed separately (below).
+
+### Connecting bank accounts
+
+Bank data comes through [Lunch Flow](https://www.lunchflow.app/). Each person:
+
+1. Creates a Lunch Flow account and connects their bank there.
+2. Adds a destination of type "REST API", switches on the accounts to share under
+   "Account Access", and copies the API key.
+3. Pastes the key into the app under "Connect Lunch Flow".
+
+The key is stored encrypted with `Credentials:EncryptionKey`. Locally, set it with:
+
+```bash
+dotnet user-secrets set "Credentials:EncryptionKey" "<output of: openssl rand -base64 32>" --project src/Joint.Api
+```
+
+Without `openssl`, PowerShell can generate the key:
+
+```powershell
+$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
+```
+
+Accounts sync right after connecting and then every six hours; Lunch Flow itself refreshes
+about once a day.
 
 ### Deploying migrations
 
