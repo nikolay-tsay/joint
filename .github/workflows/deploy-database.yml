@@ -13,6 +13,7 @@ on:
     branches: [development, main]
     paths:
       - src/Joint.Api/Data/Migrations/**
+      - .github/workflows/deploy-database.yml
   workflow_dispatch:
     inputs:
       environment:
@@ -38,4 +39,6 @@ jobs:
         with:
           global-json-file: global.json
       - run: dotnet tool restore
-      - run: dotnet ef database update --project src/Joint.Api
+      # dotnet ef builds the project but does not restore its packages first.
+      - run: dotnet build src/Joint.Api
+      - run: dotnet ef database update --project src/Joint.Api --no-build
