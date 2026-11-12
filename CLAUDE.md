@@ -13,6 +13,15 @@ reference for screens and flows.
 - A web client is planned later; `src/Joint.Contracts` holds the DTOs shared between backend and clients.
 - Providers are read-only: Fio (token API), Trading 212 (read-only API key), Air Bank (via Enable Banking, not yet confirmed to work; fallback is statement import).
 
+## Users, households and sharing
+
+- Sign-up and sign-in happen in Supabase Auth, driven by the client. The backend never sees passwords; it validates the access token and keeps its own `User` row whose id is the token's `sub`.
+- There is no sign-up endpoint. `CurrentUserService.GetOrCreateAsync` (`Common/Auth`) creates the `User` and a household of one on a person's first authenticated request; clients call `GET /api/me` right after sign-in. Slices that need the caller go through this service.
+- Every user belongs to exactly one `Household` (`User.HouseholdId`). A "joint account" is a household with more than one user, and all members see the same data. Scope every data query by the caller's `HouseholdId`, never by user id alone.
+- Joining works by invitation (`HouseholdInvitation`, code stored only as a hash): accepting moves the user into the inviter's household. The table exists; the invite, accept and leave endpoints are not built yet.
+- `BankConnection.OwnerUserId` ties a connection to a person, not a household, so connections follow their owner if they change household.
+- `Account.Visibility` exists for per-account privacy later; nothing enforces it yet.
+
 ## Commands
 
 ```bash
@@ -36,12 +45,22 @@ variables). `dotnet ef` needs both set too; dummy values are enough for `migrati
 - Scalar UI is served at `/scalar` in every environment except Production (`Common/ApiDocs.cs`). New endpoints show up there automatically; give them a name and typed results so the document is useful.
 - A feature that needs services exposes its own `AddX` extension (see `Features/Sync/SyncSetup.cs`). `Program.cs` stays composition only.
 - Shared code lives outside slices only when several features use it: `Domain` (entities), `Data` (DbContext, migrations), `Connectors`, `Common`. Don't add service or repository layers; slices use `JointDbContext` directly.
+- One type per file, including entities and enums in `Domain`. Never group several entities in one file.
+- EF mapping goes in `Data/Configurations/<Entity>Configuration.cs` (`IEntityTypeConfiguration<T>`), picked up automatically. Don't configure entities inside `JointDbContext`; it only declares the `DbSet`s and the schema.
 - Request and response types that a client consumes go in `Joint.Contracts`; everything else stays in the slice.
 - EF migrations are the source of truth for the schema (Supabase's declarative schemas and GitHub integration were considered and rejected). `.github/workflows/deploy-database.yml` applies them on pushes that touch `Data/Migrations`; the backend does not migrate at startup.
 - Two environments: the `development` branch deploys to development, `main` to production. Work lands on `development` first. Each has its own Supabase project, Railway environment and GitHub environment (secret `DATABASE_CONNECTION_STRING`, variable `SUPABASE_URL`).
 - App tables live in the `joint` schema, owned by EF migrations. Hangfire owns the `hangfire` schema. Don't touch Supabase's own schemas.
 - Each provider is an `IProviderConnector` returning the normalized `ProviderSnapshot`. Adding a provider must not require changes to other slices.
 - Provider credentials are stored encrypted and never returned to clients or logged.
+
+## Mobile conventions
+
+- Organized by feature like the backend: `Features/<Feature>/` holds the page, its view model and feature-only services. MVVM with CommunityToolkit.Mvvm; pages and view models are registered in `MauiProgram.cs` and resolved by Shell.
+- Sign-in is Google through Supabase Auth using the browser and PKCE (`Features/Auth/AuthService.cs`), talking to Supabase's HTTP API directly; there is no Supabase SDK dependency. The session lives in SecureStorage.
+- All backend calls go through `Api/ApiClient.cs`, which attaches a fresh access token. A `SignedOutException` means send the user to the login page.
+- Environment values (Supabase URL, publishable key, backend URL) are constants in `Config/AppConfig.cs`, switched by build configuration. They are public values; never put a secret there.
+- The sign-in redirect is `joint://auth-callback`; changing it means updating `AppConfig`, `AuthCallbackActivity` and Supabase's Redirect URLs together.
 
 ## Things that bite
 
@@ -59,7 +78,8 @@ variables). `dotnet ef` needs both set too; dummy values are enough for `migrati
 
 - The backend has never been run against a real database.
 - The Dockerfile, the Railway deployment and the GitHub workflows (CI, Deploy database, Release mobile) are untested.
-- The mobile app builds but has not been run on a device; it still shows the MAUI template page.
+- The mobile app builds but has not been run on a device. The Google sign-in flow (browser redirect, code exchange, token refresh) is untested, and `AppConfig.cs` still has placeholder values.
+- `/api/me` and user provisioning are covered by unit tests but have not been called with a real Supabase token.
 - `SyncJob` is a stub until the first connector exists.
 
 Update this section as these get verified, and keep this file current when a decision above changes.

@@ -83,7 +83,7 @@ namespace Joint.Api.Data.Migrations
                     b.Property<DateTimeOffset?>("LastSyncedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("MemberId")
+                    b.Property<Guid>("OwnerUserId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Provider")
@@ -96,7 +96,7 @@ namespace Joint.Api.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MemberId");
+                    b.HasIndex("OwnerUserId");
 
                     b.ToTable("BankConnections", "joint");
                 });
@@ -160,28 +160,43 @@ namespace Joint.Api.Data.Migrations
                     b.ToTable("Households", "joint");
                 });
 
-            modelBuilder.Entity("Joint.Api.Domain.HouseholdMember", b =>
+            modelBuilder.Entity("Joint.Api.Domain.HouseholdInvitation", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("DisplayName")
+                    b.Property<DateTimeOffset?>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("AcceptedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CodeHash")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("HouseholdId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("UserId")
+                    b.Property<Guid>("InvitedByUserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("HouseholdId", "UserId")
+                    b.HasIndex("AcceptedByUserId");
+
+                    b.HasIndex("CodeHash")
                         .IsUnique();
 
-                    b.ToTable("HouseholdMembers", "joint");
+                    b.HasIndex("HouseholdId");
+
+                    b.HasIndex("InvitedByUserId");
+
+                    b.ToTable("HouseholdInvitations", "joint");
                 });
 
             modelBuilder.Entity("Joint.Api.Domain.Transaction", b =>
@@ -224,6 +239,32 @@ namespace Joint.Api.Data.Migrations
                     b.ToTable("Transactions", "joint");
                 });
 
+            modelBuilder.Entity("Joint.Api.Domain.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("HouseholdId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HouseholdId");
+
+                    b.ToTable("Users", "joint");
+                });
+
             modelBuilder.Entity("Joint.Api.Domain.Account", b =>
                 {
                     b.HasOne("Joint.Api.Domain.BankConnection", null)
@@ -235,9 +276,9 @@ namespace Joint.Api.Data.Migrations
 
             modelBuilder.Entity("Joint.Api.Domain.BankConnection", b =>
                 {
-                    b.HasOne("Joint.Api.Domain.HouseholdMember", null)
+                    b.HasOne("Joint.Api.Domain.User", null)
                         .WithMany()
-                        .HasForeignKey("MemberId")
+                        .HasForeignKey("OwnerUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -251,11 +292,21 @@ namespace Joint.Api.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Joint.Api.Domain.HouseholdMember", b =>
+            modelBuilder.Entity("Joint.Api.Domain.HouseholdInvitation", b =>
                 {
+                    b.HasOne("Joint.Api.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("AcceptedByUserId");
+
                     b.HasOne("Joint.Api.Domain.Household", null)
-                        .WithMany("Members")
+                        .WithMany()
                         .HasForeignKey("HouseholdId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Joint.Api.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("InvitedByUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -266,6 +317,15 @@ namespace Joint.Api.Data.Migrations
                         .WithMany()
                         .HasForeignKey("AccountId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Joint.Api.Domain.User", b =>
+                {
+                    b.HasOne("Joint.Api.Domain.Household", null)
+                        .WithMany("Members")
+                        .HasForeignKey("HouseholdId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

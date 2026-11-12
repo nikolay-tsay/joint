@@ -1,0 +1,27 @@
+<ContentPage
+    x:Class="Joint.Mobile.Features.Auth.LoginPage"
+    xmlns:auth="clr-namespace:Joint.Mobile.Features.Auth"
+    x:DataType="auth:LoginViewModel"
+    Shell.NavBarIsVisible="False">
+
+    <VerticalStackLayout Padding="32" Spacing="16" VerticalOptions="Center">
+        <Label Text="Joint" FontSize="40" FontAttributes="Bold" HorizontalOptions="Center" />
+        <Label
+            Text="Your household's finances in one place."
+            HorizontalOptions="Center"
+            HorizontalTextAlignment="Center" />
+
+        <Button
+            Text="Continue with Google"
+            Margin="0,24,0,0"
+            Command="{Binding SignInWithGoogleCommand}" />
+
+        <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        <Label
+            Text="{Binding Error}"
+            TextColor="Red"
+            HorizontalTextAlignment="Center"
+            IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
+    </VerticalStackLayout>
+
+</ContentPage>
