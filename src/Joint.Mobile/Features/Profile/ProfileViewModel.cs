@@ -134,7 +134,7 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth, AppLock a
     public bool IsLockMenuOpen => IsLockOn && !IsPinSetupOpen && !IsTurnOffOpen;
 
     public string LockStatus => IsLockOn
-        ? "On. Joint asks for your PIN when it opens and after a minute in the background."
+        ? "On. Joint asks for your PIN every time you come back to it, and hides its contents in the app switcher."
         : "Off. Anyone holding this unlocked phone can open Joint.";
 
     public string PinSetupTitle => IsLockOn ? "Change PIN" : "Choose a PIN";
