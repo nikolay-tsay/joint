@@ -7,4 +7,5 @@ public enum ConnectStep
     ChoosingProvider,
     LunchFlow,
     Trading212,
+    Fio,
 }

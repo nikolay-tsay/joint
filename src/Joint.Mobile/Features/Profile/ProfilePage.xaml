@@ -277,6 +277,33 @@
                             </Grid>
                         </VerticalStackLayout>
 
+                        <!-- Connect, step 2 for Fio: a field for the token. -->
+                        <VerticalStackLayout Spacing="12" IsVisible="{Binding IsFioOpen}">
+                            <Label Text="Fio banka" Style="{StaticResource RowTitle}" />
+                            <Label
+                                Text="In Fio internet banking open Settings, then API, and create a token that can only watch the account. Paste it here; it is stored encrypted. The first sync takes about half a minute."
+                                Style="{StaticResource Caption}" />
+                            <Border Style="{StaticResource Field}">
+                                <Entry
+                                    x:Name="FioTokenEntry"
+                                    Text="{Binding FioToken}"
+                                    Placeholder="Fio API token"
+                                    IsPassword="True"
+                                    IsSpellCheckEnabled="False"
+                                    IsTextPredictionEnabled="False"
+                                    ReturnType="Done"
+                                    ReturnCommand="{Binding ConfirmFioCommand}" />
+                            </Border>
+                            <Label
+                                Text="{Binding ConnectError}"
+                                Style="{StaticResource ErrorText}"
+                                IsVisible="{Binding ConnectError, Converter={StaticResource HasText}}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Text="Connect" Style="{StaticResource PrimaryButton}" Command="{Binding ConfirmFioCommand}" />
+                                <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding CancelConnectCommand}" />
+                            </Grid>
+                        </VerticalStackLayout>
+
                         <!-- Connect, step 2 for Trading 212: key and secret. -->
                         <VerticalStackLayout Spacing="12" IsVisible="{Binding IsTrading212Open}">
                             <Label Text="Trading 212" Style="{StaticResource RowTitle}" />

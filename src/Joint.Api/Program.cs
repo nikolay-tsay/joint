@@ -41,6 +41,7 @@ app.MapEndpoint<AcceptInvitation>();
 app.MapEndpoint<LeaveHousehold>();
 app.MapEndpoint<ConnectLunchFlow>();
 app.MapEndpoint<ConnectTrading212>();
+app.MapEndpoint<ConnectFio>();
 app.MapEndpoint<ListConnections>();
 app.MapEndpoint<DeleteConnection>();
 if (!app.Environment.IsProduction())
