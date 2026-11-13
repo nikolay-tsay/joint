@@ -46,8 +46,7 @@ public class GetBudget : IEndpoint
             join account in db.AccountsOf(user.HouseholdId) on transaction.AccountId equals account.Id
             join connection in db.BankConnections on account.ConnectionId equals connection.Id
             join owner in db.Users on connection.OwnerUserId equals owner.Id
-            // A payment taken out of the budget by hand is left out of every figure here.
-            where transaction.BookedOn >= start && !transaction.ExcludedFromBudget
+            where transaction.BookedOn >= start
             select new
             {
                 AccountId = account.Id,

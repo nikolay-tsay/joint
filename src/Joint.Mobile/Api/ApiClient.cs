@@ -190,16 +190,6 @@ public class ApiClient(AuthService auth)
             HttpMethod.Delete, $"api/recurring/{recurringId}", null, cancellationToken, HttpStatusCode.NotFound);
     }
 
-    /// <summary>Takes a payment out of the budget's figures, or puts it back.</summary>
-    /// <returns>False when the transaction is not a payment or is no longer there.</returns>
-    public async Task<bool> SetBudgetExclusionAsync(Guid transactionId, bool excluded, CancellationToken cancellationToken = default)
-    {
-        using var response = await SendAsync(
-            HttpMethod.Patch, $"api/transactions/{transactionId}", new UpdateTransactionRequest(excluded),
-            cancellationToken, HttpStatusCode.BadRequest, HttpStatusCode.NotFound);
-        return response.IsSuccessStatusCode;
-    }
-
     /// <summary>
     /// Asks the backend to sync a connection now. Debug builds only: the backend does not
     /// offer this in production.

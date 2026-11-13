@@ -59,7 +59,6 @@ app.MapEndpoint<ListAccounts>();
 app.MapEndpoint<UpdateAccount>();
 app.MapEndpoint<ListAccountHoldings>();
 app.MapEndpoint<ListTransactions>();
-app.MapEndpoint<UpdateTransaction>();
 app.MapEndpoint<GetInsights>();
 app.MapEndpoint<GetCategories>();
 app.MapEndpoint<AssignCategory>();

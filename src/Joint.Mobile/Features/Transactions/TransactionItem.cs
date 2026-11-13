@@ -64,14 +64,6 @@ public partial class TransactionItem(
     /// <summary>What the open row shows next to "Category".</summary>
     public string CategoryChoice => Category ?? "None";
 
-    /// <summary>True when this payment was taken out of the budget by hand.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(BudgetChoice))]
-    public partial bool IsExcludedFromBudget { get; set; }
-
-    /// <summary>What the chip in the open row offers: excluding, or putting back.</summary>
-    public string BudgetChoice => IsExcludedFromBudget ? "Count in budget again" : "Exclude from budget";
-
     /// <summary>True while the row is open: full texts, and the choices for a payment.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsTrackMenuOpen))]
@@ -127,7 +119,6 @@ public partial class TransactionItem(
             transaction.Amount > 0);
         item.SetRecurring(transaction.RecurringId, transaction.RecurringKind, transaction.RecurringMatch);
         item.SetCategory(transaction.Category, transaction.CategoryRuleId, transaction.CategoryMatch);
-        item.IsExcludedFromBudget = transaction.ExcludedFromBudget;
         return item;
     }
 }

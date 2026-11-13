@@ -135,13 +135,6 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
     public ObservableCollection<RecurringItem> Subscriptions { get; } = [];
 
     public ObservableCollection<RecurringItem> Bills { get; } = [];
-
-    [ObservableProperty]
-    public partial bool HasTransfers { get; set; }
-
-    /// <summary>Payees marked as the household's own accounts; listed, but in no total.</summary>
-    public ObservableCollection<RecurringItem> Transfers { get; } = [];
-
     [RelayCommand]
     private void ShowOverview() => TabIndex = 0;
 
@@ -271,21 +264,13 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
 
         Subscriptions.Clear();
         Bills.Clear();
-        Transfers.Clear();
         foreach (var payment in recurring.Payments)
         {
-            var list = payment.Kind switch
-            {
-                RecurringKinds.Bill => Bills,
-                RecurringKinds.Transfer => Transfers,
-                _ => Subscriptions,
-            };
-            list.Add(RecurringItem.From(payment));
+            (payment.Kind == RecurringKinds.Bill ? Bills : Subscriptions).Add(RecurringItem.From(payment));
         }
 
         HasSubscriptions = Subscriptions.Count > 0;
         HasBills = Bills.Count > 0;
-        HasTransfers = Transfers.Count > 0;
     }
 
     private static string DescribePace(InsightsResponse insights)

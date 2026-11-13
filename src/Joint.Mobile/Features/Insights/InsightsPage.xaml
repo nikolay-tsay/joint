@@ -226,22 +226,7 @@
                                         BindableLayout.ItemTemplate="{StaticResource RecurringRow}"
                                         Spacing="8" />
                                 </VerticalStackLayout>
-                            </Border>
-
-                            <!-- Listed so they can be seen and removed; they are in none of the totals above. -->
-                            <Border Style="{StaticResource Card}" IsVisible="{Binding Model.HasTransfers}">
-                                <VerticalStackLayout Spacing="10">
-                                    <Label Text="Own transfers" Style="{StaticResource RowTitle}" />
-                                    <Label
-                                        Text="Money moved to accounts of your own. Not counted as spending, and what comes back is not counted as income."
-                                        Style="{StaticResource Caption}" />
-                                    <VerticalStackLayout
-                                        BindableLayout.ItemsSource="{Binding Model.Transfers}"
-                                        BindableLayout.ItemTemplate="{StaticResource RecurringRow}"
-                                        Spacing="8" />
-                                </VerticalStackLayout>
-                            </Border>
-                        </VerticalStackLayout>
+                            </Border>                        </VerticalStackLayout>
                     </VerticalStackLayout>
                 </ScrollView>
             </RefreshView>
