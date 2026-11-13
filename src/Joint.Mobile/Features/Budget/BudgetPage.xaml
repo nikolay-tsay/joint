@@ -71,7 +71,7 @@
                         <VerticalStackLayout Spacing="12">
                             <Label Text="No budget yet" Style="{StaticResource RowTitle}" />
                             <Label
-                                Text="Set what your household wants to spend per month, and this page shows what is left and where the month is heading."
+                                Text="Set what your household wants to spend per month on everyday things, after subscriptions and regular payments. This page then shows what is left and where the month is heading."
                                 Style="{StaticResource Caption}" />
                             <Label Text="{Binding Projection}" Style="{StaticResource Caption}" />
                             <Button Text="Set a monthly budget" Style="{StaticResource PrimaryButton}" Command="{Binding StartEditCommand}" />
@@ -83,7 +83,7 @@
                         <VerticalStackLayout Spacing="12">
                             <Label Text="Monthly budget" Style="{StaticResource RowTitle}" />
                             <Label
-                                Text="One amount for the whole household and everything it spends in a calendar month, fixed costs included."
+                                Text="One amount for the whole household's everyday spending in a calendar month. Payments you track as subscriptions or regular payments do not count against it."
                                 Style="{StaticResource Caption}" />
                             <Border Style="{StaticResource Field}">
                                 <Entry
@@ -118,9 +118,9 @@
                                 <Label Text="Subscriptions and regular payments" />
                                 <Label Grid.Column="1" Text="{Binding FixedPaid}" Style="{StaticResource FigureAmount}" />
                                 <Label Grid.Row="1" Text="Everything else" />
-                                <Label Grid.Row="1" Grid.Column="1" Text="{Binding Everyday}" Style="{StaticResource FigureAmount}" />
+                                <Label Grid.Row="1" Grid.Column="1" Text="{Binding Spent}" Style="{StaticResource FigureAmount}" />
                                 <Label Grid.Row="2" Text="Spent in total" FontFamily="OpenSansSemibold" />
-                                <Label Grid.Row="2" Grid.Column="1" Text="{Binding Spent}" Style="{StaticResource FigureAmount}" />
+                                <Label Grid.Row="2" Grid.Column="1" Text="{Binding Total}" Style="{StaticResource FigureAmount}" />
                                 <Label Grid.Row="3" Text="Fixed costs still to come" Style="{StaticResource Caption}" />
                                 <Label Grid.Row="3" Grid.Column="1" Text="{Binding FixedExpected}" Style="{StaticResource Caption}" HorizontalTextAlignment="End" />
                             </Grid>
@@ -132,7 +132,7 @@
 
                     <Border Style="{StaticResource Card}">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                            <Label Text="Spent last month" />
+                            <Label Text="Everyday spending last month" />
                             <Label Grid.Column="1" Text="{Binding LastMonth}" Style="{StaticResource FigureAmount}" />
                         </Grid>
                     </Border>
