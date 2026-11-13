@@ -162,6 +162,10 @@ namespace Joint.Api.Data.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<decimal?>("MonthlyBudget")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");

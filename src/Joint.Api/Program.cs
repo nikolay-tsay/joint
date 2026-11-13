@@ -1,6 +1,7 @@
 using Joint.Api.Common;
 using Joint.Api.Data;
 using Joint.Api.Features.Accounts;
+using Joint.Api.Features.Budget;
 using Joint.Api.Features.Connections;
 using Joint.Api.Features.Health;
 using Joint.Api.Features.Households;
@@ -57,6 +58,8 @@ app.MapEndpoint<UpdateAccount>();
 app.MapEndpoint<ListAccountHoldings>();
 app.MapEndpoint<ListTransactions>();
 app.MapEndpoint<GetInsights>();
+app.MapEndpoint<GetBudget>();
+app.MapEndpoint<SetBudget>();
 app.MapEndpoint<GetRecurring>();
 app.MapEndpoint<MarkRecurring>();
 app.MapEndpoint<RemoveRecurring>();

@@ -11,5 +11,11 @@ public class Household
     public required string Name { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 
+    /// <summary>
+    /// What the household allows itself to spend per calendar month, in the currency most
+    /// of its transactions are in; null when no budget is set.
+    /// </summary>
+    public decimal? MonthlyBudget { get; set; }
+
     public List<User> Members { get; } = [];
 }

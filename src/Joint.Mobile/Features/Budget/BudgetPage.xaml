@@ -1,0 +1,150 @@
+<ContentPage
+    x:Class="Joint.Mobile.Features.Budget.BudgetPage"
+    xmlns:budget="clr-namespace:Joint.Mobile.Features.Budget"
+    x:DataType="budget:BudgetViewModel"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
+
+    <ContentPage.Resources>
+        <!-- The name of a figure, with its amount to the right. -->
+        <Style x:Key="FigureAmount" TargetType="Label">
+            <Setter Property="FontFamily" Value="OpenSansSemibold" />
+            <Setter Property="HorizontalTextAlignment" Value="End" />
+        </Style>
+    </ContentPage.Resources>
+
+    <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
+        <ScrollView>
+            <VerticalStackLayout Padding="12,24,12,24" Spacing="12">
+                <Label Text="Budget" FontSize="24" FontFamily="OpenSansSemibold" Margin="4,0" />
+
+                <Label
+                    Text="{Binding Error}"
+                    Style="{StaticResource ErrorText}"
+                    IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
+
+                <Border Style="{StaticResource Card}" IsVisible="{Binding HasNoData}">
+                    <Label
+                        Text="Nothing to budget yet. Once a connected account has transactions, you can set a monthly budget here."
+                        Style="{StaticResource Caption}" />
+                </Border>
+
+                <VerticalStackLayout Spacing="12" IsVisible="{Binding HasData}">
+
+                    <!-- With a budget: what is left of it. -->
+                    <Border Style="{StaticResource HeroCard}" IsVisible="{Binding IsSummaryVisible}">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding Title}" TextColor="White" Opacity="0.8" FontSize="13" />
+                            <Label Text="{Binding LeftAmount}" TextColor="White" FontSize="32" FontFamily="OpenSansSemibold" />
+                            <Label Text="{Binding LeftTitle}" TextColor="White" Opacity="0.8" FontSize="13" />
+                            <ProgressBar Progress="{Binding Progress}" ProgressColor="White" Margin="0,10,0,2" />
+                            <Label Text="{Binding SpentOf}" TextColor="White" FontSize="14" />
+                            <Label
+                                Text="{Binding DailyAllowance}"
+                                TextColor="White"
+                                Opacity="0.8"
+                                FontSize="13"
+                                IsVisible="{Binding DailyAllowance, Converter={StaticResource HasText}}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- With a budget: where the month is heading. -->
+                    <Border Style="{StaticResource Card}" IsVisible="{Binding IsSummaryVisible}">
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Where this month is heading" Style="{StaticResource RowTitle}" />
+                            <Label Text="{Binding Projection}" Style="{StaticResource Caption}" />
+                            <Label
+                                Text="{Binding Verdict}"
+                                FontFamily="OpenSansSemibold"
+                                TextColor="{AppThemeBinding Light={StaticResource Positive}, Dark={StaticResource PositiveDark}}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding IsProjectedOver}" Value="True">
+                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Without a budget: an invitation to set one. -->
+                    <Border Style="{StaticResource Card}" IsVisible="{Binding IsPromptVisible}">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="No budget yet" Style="{StaticResource RowTitle}" />
+                            <Label
+                                Text="Set what your household wants to spend per month, and this page shows what is left and where the month is heading."
+                                Style="{StaticResource Caption}" />
+                            <Label Text="{Binding Projection}" Style="{StaticResource Caption}" />
+                            <Button Text="Set a monthly budget" Style="{StaticResource PrimaryButton}" Command="{Binding StartEditCommand}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Typing the budget, in place. -->
+                    <Border Style="{StaticResource Card}" IsVisible="{Binding IsEditing}">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="Monthly budget" Style="{StaticResource RowTitle}" />
+                            <Label
+                                Text="One amount for the whole household and everything it spends in a calendar month, fixed costs included."
+                                Style="{StaticResource Caption}" />
+                            <Border Style="{StaticResource Field}">
+                                <Entry
+                                    x:Name="LimitEntry"
+                                    Text="{Binding LimitInput}"
+                                    Placeholder="{Binding LimitPlaceholder}"
+                                    Keyboard="Numeric"
+                                    ReturnType="Done"
+                                    ReturnCommand="{Binding SaveCommand}" />
+                            </Border>
+                            <Label
+                                Text="{Binding LimitError}"
+                                Style="{StaticResource ErrorText}"
+                                IsVisible="{Binding LimitError, Converter={StaticResource HasText}}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Text="Save" Style="{StaticResource PrimaryButton}" Command="{Binding SaveCommand}" />
+                                <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding CancelEditCommand}" />
+                            </Grid>
+                            <Button
+                                Text="Remove the budget"
+                                Style="{StaticResource DangerButton}"
+                                IsVisible="{Binding HasBudget}"
+                                Command="{Binding RemoveCommand}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- The month's figures. -->
+                    <Border Style="{StaticResource Card}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="This month so far" Style="{StaticResource RowTitle}" />
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                                <Label Text="Subscriptions and regular payments" />
+                                <Label Grid.Column="1" Text="{Binding FixedPaid}" Style="{StaticResource FigureAmount}" />
+                                <Label Grid.Row="1" Text="Everything else" />
+                                <Label Grid.Row="1" Grid.Column="1" Text="{Binding Everyday}" Style="{StaticResource FigureAmount}" />
+                                <Label Grid.Row="2" Text="Spent in total" FontFamily="OpenSansSemibold" />
+                                <Label Grid.Row="2" Grid.Column="1" Text="{Binding Spent}" Style="{StaticResource FigureAmount}" />
+                                <Label Grid.Row="3" Text="Fixed costs still to come" Style="{StaticResource Caption}" />
+                                <Label Grid.Row="3" Grid.Column="1" Text="{Binding FixedExpected}" Style="{StaticResource Caption}" HorizontalTextAlignment="End" />
+                            </Grid>
+                            <Label
+                                Text="Fixed costs are the payments you track as subscriptions or regular payments. One paid last month and not yet this month counts as still to come."
+                                Style="{StaticResource Caption}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <Label Text="Spent last month" />
+                            <Label Grid.Column="1" Text="{Binding LastMonth}" Style="{StaticResource FigureAmount}" />
+                        </Grid>
+                    </Border>
+
+                    <Button
+                        Text="Change the budget"
+                        Style="{StaticResource SecondaryButton}"
+                        IsVisible="{Binding IsSummaryVisible}"
+                        Command="{Binding StartEditCommand}" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+
+</ContentPage>
