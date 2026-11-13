@@ -9,8 +9,9 @@ using Joint.Mobile.Features.Auth;
 namespace Joint.Mobile.Features.Insights;
 
 /// <summary>
-/// Where the household's money comes from and goes: this month at a glance, income against
-/// spending by month, what was left over, this month's pace against last month's, and who spent.
+/// Two views behind one tab. Overview: this month at a glance, income against spending by
+/// month, what was left over, this month's pace against last month's, and who spent.
+/// Recurring: what subscriptions and regular payments cost per month, and the list of them.
 /// </summary>
 public partial class InsightsViewModel(ApiClient api, AuthService auth) : PageViewModel(auth)
 {
@@ -54,10 +55,66 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth) : PageVi
 
     public ObservableCollection<MemberSpendingItem> Members { get; } = [];
 
+    // ----- Recurring view -----
+
+    /// <summary>Which of the page's two views is showing.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOverviewTab))]
+    public partial bool IsRecurringTab { get; set; }
+
+    public bool IsOverviewTab => !IsRecurringTab;
+
+    [ObservableProperty]
+    public partial string? RecurringTitle { get; set; }
+
+    [ObservableProperty]
+    public partial string? RecurringTotal { get; set; }
+
+    [ObservableProperty]
+    public partial string? SubscriptionsTotal { get; set; }
+
+    [ObservableProperty]
+    public partial string? BillsTotal { get; set; }
+
+    [ObservableProperty]
+    public partial IDrawable? RecurringChart { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasRecurring { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasNoRecurring { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasSubscriptions { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasBills { get; set; }
+
+    public ObservableCollection<RecurringItem> Subscriptions { get; } = [];
+
+    public ObservableCollection<RecurringItem> Bills { get; } = [];
+
+    [RelayCommand]
+    private void ShowOverview() => IsRecurringTab = false;
+
+    [RelayCommand]
+    private void ShowRecurring() => IsRecurringTab = true;
+
+    /// <summary>Stops tracking a payee; its transactions stay as they are.</summary>
+    [RelayCommand]
+    private Task RemoveRecurringAsync(RecurringItem item) => RunAsync(async () =>
+    {
+        await api.RemoveRecurringAsync(item.Id);
+        await LoadAsync();
+    });
+
     [RelayCommand]
     private Task LoadAsync() => ReloadAsync(async () =>
     {
         var insights = await api.GetInsightsAsync(Months);
+        FillRecurring(await api.GetRecurringAsync(Months), insights.Currency);
+
         HasData = insights.Currency is not null;
         HasNoData = !HasData;
         if (insights.Currency is not { } currency)
@@ -99,6 +156,36 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth) : PageVi
 
         HasSeveralSpenders = Members.Count > 1;
     });
+
+    private void FillRecurring(RecurringOverviewResponse recurring, string? householdCurrency)
+    {
+        HasRecurring = recurring.Payments.Count > 0;
+        HasNoRecurring = !HasRecurring;
+
+        var currency = recurring.Currency ?? householdCurrency ?? "";
+        var current = recurring.Months[^1];
+        RecurringTitle = $"Recurring in {current.Month:MMMM}";
+        RecurringTotal = Money.Format(current.Subscriptions + current.Bills, currency);
+        SubscriptionsTotal = Money.Format(current.Subscriptions, currency);
+        BillsTotal = Money.Format(current.Bills, currency);
+
+        RecurringChart = new BarChart(
+            recurring.Months.Select(m => m.Month.ToString("MMM")).ToList(),
+            [
+                new ChartSeries(recurring.Months.Select(m => m.Subscriptions).ToList(), ChartStyle.Spending),
+                new ChartSeries(recurring.Months.Select(m => m.Bills).ToList(), ChartStyle.Accent),
+            ]);
+
+        Subscriptions.Clear();
+        Bills.Clear();
+        foreach (var payment in recurring.Payments)
+        {
+            (payment.Kind == RecurringKinds.Bill ? Bills : Subscriptions).Add(RecurringItem.From(payment));
+        }
+
+        HasSubscriptions = Subscriptions.Count > 0;
+        HasBills = Bills.Count > 0;
+    }
 
     private static string DescribePace(InsightsResponse insights)
     {

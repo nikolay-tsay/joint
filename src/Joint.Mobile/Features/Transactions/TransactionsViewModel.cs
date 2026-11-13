@@ -156,6 +156,76 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
     [RelayCommand]
     private void ToggleTypeMenu() => IsTypeMenuOpen = !IsTypeMenuOpen;
 
+    /// <summary>Opens a payment's choices in place, closing any other row's.</summary>
+    [RelayCommand]
+    private void ToggleMenu(TransactionItem item)
+    {
+        var open = item.CanTrack && !item.IsMenuOpen;
+        foreach (var other in Groups.SelectMany(group => group))
+        {
+            other.IsMenuOpen = false;
+        }
+
+        item.IsMenuOpen = open;
+    }
+
+    [RelayCommand]
+    private Task MarkSubscriptionAsync(TransactionItem item) => MarkAsync(item, RecurringKinds.Subscription);
+
+    [RelayCommand]
+    private Task MarkBillAsync(TransactionItem item) => MarkAsync(item, RecurringKinds.Bill);
+
+    /// <summary>Stops tracking the payee of this payment.</summary>
+    [RelayCommand]
+    private Task StopTrackingAsync(TransactionItem item) => RunAsync(async () =>
+    {
+        item.IsMenuOpen = false;
+        if (item.RecurringId is { } recurringId)
+        {
+            await _api.RemoveRecurringAsync(recurringId);
+            await RefreshRecurringAsync();
+        }
+    });
+
+    private Task MarkAsync(TransactionItem item, string kind) => RunAsync(async () =>
+    {
+        item.IsMenuOpen = false;
+        if (await _api.MarkRecurringAsync(item.Id, kind))
+        {
+            await RefreshRecurringAsync();
+        }
+        else
+        {
+            Error = "This payment can't be tracked: the bank did not say who it went to.";
+        }
+    });
+
+    /// <summary>
+    /// Marking one payment changes every row to the same payee, and only the backend knows
+    /// which those are. Re-reads the rows already on screen and updates them where they
+    /// stand, so the list keeps its place.
+    /// </summary>
+    private async Task RefreshRecurringAsync()
+    {
+        const int batch = 200;
+        var fresh = new Dictionary<Guid, TransactionResponse>();
+        for (var skip = 0; skip < _loaded; skip += batch)
+        {
+            foreach (var transaction in await _api.GetTransactionsAsync(_accountId, _kindFilter, skip, batch))
+            {
+                fresh[transaction.Id] = transaction;
+            }
+        }
+
+        foreach (var item in Groups.SelectMany(group => group))
+        {
+            if (fresh.TryGetValue(item.Id, out var transaction))
+            {
+                item.SetRecurring(transaction.RecurringId, transaction.RecurringKind);
+            }
+        }
+    }
+
     /// <summary>Files this account under the chosen type and closes the dropdown.</summary>
     [RelayCommand]
     private async Task SelectAccountTypeAsync(ChoiceItem type)
