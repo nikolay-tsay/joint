@@ -60,10 +60,13 @@ public class GetInsights : IEndpoint
             .ToListAsync(cancellationToken);
 
         // A payment the household marked as a transfer to its own account is not spending.
+        // It is only flagged here: the calculator pairs transfers up before dropping it.
         var matcher = new RecurringMatcher(await db.RecurringOf(user.HouseholdId).ToListAsync(cancellationToken));
         var flows = rows
-            .Where(r => !matcher.IsOwnTransfer(r.Flow.Amount, r.Counterparty, r.Description))
-            .Select(r => r.Flow)
+            .Select(r => r.Flow with
+            {
+                MarkedAsTransfer = matcher.IsOwnTransfer(r.Flow.Amount, r.Counterparty, r.Description),
+            })
             .ToList();
 
         return TypedResults.Ok(InsightsCalculator.Build(flows, today, span));

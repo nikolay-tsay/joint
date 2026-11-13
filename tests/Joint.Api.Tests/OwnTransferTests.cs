@@ -71,6 +71,56 @@ public class OwnTransferTests
     }
 
     [Fact]
+    public async Task Marking_a_transfer_the_app_already_pairs_up_does_not_turn_its_arrival_into_income()
+    {
+        await using var db = NewDb();
+        var ana = Principal("ana@example.com");
+        var everyday = await AccountAsync(db, ana);
+        var savings = await AccountAsync(db, ana, "2");
+        var sent = Add(db, everyday, -5000, "Ana Savings");
+        var arrived = Add(db, savings, 5000, "Ana Everyday");
+        var groceries = Add(db, everyday, -300, "Albert");
+        await db.SaveChangesAsync();
+
+        // Already recognised: neither half counts, and the list says so on both.
+        var before = (await InsightsAsync(db, ana)).Months[^1];
+        Assert.Equal((0m, 300m), (before.Income, before.Spending));
+        var listed = await ListAsync(db, ana);
+        Assert.True(listed.Single(t => t.Id == sent.Id).IsInternalTransfer);
+        Assert.True(listed.Single(t => t.Id == arrived.Id).IsInternalTransfer);
+        Assert.False(listed.Single(t => t.Id == groceries.Id).IsInternalTransfer);
+
+        await MarkRecurring.HandleAsync(
+            new MarkRecurringRequest(sent.Id, "Transfer"), ana, new CurrentUserService(db), db, CancellationToken.None);
+
+        var after = (await InsightsAsync(db, ana)).Months[^1];
+        Assert.Equal((0m, 300m), (after.Income, after.Spending));
+        Assert.Equal(300m, (await BudgetAsync(db, ana)).Spent);
+        Assert.Equal(300m, (await CategoriesAsync(db, ana)).Uncategorized);
+    }
+
+    [Fact]
+    public async Task A_transfer_is_recognised_in_the_list_when_its_other_half_is_filtered_out()
+    {
+        await using var db = NewDb();
+        var ana = Principal("ana@example.com");
+        var everyday = await AccountAsync(db, ana);
+        var savings = await AccountAsync(db, ana, "2");
+        var sent = Add(db, everyday, -5000, "Ana Savings");
+        Add(db, savings, 5000, "Ana Everyday");
+        var unmatched = Add(db, everyday, -700, "Trading 212");
+        await db.SaveChangesAsync();
+
+        var listed = await ListTransactions.HandleAsync(
+            everyday.Id, null, null, null, ana, new CurrentUserService(db), db, CancellationToken.None);
+        var rows = Assert.IsType<Ok<List<TransactionResponse>>>(listed.Result).Value!;
+
+        Assert.Equal(2, rows.Count);
+        Assert.True(rows.Single(t => t.Id == sent.Id).IsInternalTransfer);
+        Assert.False(rows.Single(t => t.Id == unmatched.Id).IsInternalTransfer);
+    }
+
+    [Fact]
     public async Task A_mark_matches_on_a_transactions_name_not_on_the_detail_under_it()
     {
         await using var db = NewDb();
@@ -183,25 +233,30 @@ public class OwnTransferTests
         return transaction;
     }
 
-    private static async Task<Account> AccountAsync(JointDbContext db, ClaimsPrincipal principal)
+    private static async Task<Account> AccountAsync(JointDbContext db, ClaimsPrincipal principal, string externalId = "1")
     {
         var user = (await new CurrentUserService(db).GetOrCreateAsync(principal, CancellationToken.None))!;
-        var connection = new BankConnection
+        var connection = await db.BankConnections.FirstOrDefaultAsync(c => c.OwnerUserId == user.Id);
+        if (connection is null)
         {
-            Id = Guid.NewGuid(),
-            OwnerUserId = user.Id,
-            Provider = ProviderKind.LunchFlow,
-            EncryptedCredential = "x",
-        };
+            connection = new BankConnection
+            {
+                Id = Guid.NewGuid(),
+                OwnerUserId = user.Id,
+                Provider = ProviderKind.LunchFlow,
+                EncryptedCredential = "x",
+            };
+            db.BankConnections.Add(connection);
+        }
+
         var account = new Account
         {
             Id = Guid.NewGuid(),
             ConnectionId = connection.Id,
-            ExternalId = "1",
+            ExternalId = externalId,
             Name = "Everyday",
             Currency = "CZK",
         };
-        db.BankConnections.Add(connection);
         db.Accounts.Add(account);
         await db.SaveChangesAsync();
         return account;

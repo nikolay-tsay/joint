@@ -18,7 +18,7 @@ public static class InsightsCalculator
             .Select(g => g.Key)
             .FirstOrDefault();
         var flows = InternalTransfers.Without(
-            rows.Where(r => r.Currency == currency).ToList(), r => r.AccountId, r => r.BookedOn, r => r.Amount);
+            rows.Where(r => r.Currency == currency).ToList(), r => r.AccountId, r => r.BookedOn, r => r.Amount, r => r.MarkedAsTransfer);
 
         var monthly = Enumerable.Range(0, months)
             .Select(back => thisMonth.AddMonths(back - months + 1))

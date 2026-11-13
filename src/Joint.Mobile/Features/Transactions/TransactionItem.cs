@@ -83,6 +83,12 @@ public partial class TransactionItem(
     /// <summary>Marked as money moved to an own account, so not counted as spending.</summary>
     public bool IsTransfer => RecurringKind == RecurringKinds.Transfer;
 
+    /// <summary>
+    /// The app itself recognised this as money moved between the household's own accounts,
+    /// so it already counts as neither income nor spending and needs no mark.
+    /// </summary>
+    public bool IsInternalTransfer { get; private set; }
+
     /// <summary>Takes over what the backend now says about this row's payee.</summary>
     public void SetRecurring(Guid? recurringId, string? kind, string? matchText)
     {
@@ -119,6 +125,7 @@ public partial class TransactionItem(
             transaction.Amount > 0);
         item.SetRecurring(transaction.RecurringId, transaction.RecurringKind, transaction.RecurringMatch);
         item.SetCategory(transaction.Category, transaction.CategoryRuleId, transaction.CategoryMatch);
+        item.IsInternalTransfer = transaction.IsInternalTransfer;
         return item;
     }
 }

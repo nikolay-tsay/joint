@@ -4,6 +4,7 @@ using Joint.Api.Common.Auth;
 using Joint.Api.Data;
 using Joint.Api.Domain;
 using Joint.Api.Features.Categories;
+using Joint.Api.Features.Insights;
 using Joint.Api.Features.Recurring;
 using Joint.Contracts;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -81,8 +82,50 @@ public class ListTransactions : IEndpoint
             .Take(Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit))
             .ToListAsync(cancellationToken);
 
+        transactions = await WithTransfersAsync(transactions, user.HouseholdId, db, cancellationToken);
         return TypedResults.Ok(await WithRecurringAsync(transactions, user.HouseholdId, db, cancellationToken));
     }
+
+    /// <summary>
+    /// Says which of the listed transactions the app recognises as money moved between the
+    /// household's own accounts, so the user can see it is already left out of income and
+    /// spending and does not mark it by hand. The other half of a transfer is usually in
+    /// another account and not on this page, so the household's transactions of the same
+    /// amounts around the page's dates are read to pair against.
+    /// </summary>
+    private static async Task<List<TransactionResponse>> WithTransfersAsync(
+        List<TransactionResponse> transactions, Guid householdId, JointDbContext db, CancellationToken cancellationToken)
+    {
+        if (transactions.Count == 0)
+        {
+            return transactions;
+        }
+
+        // Twice the window: a neighbour just off the page may itself pair with something further out.
+        var margin = 2 * InternalTransfers.WindowDays;
+        var from = transactions.Min(t => t.BookedOn).AddDays(-margin);
+        var to = transactions.Max(t => t.BookedOn).AddDays(margin);
+        var amounts = transactions.SelectMany(t => new[] { t.Amount, -t.Amount }).Distinct().ToList();
+
+        var candidates = await (
+            from transaction in db.Transactions
+            join account in db.AccountsOf(householdId) on transaction.AccountId equals account.Id
+            where transaction.BookedOn >= @from && transaction.BookedOn <= to && amounts.Contains(transaction.Amount)
+            select new TransferCandidate(
+                transaction.Id, account.Id, transaction.BookedOn, transaction.Amount, transaction.Currency))
+            .ToListAsync(cancellationToken);
+
+        // Per currency, as the calculators do: amounts are never compared across currencies.
+        var paired = candidates
+            .GroupBy(c => c.Currency)
+            .SelectMany(g => InternalTransfers.Find(g.ToList(), c => c.AccountId, c => c.BookedOn, c => c.Amount))
+            .Select(c => c.Id)
+            .ToHashSet();
+
+        return transactions.Select(t => paired.Contains(t.Id) ? t with { IsInternalTransfer = true } : t).ToList();
+    }
+
+    private sealed record TransferCandidate(Guid Id, Guid AccountId, DateOnly BookedOn, decimal Amount, string Currency);
 
     /// <summary>
     /// Says which of the listed payments count towards a tracked subscription or regular

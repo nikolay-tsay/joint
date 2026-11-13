@@ -61,18 +61,18 @@ public class GetBudget : IEndpoint
             })
             .ToListAsync(cancellationToken);
 
-        // Money marked as moved to the household's own account is not spending at all.
+        // Money marked as moved to the household's own account is not spending at all. In the
+        // flows it is only flagged, because the calculator pairs transfers up before dropping it.
         var matcher = new RecurringMatcher(await db.RecurringOf(user.HouseholdId).ToListAsync(cancellationToken));
-        var transactions = loaded
-            .Where(t => !matcher.IsOwnTransfer(t.Amount, t.Counterparty, t.Description))
+        var flows = loaded
+            .Select(t => new FlowRow(
+                t.AccountId, t.OwnerId, t.DisplayName, t.AvatarUrl, t.BookedOn, t.Amount, t.Currency,
+                MarkedAsTransfer: matcher.IsOwnTransfer(t.Amount, t.Counterparty, t.Description)))
             .ToList();
 
-        var flows = transactions
-            .Select(t => new FlowRow(t.AccountId, t.OwnerId, t.DisplayName, t.AvatarUrl, t.BookedOn, t.Amount, t.Currency))
-            .ToList();
-
-        var recurring = transactions
-            .Where(t => t.Amount < 0)
+        // Nor is it a fixed cost, so it is kept out of the tracked payments altogether.
+        var recurring = loaded
+            .Where(t => t.Amount < 0 && !matcher.IsOwnTransfer(t.Amount, t.Counterparty, t.Description))
             .Select(t => new RecurringRow(
                 t.BookedOn, t.Amount, t.Currency, matcher.Find(t.Counterparty, t.Description)?.MatchKey))
             .ToList();
