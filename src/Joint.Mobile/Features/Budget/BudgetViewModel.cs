@@ -9,9 +9,9 @@ using Joint.Mobile.Features.Auth;
 namespace Joint.Mobile.Features.Budget;
 
 /// <summary>
-/// The household's one monthly budget: what is left, where the month is heading, and how
-/// the spending splits into fixed costs and everything else. The budget is set and changed
-/// in place on the page.
+/// The household's one monthly budget for everyday spending: what is left and where the
+/// month is heading. Subscriptions and regular payments are outside it and only shown for
+/// context. The budget is set and changed in place on the page.
 /// </summary>
 public partial class BudgetViewModel(ApiClient api, AuthService auth) : PageViewModel(auth)
 {
@@ -83,8 +83,9 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth) : PageView
     [ObservableProperty]
     public partial string? FixedExpected { get; set; }
 
+    /// <summary>Everyday spending and fixed costs together.</summary>
     [ObservableProperty]
-    public partial string? Everyday { get; set; }
+    public partial string? Total { get; set; }
 
     [ObservableProperty]
     public partial string? LastMonth { get; set; }
@@ -153,9 +154,9 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth) : PageView
         Spent = Format(budget.Spent);
         FixedPaid = Format(budget.FixedPaid);
         FixedExpected = Format(budget.FixedExpected);
-        Everyday = Format(budget.Spent - budget.FixedPaid);
+        Total = Format(budget.Spent + budget.FixedPaid);
         LastMonth = Format(budget.LastMonthSpent);
-        Projection = $"At this pace about {Format(budget.Projected)} will be spent by the end of {budget.Month:MMMM}.";
+        Projection = $"At this pace everyday spending reaches about {Format(budget.Projected)} by the end of {budget.Month:MMMM}.";
         LimitPlaceholder = $"Budget per month, in {_currency}";
 
         HasBudget = budget.Limit is not null;
@@ -181,10 +182,7 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth) : PageView
             : $"That is {Format(projectedLeft)} under budget.";
     }
 
-    /// <summary>
-    /// What is left once the fixed costs still to come are set aside, spread over the days
-    /// that remain, today included.
-    /// </summary>
+    /// <summary>What is left of the budget, spread over the days that remain, today included.</summary>
     private string DescribeAllowance(BudgetResponse budget, decimal limit)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -192,16 +190,15 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth) : PageView
         var daysLeft = today.Year == budget.Month.Year && today.Month == budget.Month.Month
             ? daysInMonth - today.Day + 1
             : 0;
-        var free = limit - budget.Spent - budget.FixedExpected;
+        var free = limit - budget.Spent;
         if (daysLeft <= 0 || free <= 0)
         {
             return "";
         }
 
-        var days = daysLeft == 1 ? "today" : $"a day for the remaining {daysLeft} days";
-        return budget.FixedExpected > 0
-            ? $"About {Format(free / daysLeft)} {days}, after the fixed costs still to come."
-            : $"About {Format(free / daysLeft)} {days}.";
+        return daysLeft == 1
+            ? $"About {Format(free)} for today."
+            : $"About {Format(free / daysLeft)} a day for the remaining {daysLeft} days.";
     }
 
     private string Format(decimal amount) => Money.Format(amount, _currency);

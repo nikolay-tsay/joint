@@ -19,7 +19,7 @@ public class BudgetTests
     private static readonly Guid Owner = Guid.NewGuid();
 
     [Fact]
-    public void Spent_is_this_months_spending_without_internal_transfers()
+    public void Spent_is_this_months_everyday_spending_without_internal_transfers()
     {
         var budget = BudgetCalculator.Build(
             40000,
@@ -41,7 +41,7 @@ public class BudgetTests
     }
 
     [Fact]
-    public void Fixed_costs_are_counted_once_and_only_the_rest_is_stretched_over_the_month()
+    public void Subscriptions_and_regular_payments_stay_out_of_the_budget()
     {
         // Rent was paid on the 1st; 3000 of everyday spending in ten days is 9000 by the 30th.
         var budget = BudgetCalculator.Build(
@@ -56,10 +56,10 @@ public class BudgetTests
             ],
             Today);
 
-        Assert.Equal(21000m, budget.Spent);
+        Assert.Equal(3000m, budget.Spent);
         Assert.Equal(18000m, budget.FixedPaid);
         Assert.Equal(0m, budget.FixedExpected);
-        Assert.Equal(27000m, budget.Projected);
+        Assert.Equal(9000m, budget.Projected);
     }
 
     [Fact]
@@ -70,6 +70,7 @@ public class BudgetTests
             [
                 Flow(Account, "2026-10-20", -289),
                 Flow(Account, "2026-10-01", -18000),
+                Flow(Account, "2026-10-15", -700),
                 Flow(Account, "2026-11-01", -18000),
             ],
             [
@@ -79,9 +80,13 @@ public class BudgetTests
             ],
             Today);
 
+        Assert.Equal(0m, budget.Spent);
         Assert.Equal(18000m, budget.FixedPaid);
         Assert.Equal(289m, budget.FixedExpected);
-        Assert.Equal(18289m, budget.Projected);
+        Assert.Equal(0m, budget.Projected);
+
+        // Last month for comparison is everyday spending too, without its rent and Netflix.
+        Assert.Equal(700m, budget.LastMonthSpent);
     }
 
     [Fact]

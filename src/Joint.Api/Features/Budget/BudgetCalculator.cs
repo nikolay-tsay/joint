@@ -4,7 +4,11 @@ using Joint.Contracts;
 
 namespace Joint.Api.Features.Budget;
 
-/// <summary>Works out where the current month stands and where it is heading.</summary>
+/// <summary>
+/// Works out where the current month stands and where it is heading. The budget is for
+/// everyday spending only: what goes to tracked subscriptions and regular payments is a
+/// given, reported next to it and never counted against it.
+/// </summary>
 public static class BudgetCalculator
 {
     /// <param name="flows">The household's transactions from the start of last month.</param>
@@ -15,35 +19,35 @@ public static class BudgetCalculator
         var thisMonth = new DateOnly(today.Year, today.Month, 1);
         var lastMonth = thisMonth.AddMonths(-1);
 
-        // Same rules as the Insights charts, so the two screens never disagree on "spent".
+        // Same rules as the Insights charts, so the two screens never disagree on what was spent.
         var insights = InsightsCalculator.Build(flows, today, months: 2);
-        var spent = insights.Months[1].Spending;
+        var spentInTotal = insights.Months[1].Spending;
+        var spentLastMonth = insights.Months[0].Spending;
 
         var tracked = recurring.Where(r => r.Key is not null && r.Amount < 0 && r.Currency == insights.Currency).ToList();
         var paidThisMonth = PaidPerPayment(tracked, thisMonth);
         var paidLastMonth = PaidPerPayment(tracked, lastMonth);
 
         // Never more than was spent: a tracked payment can also have been dropped as a transfer.
-        var fixedPaid = Math.Min(paidThisMonth.Values.Sum(), spent);
+        var fixedPaid = Math.Min(paidThisMonth.Values.Sum(), spentInTotal);
+        var fixedLastMonth = Math.Min(paidLastMonth.Values.Sum(), spentLastMonth);
 
         // What came last month and has not come yet is assumed to still be on its way.
         var fixedExpected = paidLastMonth
             .Where(p => !paidThisMonth.ContainsKey(p.Key))
             .Sum(p => p.Value);
 
-        // Fixed costs land on their own dates, often early, so only the rest is stretched
-        // over the month. Stretching rent paid on the 1st would predict thirty rents.
+        var everyday = spentInTotal - fixedPaid;
         var daysInMonth = DateTime.DaysInMonth(today.Year, today.Month);
-        var everydayPace = (spent - fixedPaid) / today.Day * daysInMonth;
 
         return new BudgetResponse(
             insights.Currency,
             limit,
-            spent,
+            Spent: everyday,
             fixedPaid,
             fixedExpected,
-            Projected: decimal.Round(fixedPaid + fixedExpected + everydayPace, 2),
-            LastMonthSpent: insights.Months[0].Spending,
+            Projected: decimal.Round(everyday / today.Day * daysInMonth, 2),
+            LastMonthSpent: spentLastMonth - fixedLastMonth,
             thisMonth);
     }
 
