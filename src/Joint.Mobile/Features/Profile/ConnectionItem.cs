@@ -21,6 +21,13 @@ public partial class ConnectionItem(Guid id, string title, string status, bool i
     [NotifyPropertyChangedFor(nameof(CanStartRemove))]
     public partial bool IsConfirmingRemove { get; set; }
 
+    /// <summary>Whether to offer "Sync now", a development aid that exists only in Debug builds.</summary>
+#if DEBUG
+    public bool CanSyncNow => true;
+#else
+    public bool CanSyncNow => false;
+#endif
+
     /// <summary>Only the owner can remove a connection, and not while already being asked.</summary>
     public bool CanStartRemove => isMine && !IsConfirmingRemove;
 

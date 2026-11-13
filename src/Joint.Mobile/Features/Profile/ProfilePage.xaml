@@ -182,6 +182,14 @@
                                                 CommandParameter="{Binding .}" />
                                         </Grid>
 
+                                        <!-- Development aid; hidden in Release builds. -->
+                                        <Button
+                                            Text="Sync now"
+                                            Style="{StaticResource SecondaryButton}"
+                                            IsVisible="{Binding CanSyncNow}"
+                                            Command="{Binding SyncNowCommand, Source={RelativeSource AncestorType={x:Type profile:ProfileViewModel}}, x:DataType=profile:ProfileViewModel}"
+                                            CommandParameter="{Binding .}" />
+
                                         <!-- Remove: confirm in place, under the row. -->
                                         <VerticalStackLayout Spacing="8" IsVisible="{Binding IsConfirmingRemove}">
                                             <Label

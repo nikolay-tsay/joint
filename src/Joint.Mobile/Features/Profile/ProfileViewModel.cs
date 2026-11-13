@@ -275,6 +275,17 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
         });
     }
 
+    // ----- Sync now (Debug builds only) -----
+
+    /// <summary>Asks for an immediate sync, then reloads once it has had a moment to run.</summary>
+    [RelayCommand]
+    private Task SyncNowAsync(ConnectionItem connection) => RunAsync(async () =>
+    {
+        await api.SyncConnectionAsync(connection.Id);
+        await Task.Delay(TimeSpan.FromSeconds(4));
+        await LoadAsync();
+    });
+
     // ----- Remove a connection -----
 
     [RelayCommand]
