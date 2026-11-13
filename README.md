@@ -90,7 +90,13 @@ Bank data comes through [Lunch Flow](https://www.lunchflow.app/). Each person:
 1. Creates a Lunch Flow account and connects their bank there.
 2. Adds a destination of type "REST API", switches on the accounts to share under
    "Account Access", and copies the API key.
-3. Pastes the key into the app under "Connect Lunch Flow".
+3. Pastes the key into the app under Connect.
+
+A Fio account connects directly. In Fio internet banking, open Settings, then API, and add
+a token with the "watch the account" right only (it cannot make payments); paste it into
+the app under Connect. A token covers one account and expires unless it is set to extend
+itself. Fio hands out only the last 90 days of movements to a token, so that is how far
+back the first sync reaches.
 
 Investments come straight from Trading 212. In its app, open Settings, then API, generate
 a key with only the "Account data" and "Portfolio" permissions, and paste the key and the

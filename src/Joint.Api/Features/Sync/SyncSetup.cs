@@ -1,6 +1,7 @@
 using Hangfire;
 using Joint.Api.Common.Security;
 using Joint.Api.Connectors;
+using Joint.Api.Connectors.Fio;
 using Joint.Api.Connectors.LunchFlow;
 using Joint.Api.Connectors.Trading212;
 
@@ -18,6 +19,11 @@ public static class SyncSetup
 
         services.AddHttpClient<Trading212Connector>(http => http.BaseAddress = new Uri(Trading212Connector.BaseUrl));
         services.AddScoped<IProviderConnector>(provider => provider.GetRequiredService<Trading212Connector>());
+
+        // Fio carries the token in the URL, and the default HTTP client loggers write URLs out.
+        services.AddHttpClient<FioConnector>(http => http.BaseAddress = new Uri(FioConnector.BaseUrl))
+            .RemoveAllLoggers();
+        services.AddScoped<IProviderConnector>(provider => provider.GetRequiredService<FioConnector>());
 
         services.AddScoped<ConnectorRegistry>();
         services.AddScoped<ConnectionSyncer>();

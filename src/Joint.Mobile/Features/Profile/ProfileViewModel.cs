@@ -74,7 +74,8 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(
-        nameof(IsConnectClosed), nameof(IsChoosingProvider), nameof(IsLunchFlowOpen), nameof(IsTrading212Open))]
+        nameof(IsConnectClosed), nameof(IsChoosingProvider), nameof(IsLunchFlowOpen), nameof(IsTrading212Open),
+        nameof(IsFioOpen))]
     public partial ConnectStep ConnectStep { get; set; }
 
     public bool IsConnectClosed => ConnectStep == ConnectStep.Closed;
@@ -84,6 +85,8 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
     public bool IsLunchFlowOpen => ConnectStep == ConnectStep.LunchFlow;
 
     public bool IsTrading212Open => ConnectStep == ConnectStep.Trading212;
+
+    public bool IsFioOpen => ConnectStep == ConnectStep.Fio;
 
     /// <summary>The connectors offered after tapping "Connect".</summary>
     public IReadOnlyList<ProviderOption> Providers { get; } = ProviderOption.All;
@@ -98,6 +101,10 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
 
     [ObservableProperty]
     public partial string? Trading212Secret { get; set; }
+
+    /// <summary>What the user is pasting into the Fio panel.</summary>
+    [ObservableProperty]
+    public partial string? FioToken { get; set; }
 
     [ObservableProperty]
     public partial string? ConnectError { get; set; }
@@ -220,11 +227,13 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
         LunchFlowKey = null;
         Trading212Key = null;
         Trading212Secret = null;
+        FioToken = null;
         ConnectError = null;
         ConnectStep = provider.Key switch
         {
             ProviderOption.LunchFlowKey => ConnectStep.LunchFlow,
             ProviderOption.Trading212Key => ConnectStep.Trading212,
+            ProviderOption.FioKey => ConnectStep.Fio,
             _ => ConnectStep.Closed,
         };
     }
@@ -270,6 +279,27 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
                 ConnectStep = ConnectStep.Closed;
                 Trading212Key = null;
                 Trading212Secret = null;
+                await LoadAsync();
+            }
+        });
+    }
+
+    [RelayCommand]
+    private async Task ConfirmFioAsync()
+    {
+        if (string.IsNullOrWhiteSpace(FioToken))
+        {
+            ConnectError = "Paste the token first.";
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            ConnectError = await api.ConnectFioAsync(FioToken);
+            if (ConnectError is null)
+            {
+                ConnectStep = ConnectStep.Closed;
+                FioToken = null;
                 await LoadAsync();
             }
         });

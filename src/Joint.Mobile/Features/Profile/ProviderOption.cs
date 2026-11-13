@@ -5,11 +5,13 @@ public record ProviderOption(string Key, string Name, string Description)
 {
     public const string LunchFlowKey = "LunchFlow";
     public const string Trading212Key = "Trading212";
+    public const string FioKey = "Fio";
 
     /// <summary>Every connector the app offers. Add new ones here and give them a panel.</summary>
     public static readonly IReadOnlyList<ProviderOption> All =
     [
         new(LunchFlowKey, "Lunch Flow", "Air Bank and many other banks, using a Lunch Flow API key"),
+        new(FioKey, "Fio banka", "A Fio account, using a read-only token from internet banking"),
         new(Trading212Key, "Trading 212", "Your investments, using a read-only Trading 212 API key"),
     ];
 

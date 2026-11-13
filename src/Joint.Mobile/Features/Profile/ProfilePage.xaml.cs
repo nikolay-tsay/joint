@@ -33,6 +33,7 @@ public partial class ProfilePage : ContentPage
         {
             SyncKeyboard(LunchFlowKeyEntry, _viewModel.IsLunchFlowOpen);
             SyncKeyboard(Trading212KeyEntry, _viewModel.IsTrading212Open);
+            SyncKeyboard(FioTokenEntry, _viewModel.IsFioOpen);
         }
     }
 

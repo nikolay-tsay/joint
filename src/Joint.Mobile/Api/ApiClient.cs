@@ -131,6 +131,20 @@ public class ApiClient(AuthService auth)
         };
     }
 
+    /// <returns>Null on success, otherwise a message to show the user.</returns>
+    public async Task<string?> ConnectFioAsync(string token, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Post, "api/connections/fio", new ConnectFioRequest(token),
+            cancellationToken, HttpStatusCode.BadRequest, HttpStatusCode.BadGateway);
+        return response.StatusCode switch
+        {
+            HttpStatusCode.BadRequest => "Fio rejected this token. Check that it was copied whole and has not expired.",
+            HttpStatusCode.BadGateway => "Fio could not be reached. Try again in a minute.",
+            _ => null,
+        };
+    }
+
     /// <summary>What an investment account currently holds, largest position first.</summary>
     public async Task<List<HoldingResponse>> GetHoldingsAsync(Guid accountId, CancellationToken cancellationToken = default)
     {
