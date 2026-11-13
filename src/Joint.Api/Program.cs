@@ -43,6 +43,12 @@ app.MapEndpoint<ConnectLunchFlow>();
 app.MapEndpoint<ConnectTrading212>();
 app.MapEndpoint<ListConnections>();
 app.MapEndpoint<DeleteConnection>();
+if (!app.Environment.IsProduction())
+{
+    // Sync on demand is a development aid; see SyncConnection.
+    app.MapEndpoint<SyncConnection>();
+}
+
 app.MapEndpoint<ListAccounts>();
 app.MapEndpoint<UpdateAccount>();
 app.MapEndpoint<ListAccountHoldings>();

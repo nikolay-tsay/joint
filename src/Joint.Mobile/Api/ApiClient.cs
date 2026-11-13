@@ -83,6 +83,16 @@ public class ApiClient(AuthService auth)
         return await ReadAsync<List<TransactionResponse>>(response, cancellationToken);
     }
 
+    /// <summary>
+    /// Asks the backend to sync a connection now. Debug builds only: the backend does not
+    /// offer this in production.
+    /// </summary>
+    public async Task SyncConnectionAsync(Guid connectionId, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Post, $"api/connections/{connectionId}/sync", null, cancellationToken, HttpStatusCode.NotFound);
+    }
+
     /// <summary>Removes one of the caller's connections with its accounts and transactions.</summary>
     public async Task DeleteConnectionAsync(Guid connectionId, CancellationToken cancellationToken = default)
     {
