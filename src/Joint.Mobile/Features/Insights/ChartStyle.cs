@@ -23,6 +23,21 @@ public static class ChartStyle
     /// <summary>The brand orange, for a second series next to the purple.</summary>
     public static Color Accent => (Color)Application.Current!.Resources["Accent"];
 
+    /// <summary>
+    /// Colors for charts with many parts, such as the category ring: the brand purple and
+    /// orange first, then hues chosen to stay apart from each other in both themes.
+    /// </summary>
+    public static readonly IReadOnlyList<Color> Palette =
+    [
+        Color.FromArgb("#7C3AED"), Color.FromArgb("#F97316"), Color.FromArgb("#0EA5E9"), Color.FromArgb("#10B981"),
+        Color.FromArgb("#EAB308"), Color.FromArgb("#EC4899"), Color.FromArgb("#14B8A6"), Color.FromArgb("#F43F5E"),
+        Color.FromArgb("#84CC16"), Color.FromArgb("#6366F1"), Color.FromArgb("#D946EF"), Color.FromArgb("#06B6D4"),
+        Color.FromArgb("#A16207"),
+    ];
+
+    /// <summary>For the part of a chart that belongs to no category.</summary>
+    public static Color Unassigned => Color.FromArgb("#9CA3AF");
+
     public static Color Negative => Themed("Negative", "NegativeDark");
 
     public static Color Muted => Themed("TextSecondary", "TextSecondaryDark");

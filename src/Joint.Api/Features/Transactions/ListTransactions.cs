@@ -3,6 +3,7 @@ using Joint.Api.Common;
 using Joint.Api.Common.Auth;
 using Joint.Api.Data;
 using Joint.Api.Domain;
+using Joint.Api.Features.Categories;
 using Joint.Api.Features.Recurring;
 using Joint.Contracts;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -89,13 +90,14 @@ public class ListTransactions : IEndpoint
 
     /// <summary>
     /// Says which of the listed payments count towards a tracked subscription or regular
-    /// payment, and for the rest what text tracking them would match on. Done on the page
+    /// payment and which have a category, and for the rest what text a rule would match on. Done on the page
     /// just read, because matching is decided in code.
     /// </summary>
     private static async Task<List<TransactionResponse>> WithRecurringAsync(
         List<TransactionResponse> transactions, Guid householdId, JointDbContext db, CancellationToken cancellationToken)
     {
         var matcher = new RecurringMatcher(await db.RecurringOf(householdId).ToListAsync(cancellationToken));
+        var categories = new CategoryMatcher(await db.CategoryRulesOf(householdId).ToListAsync(cancellationToken));
 
         return transactions
             .Select(t =>
@@ -105,6 +107,11 @@ public class ListTransactions : IEndpoint
                     return t;
                 }
 
+                var suggestion = PaymentKey.From(t.Counterparty, t.Description);
+                t = categories.Find(t.Counterparty, t.Description) is { } rule
+                    ? t with { Category = rule.Category, CategoryRuleId = rule.Id, CategoryMatch = rule.MatchKey }
+                    : t with { CategoryMatch = suggestion };
+
                 return matcher.Find(t.Counterparty, t.Description) is { } recurring
                     ? t with
                     {
@@ -112,7 +119,7 @@ public class ListTransactions : IEndpoint
                         RecurringKind = recurring.Kind.ToString(),
                         RecurringMatch = recurring.MatchKey,
                     }
-                    : t with { RecurringMatch = PaymentKey.From(t.Counterparty, t.Description) };
+                    : t with { RecurringMatch = suggestion };
             })
             .ToList();
     }

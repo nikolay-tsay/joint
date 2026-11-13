@@ -48,6 +48,22 @@ public partial class TransactionItem(
     [ObservableProperty]
     public partial string? MatchText { get; set; }
 
+    /// <summary>The category a rule gives this payment; null when it has none.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCategory), nameof(CategoryChoice))]
+    public partial string? Category { get; set; }
+
+    /// <summary>The rule that gives it, for taking the category off.</summary>
+    public Guid? CategoryRuleId { get; private set; }
+
+    /// <summary>The rule's match text, or the suggested text for making one.</summary>
+    public string? CategoryMatch { get; private set; }
+
+    public bool HasCategory => Category is not null;
+
+    /// <summary>What the open row shows next to "Category".</summary>
+    public string CategoryChoice => Category ?? "None";
+
     /// <summary>True when this payment was taken out of the budget by hand.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(BudgetChoice))]
@@ -80,6 +96,14 @@ public partial class TransactionItem(
         MatchText = matchText;
     }
 
+    /// <summary>Takes over what the backend now says about this row's category.</summary>
+    public void SetCategory(string? category, Guid? ruleId, string? matchText)
+    {
+        CategoryRuleId = ruleId;
+        CategoryMatch = matchText;
+        Category = category;
+    }
+
     /// <param name="showAccount">Name the account when the list mixes several.</param>
     public static TransactionItem From(TransactionResponse transaction, bool showAccount)
     {
@@ -99,6 +123,7 @@ public partial class TransactionItem(
             Money.FormatSigned(transaction.Amount, transaction.Currency),
             transaction.Amount > 0);
         item.SetRecurring(transaction.RecurringId, transaction.RecurringKind, transaction.RecurringMatch);
+        item.SetCategory(transaction.Category, transaction.CategoryRuleId, transaction.CategoryMatch);
         item.IsExcludedFromBudget = transaction.ExcludedFromBudget;
         return item;
     }

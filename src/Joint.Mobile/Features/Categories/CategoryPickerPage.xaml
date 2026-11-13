@@ -1,0 +1,105 @@
+<ContentPage
+    x:Class="Joint.Mobile.Features.Categories.CategoryPickerPage"
+    xmlns:categories="clr-namespace:Joint.Mobile.Features.Categories"
+    x:DataType="categories:CategoryPickerViewModel"
+    Shell.NavBarIsVisible="False"
+    Shell.TabBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- The page's own heading with the way back; Shell's navigation bar stays off. -->
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="4" Margin="16,24,16,0">
+            <Label
+                Text="‹"
+                FontSize="30"
+                Padding="0,0,12,4"
+                VerticalOptions="Center"
+                SemanticProperties.Description="Back"
+                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding GoBackCommand}" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Label Grid.Column="1" Text="Category" FontSize="24" FontFamily="OpenSansSemibold" VerticalOptions="Center" />
+        </Grid>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="16,12,16,24" Spacing="12">
+                <Label
+                    Text="{Binding Error}"
+                    Style="{StaticResource ErrorText}"
+                    IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
+
+                <!-- Which payments the choice applies to. -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="{Binding Payee}" Style="{StaticResource RowTitle}" LineBreakMode="WordWrap" />
+                        <Label Text="The category goes to every payment containing" Style="{StaticResource Caption}" />
+                        <Border Style="{StaticResource Field}">
+                            <Entry
+                                Text="{Binding MatchText}"
+                                Placeholder="Text every payment has in common"
+                                IsSpellCheckEnabled="False"
+                                IsTextPredictionEnabled="False"
+                                ReturnType="Done" />
+                        </Border>
+                        <Label
+                            Text="Shorten it if the bank adds something that changes each time, such as a reference number."
+                            Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- The categories: tap one to choose it. -->
+                <Border Style="{StaticResource Card}" Padding="8">
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Choices}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="categories:CategoryChoice">
+                                <Grid ColumnDefinitions="*,Auto" Padding="8,13">
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding ChooseCommand, Source={RelativeSource AncestorType={x:Type categories:CategoryPickerViewModel}}, x:DataType=categories:CategoryPickerViewModel}"
+                                            CommandParameter="{Binding .}" />
+                                    </Grid.GestureRecognizers>
+                                    <Label Text="{Binding Name}" FontSize="16" />
+                                    <Label
+                                        Grid.Column="1"
+                                        Text="✓"
+                                        FontSize="16"
+                                        IsVisible="{Binding IsCurrent}"
+                                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                </Grid>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- A category of your own. -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Your own category" Style="{StaticResource RowTitle}" />
+                        <Border Style="{StaticResource Field}">
+                            <Entry
+                                Text="{Binding NewName}"
+                                Placeholder="Name of a new category"
+                                MaxLength="50"
+                                ReturnType="Done"
+                                ReturnCommand="{Binding AddCommand}" />
+                        </Border>
+                        <Button Text="Add and choose it" Style="{StaticResource SecondaryButton}" Command="{Binding AddCommand}" />
+                        <Label
+                            Text="It stays in the list for as long as at least one payee uses it."
+                            Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Button
+                    Text="Remove the category"
+                    Style="{StaticResource DangerButton}"
+                    IsVisible="{Binding CanRemove}"
+                    Command="{Binding RemoveCommand}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentPage>

@@ -82,6 +82,22 @@ public static class GuideContent
                 "Only money going out counts. A refund from the same company is not subtracted.",
             ]),
         new(
+            "Categories",
+            "Transactions and Insights, Categories",
+            [
+                "Nothing is categorized automatically. You open a payment in Transactions, tap Category and pick one, "
+                    + "and Joint gives that category to every payment like it, past and future.",
+                "\"Like it\" works the same way as for subscriptions: the payment's counterparty or description "
+                    + "contains the match text shown on the category page, which you can edit. The longest matching text wins.",
+                "A category is separate from the subscription and regular payment marks: one payment can have both.",
+                "There is a starter list of categories. Typing a new name on the category page adds your own, and it "
+                    + "stays in the list for as long as at least one payee uses it.",
+                "The ring on Insights shows one calendar month: each slice is what was spent in a category, and "
+                    + "\"Uncategorized\" is spending that no category matches yet. The percentages are shares of that month's spending.",
+                "Only money going out is categorized, and transfers between your own accounts are left out first, "
+                    + "as everywhere else.",
+            ]),
+        new(
             "Budget",
             "Budget",
             [

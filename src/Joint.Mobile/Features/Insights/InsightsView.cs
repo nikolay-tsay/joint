@@ -8,4 +8,5 @@ public record InsightsView(string Key, InsightsViewModel Model)
 {
     public const string Overview = "Overview";
     public const string Recurring = "Recurring";
+    public const string Categories = "Categories";
 }

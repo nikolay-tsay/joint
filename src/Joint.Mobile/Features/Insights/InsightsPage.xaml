@@ -233,10 +233,96 @@
             </RefreshView>
         </DataTemplate>
 
+        <!-- ===== Categories page: one month's spending by category ===== -->
+        <DataTemplate x:Key="CategoriesTemplate" x:DataType="insights:InsightsView">
+            <RefreshView IsRefreshing="{Binding Model.Categories.IsRefreshing}" Command="{Binding Model.Categories.LoadCommand}">
+                <ScrollView>
+                    <VerticalStackLayout Padding="12,12,12,24" Spacing="12">
+                        <Label
+                            Text="{Binding Model.Categories.Error}"
+                            Style="{StaticResource ErrorText}"
+                            IsVisible="{Binding Model.Categories.Error, Converter={StaticResource HasText}}" />
+
+                        <!-- Which month: back, and forward up to the current one. -->
+                        <Border Style="{StaticResource Card}" Padding="8,4">
+                            <Grid ColumnDefinitions="48,*,48">
+                                <Label
+                                    Text="‹"
+                                    FontSize="30"
+                                    Padding="0,0,0,4"
+                                    HorizontalTextAlignment="Center"
+                                    SemanticProperties.Description="Previous month"
+                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Model.Categories.PreviousMonthCommand}" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+                                <Label
+                                    Grid.Column="1"
+                                    Text="{Binding Model.Categories.MonthTitle}"
+                                    Style="{StaticResource RowTitle}"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center" />
+                                <Label
+                                    Grid.Column="2"
+                                    Text="›"
+                                    FontSize="30"
+                                    Padding="0,0,0,4"
+                                    HorizontalTextAlignment="Center"
+                                    IsVisible="{Binding Model.Categories.CanGoForward}"
+                                    SemanticProperties.Description="Next month"
+                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Model.Categories.NextMonthCommand}" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+                            </Grid>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}" IsVisible="{Binding Model.Categories.HasNoSpending}">
+                            <Label Text="No spending in this month." Style="{StaticResource Caption}" />
+                        </Border>
+
+                        <Border Style="{StaticResource Card}" IsVisible="{Binding Model.Categories.HasSpending}">
+                            <VerticalStackLayout Spacing="10">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <Label Text="Spent by category" Style="{StaticResource RowTitle}" />
+                                    <Label Grid.Column="1" Text="{Binding Model.Categories.Total}" FontSize="16" FontFamily="OpenSansSemibold" />
+                                </Grid>
+                                <GraphicsView Drawable="{Binding Model.Categories.Chart}" HeightRequest="230" StartInteraction="OnChartTouched" DragInteraction="OnChartTouched" />
+                                <Label Text="{Binding Model.Categories.Detail}" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+
+                                <!-- The same as a list, in the ring's colors. -->
+                                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Model.Categories.Items}" Spacing="10" Margin="0,6,0,0">
+                                    <BindableLayout.ItemTemplate>
+                                        <DataTemplate x:DataType="insights:CategoryItem">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                                                <BoxView Style="{StaticResource LegendDot}" Color="{Binding Color}" />
+                                                <Label Grid.Column="1" Text="{Binding Name}" LineBreakMode="TailTruncation" />
+                                                <Label Grid.Column="2" Text="{Binding Percent}" Style="{StaticResource Caption}" VerticalOptions="Center" />
+                                                <Label Grid.Column="3" Text="{Binding Amount}" FontFamily="OpenSansSemibold" HorizontalTextAlignment="End" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </BindableLayout.ItemTemplate>
+                                </VerticalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Label
+                            Text="{Binding Model.Categories.UncategorizedNote}"
+                            Style="{StaticResource Caption}"
+                            Margin="4,0"
+                            IsVisible="{Binding Model.Categories.UncategorizedNote, Converter={StaticResource HasText}}" />
+                    </VerticalStackLayout>
+                </ScrollView>
+            </RefreshView>
+        </DataTemplate>
+
         <insights:InsightsViewTemplateSelector
             x:Key="ViewTemplate"
             Overview="{StaticResource OverviewTemplate}"
-            Recurring="{StaticResource RecurringTemplate}" />
+            Recurring="{StaticResource RecurringTemplate}"
+            Categories="{StaticResource CategoriesTemplate}" />
     </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto,Auto,Auto,*">
@@ -244,7 +330,7 @@
 
         <!-- The two pages as tabs. Tapping one slides to it; so does dragging the page sideways. -->
         <Grid Grid.Row="1" RowDefinitions="Auto,1" Margin="12,12,12,0">
-            <Grid ColumnDefinitions="*,*">
+            <Grid ColumnDefinitions="*,*,*">
                 <Grid RowDefinitions="Auto,3" RowSpacing="8" Padding="0,6,0,0">
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding ShowOverviewCommand}" />
@@ -270,6 +356,19 @@
                         </Label.Triggers>
                     </Label>
                     <BoxView Grid.Row="1" Style="{StaticResource TabLine}" IsVisible="{Binding IsRecurringTab}" />
+                </Grid>
+                <Grid Grid.Column="2" RowDefinitions="Auto,3" RowSpacing="8" Padding="0,6,0,0">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ShowCategoriesCommand}" />
+                    </Grid.GestureRecognizers>
+                    <Label Text="Categories" Style="{StaticResource TabLabel}">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsCategoriesTab}" Value="True">
+                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    <BoxView Grid.Row="1" Style="{StaticResource TabLine}" IsVisible="{Binding IsCategoriesTab}" />
                 </Grid>
             </Grid>
             <BoxView Grid.Row="1" BackgroundColor="Transparent" Color="{AppThemeBinding Light={StaticResource InsetStroke}, Dark={StaticResource InsetStrokeDark}}" />

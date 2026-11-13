@@ -7,6 +7,13 @@ public class InsightsViewTemplateSelector : DataTemplateSelector
 
     public DataTemplate? Recurring { get; set; }
 
+    public DataTemplate? Categories { get; set; }
+
     protected override DataTemplate OnSelectTemplate(object item, BindableObject container) =>
-        (item is InsightsView { Key: InsightsView.Recurring } ? Recurring : Overview)!;
+        (item switch
+        {
+            InsightsView { Key: InsightsView.Recurring } => Recurring,
+            InsightsView { Key: InsightsView.Categories } => Categories,
+            _ => Overview,
+        })!;
 }

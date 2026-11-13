@@ -12,6 +12,12 @@ public static class Routes
     /// <summary>The guide to how the app's figures are worked out.</summary>
     public const string Guide = "guide";
 
+    /// <summary>
+    /// Choosing a payment's category; takes <c>transactionId</c>, <c>payee</c>,
+    /// <c>category</c>, <c>ruleId</c> and <c>match</c>.
+    /// </summary>
+    public const string CategoryPicker = "category";
+
     /// <summary>The app lock's settings.</summary>
     public const string Security = "security";
 }

@@ -1,3 +1,4 @@
+using Joint.Mobile.Features.Categories;
 using Joint.Mobile.Features.Guide;
 using Joint.Mobile.Features.Lock;
 using Joint.Mobile.Features.Transactions;
@@ -12,6 +13,9 @@ public partial class AppShell : Shell
 
 		// Pushed on top of the tabs when an account is opened from Home.
 		Routing.RegisterRoute(Routes.AccountTransactions, typeof(TransactionsPage));
+
+		// Pushed from a payment's open row in Transactions.
+		Routing.RegisterRoute(Routes.CategoryPicker, typeof(CategoryPickerPage));
 
 		// Pushed from Profile.
 		Routing.RegisterRoute(Routes.Guide, typeof(GuidePage));

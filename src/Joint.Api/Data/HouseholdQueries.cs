@@ -32,4 +32,11 @@ public static class HouseholdQueries
         join maker in db.Users on goal.UserId equals maker.Id
         where maker.HouseholdId == householdId
         select goal;
+
+    /// <summary>The category rules made by anyone in the household.</summary>
+    public static IQueryable<CategoryRule> CategoryRulesOf(this JointDbContext db, Guid householdId) =>
+        from rule in db.CategoryRules
+        join maker in db.Users on rule.UserId equals maker.Id
+        where maker.HouseholdId == householdId
+        select rule;
 }

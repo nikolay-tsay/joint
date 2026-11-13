@@ -1,7 +1,7 @@
 namespace Joint.Mobile.Features.Insights;
 
 /// <summary>
-/// A hand-drawn chart that can be touched: the touch picks the month or day under the
+/// A hand-drawn chart that can be touched: the touch picks the month, day or slice under the
 /// finger, the chart marks it, and <see cref="Selected"/> tells whoever built the chart so
 /// it can show that period's exact numbers.
 /// </summary>
@@ -26,7 +26,7 @@ public abstract class Chart : IDrawable
     /// <returns>True when the pick changed and the chart needs redrawing.</returns>
     public bool SelectAt(PointF point)
     {
-        if (IndexAt(point.X) is not { } index || index == SelectedIndex)
+        if (IndexAt(point) is not { } index || index == SelectedIndex)
         {
             return false;
         }
@@ -38,6 +38,6 @@ public abstract class Chart : IDrawable
 
     protected abstract void Render(ICanvas canvas, RectF bounds);
 
-    /// <summary>The month or day at a horizontal position, or null when the chart is empty.</summary>
-    protected abstract int? IndexAt(float x);
+    /// <summary>The month, day or slice at a point, or null when nothing is there.</summary>
+    protected abstract int? IndexAt(PointF point);
 }

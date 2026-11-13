@@ -99,6 +99,38 @@ public class ApiClient(AuthService auth)
         return response.IsSuccessStatusCode;
     }
 
+    /// <summary>
+    /// One month's spending by category and the category names on offer. Null asks for
+    /// the current month.
+    /// </summary>
+    public async Task<CategoriesResponse> GetCategoriesAsync(DateOnly? month, CancellationToken cancellationToken = default)
+    {
+        var path = month is { } first ? $"api/categories?month={first:yyyy-MM}" : "api/categories";
+        using var response = await SendAsync(HttpMethod.Get, path, null, cancellationToken);
+        return await ReadAsync<CategoriesResponse>(response, cancellationToken);
+    }
+
+    /// <summary>
+    /// Gives a payment's payee a category: every payment containing
+    /// <paramref name="matchText"/> then has it. A new name makes a new category.
+    /// </summary>
+    /// <returns>False when the text or the name does not fit, or the payment is no longer there.</returns>
+    public async Task<bool> AssignCategoryAsync(
+        Guid transactionId, string category, string? matchText, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Post, "api/categories", new AssignCategoryRequest(transactionId, category, matchText),
+            cancellationToken, HttpStatusCode.BadRequest, HttpStatusCode.NotFound);
+        return response.IsSuccessStatusCode;
+    }
+
+    /// <summary>Takes the category off a payee.</summary>
+    public async Task RemoveCategoryRuleAsync(Guid ruleId, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Delete, $"api/categories/{ruleId}", null, cancellationToken, HttpStatusCode.NotFound);
+    }
+
     /// <summary>The household's saving goals, each with how much is saved.</summary>
     public async Task<List<GoalResponse>> GetGoalsAsync(CancellationToken cancellationToken = default)
     {
