@@ -36,9 +36,9 @@ public partial class TransactionItem(
     /// <summary>The tracked payment this one counts towards, if any.</summary>
     public Guid? RecurringId { get; private set; }
 
-    /// <summary>Subscription or Bill when the payee is tracked.</summary>
+    /// <summary>Subscription, Bill or Transfer when the payee is marked.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(RecurringLabel), nameof(IsTracked), nameof(IsSubscription), nameof(IsBill))]
+    [NotifyPropertyChangedFor(nameof(RecurringLabel), nameof(IsTracked), nameof(IsSubscription), nameof(IsBill), nameof(IsTransfer))]
     public partial string? RecurringKind { get; set; }
 
     /// <summary>
@@ -87,6 +87,9 @@ public partial class TransactionItem(
     public bool IsSubscription => RecurringKind == RecurringKinds.Subscription;
 
     public bool IsBill => RecurringKind == RecurringKinds.Bill;
+
+    /// <summary>Marked as money moved to or from an own account, so not counted as spending or income.</summary>
+    public bool IsTransfer => RecurringKind == RecurringKinds.Transfer;
 
     /// <summary>Takes over what the backend now says about this row's payee.</summary>
     public void SetRecurring(Guid? recurringId, string? kind, string? matchText)

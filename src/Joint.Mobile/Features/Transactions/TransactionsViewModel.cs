@@ -179,6 +179,13 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
     [RelayCommand]
     private Task MarkBillAsync(TransactionItem item) => MarkAsync(item, RecurringKinds.Bill);
 
+    /// <summary>
+    /// Marks the payee as an account of the household's own that the app cannot pair up, so
+    /// money sent there stops counting as spending.
+    /// </summary>
+    [RelayCommand]
+    private Task MarkTransferAsync(TransactionItem item) => MarkAsync(item, RecurringKinds.Transfer);
+
     /// <summary>Stops tracking the payee of this payment.</summary>
     [RelayCommand]
     private Task StopTrackingAsync(TransactionItem item) => RunAsync(async () =>

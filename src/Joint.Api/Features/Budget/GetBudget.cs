@@ -41,7 +41,7 @@ public class GetBudget : IEndpoint
         // Two months: this one, and the last for comparison and for what is still expected.
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var start = new DateOnly(today.Year, today.Month, 1).AddMonths(-1);
-        var transactions = await (
+        var loaded = await (
             from transaction in db.Transactions
             join account in db.AccountsOf(user.HouseholdId) on transaction.AccountId equals account.Id
             join connection in db.BankConnections on account.ConnectionId equals connection.Id
@@ -62,11 +62,16 @@ public class GetBudget : IEndpoint
             })
             .ToListAsync(cancellationToken);
 
+        // Money marked as moved to or from the household's own account is not spending at all.
+        var matcher = new RecurringMatcher(await db.RecurringOf(user.HouseholdId).ToListAsync(cancellationToken));
+        var transactions = loaded
+            .Where(t => !matcher.IsOwnTransfer(t.Counterparty, t.Description))
+            .ToList();
+
         var flows = transactions
             .Select(t => new FlowRow(t.AccountId, t.OwnerId, t.DisplayName, t.AvatarUrl, t.BookedOn, t.Amount, t.Currency))
             .ToList();
 
-        var matcher = new RecurringMatcher(await db.RecurringOf(user.HouseholdId).ToListAsync(cancellationToken));
         var recurring = transactions
             .Where(t => t.Amount < 0)
             .Select(t => new RecurringRow(

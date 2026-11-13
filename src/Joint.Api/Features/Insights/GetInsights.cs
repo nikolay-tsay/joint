@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Joint.Api.Common;
 using Joint.Api.Common.Auth;
 using Joint.Api.Data;
+using Joint.Api.Features.Recurring;
 using Joint.Contracts;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -48,11 +49,24 @@ public class GetInsights : IEndpoint
             join connection in db.BankConnections on account.ConnectionId equals connection.Id
             join owner in db.Users on connection.OwnerUserId equals owner.Id
             where transaction.BookedOn >= start
-            select new FlowRow(
-                account.Id, owner.Id, owner.DisplayName, owner.AvatarUrl,
-                transaction.BookedOn, transaction.Amount, transaction.Currency))
+            select new
+            {
+                Flow = new FlowRow(
+                    account.Id, owner.Id, owner.DisplayName, owner.AvatarUrl,
+                    transaction.BookedOn, transaction.Amount, transaction.Currency),
+                transaction.Counterparty,
+                transaction.Description,
+            })
             .ToListAsync(cancellationToken);
 
-        return TypedResults.Ok(InsightsCalculator.Build(rows, today, span));
+        // What the household marked as a transfer to or from its own account is neither
+        // income nor spending, whichever way it went.
+        var matcher = new RecurringMatcher(await db.RecurringOf(user.HouseholdId).ToListAsync(cancellationToken));
+        var flows = rows
+            .Where(r => !matcher.IsOwnTransfer(r.Counterparty, r.Description))
+            .Select(r => r.Flow)
+            .ToList();
+
+        return TypedResults.Ok(InsightsCalculator.Build(flows, today, span));
     }
 }
