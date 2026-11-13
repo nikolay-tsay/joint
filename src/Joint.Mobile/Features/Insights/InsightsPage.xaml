@@ -16,21 +16,6 @@
             <Setter Property="BackgroundColor" Value="Transparent" />
         </Style>
 
-        <!-- A tab's caption; the selected one is recolored by a trigger. -->
-        <Style x:Key="TabLabel" TargetType="Label">
-            <Setter Property="FontSize" Value="15" />
-            <Setter Property="FontFamily" Value="OpenSansSemibold" />
-            <Setter Property="HorizontalOptions" Value="Center" />
-            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
-        </Style>
-
-        <!-- The line under the selected tab. -->
-        <Style x:Key="TabLine" TargetType="BoxView">
-            <Setter Property="CornerRadius" Value="2" />
-            <Setter Property="BackgroundColor" Value="Transparent" />
-            <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-        </Style>
-
         <!-- One tracked subscription or regular payment. -->
         <DataTemplate x:Key="RecurringRow" x:DataType="insights:RecurringItem">
             <Border Style="{StaticResource InsetRow}">

@@ -99,6 +99,30 @@ public class ApiClient(AuthService auth)
         return response.IsSuccessStatusCode;
     }
 
+    /// <summary>The household's saving goals, each with how much is saved.</summary>
+    public async Task<List<GoalResponse>> GetGoalsAsync(CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(HttpMethod.Get, "api/goals", null, cancellationToken);
+        return await ReadAsync<List<GoalResponse>>(response, cancellationToken);
+    }
+
+    /// <summary>Adds a saving goal, or changes the one with the given id.</summary>
+    /// <returns>False when it was not accepted, or the goal is no longer there.</returns>
+    public async Task<bool> SaveGoalAsync(Guid? goalId, SaveGoalRequest goal, CancellationToken cancellationToken = default)
+    {
+        using var response = goalId is { } id
+            ? await SendAsync(
+                HttpMethod.Put, $"api/goals/{id}", goal, cancellationToken, HttpStatusCode.BadRequest, HttpStatusCode.NotFound)
+            : await SendAsync(HttpMethod.Post, "api/goals", goal, cancellationToken, HttpStatusCode.BadRequest);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task DeleteGoalAsync(Guid goalId, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Delete, $"api/goals/{goalId}", null, cancellationToken, HttpStatusCode.NotFound);
+    }
+
     /// <summary>Income, spending and who spent, for the charts on the Insights tab.</summary>
     public async Task<InsightsResponse> GetInsightsAsync(int months, CancellationToken cancellationToken = default)
     {

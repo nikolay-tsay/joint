@@ -25,4 +25,11 @@ public static class HouseholdQueries
         join marker in db.Users on recurring.UserId equals marker.Id
         where marker.HouseholdId == householdId
         select recurring;
+
+    /// <summary>The saving goals made by anyone in the household.</summary>
+    public static IQueryable<Goal> GoalsOf(this JointDbContext db, Guid householdId) =>
+        from goal in db.Goals
+        join maker in db.Users on goal.UserId equals maker.Id
+        where maker.HouseholdId == householdId
+        select goal;
 }

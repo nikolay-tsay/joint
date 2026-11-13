@@ -84,6 +84,21 @@
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}" />
     </Style>
 
+    <!-- A tab in a strip at the top of a page; the page recolors the selected one with a trigger. -->
+    <Style x:Key="TabLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+    </Style>
+
+    <!-- The line under the selected tab. -->
+    <Style x:Key="TabLine" TargetType="BoxView">
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+    </Style>
+
     <!-- Low-emphasis text button, for "Done" and the like. -->
     <Style x:Key="QuietButton" TargetType="Button">
         <Setter Property="CornerRadius" Value="12" />

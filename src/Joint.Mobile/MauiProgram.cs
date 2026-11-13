@@ -22,7 +22,9 @@ public static class MauiProgram
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
 				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-			});
+			})
+			// The bottom tabs are icons only; see IconOnlyShellRenderer.
+			.ConfigureMauiHandlers(handlers => handlers.AddHandler<Shell, IconOnlyShellRenderer>());
 
 		builder.Services.AddSingleton<SupabaseAuthClient>();
 		builder.Services.AddSingleton<AuthService>();
@@ -43,6 +45,7 @@ public static class MauiProgram
 		builder.Services.AddTransient<TransactionsViewModel>();
 		builder.Services.AddTransient<BudgetPage>();
 		builder.Services.AddTransient<BudgetViewModel>();
+		builder.Services.AddTransient<GoalsViewModel>();
 		builder.Services.AddTransient<InsightsPage>();
 		builder.Services.AddTransient<InsightsViewModel>();
 		builder.Services.AddTransient<ProfilePage>();
