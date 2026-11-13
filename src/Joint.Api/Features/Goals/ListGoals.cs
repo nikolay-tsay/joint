@@ -9,8 +9,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Joint.Api.Features.Goals;
 
 /// <summary>
-/// The household's saving and investment goals, oldest first, each with how much is saved: the followed
-/// account's current balance, or the figure kept by hand.
+/// The household's saving and investment goals, oldest first. Every saving goal is
+/// measured against the combined balance of the accounts of the Savings type, every
+/// investment goal against those of the Investment type.
 /// </summary>
 public class ListGoals : IEndpoint
 {
@@ -32,23 +33,13 @@ public class ListGoals : IEndpoint
         }
 
         var goals = await db.GoalsOf(user.HouseholdId).OrderBy(g => g.CreatedAt).ToListAsync(cancellationToken);
-
-        // Through the household's accounts, so a goal never reveals an account that has left with its owner.
-        var accounts = await db.AccountsOf(user.HouseholdId).ToDictionaryAsync(a => a.Id, cancellationToken);
+        var accounts = await db.AccountsOf(user.HouseholdId).ToListAsync(cancellationToken);
 
         return TypedResults.Ok(goals
             .Select(goal =>
             {
-                var followed = goal.AccountId is { } id ? accounts.GetValueOrDefault(id) : null;
-                return new GoalResponse(
-                    goal.Id,
-                    goal.Name,
-                    goal.TargetAmount,
-                    Saved: followed?.Balance ?? goal.SavedAmount,
-                    followed?.Currency ?? goal.Currency,
-                    followed?.Id,
-                    followed?.Name,
-                    goal.Kind.ToString());
+                var (reached, currency) = GoalRules.Progress(goal.Kind, accounts);
+                return new GoalResponse(goal.Id, goal.Name, goal.TargetAmount, reached, currency, goal.Kind.ToString());
             })
             .ToList());
     }

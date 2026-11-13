@@ -48,6 +48,14 @@ public partial class TransactionItem(
     [ObservableProperty]
     public partial string? MatchText { get; set; }
 
+    /// <summary>True when this payment was taken out of the budget by hand.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BudgetChoice))]
+    public partial bool IsExcludedFromBudget { get; set; }
+
+    /// <summary>What the chip in the open row offers: excluding, or putting back.</summary>
+    public string BudgetChoice => IsExcludedFromBudget ? "Count in budget again" : "Exclude from budget";
+
     /// <summary>True while the row is open: full texts, and the choices for a payment.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsTrackMenuOpen))]
@@ -91,6 +99,7 @@ public partial class TransactionItem(
             Money.FormatSigned(transaction.Amount, transaction.Currency),
             transaction.Amount > 0);
         item.SetRecurring(transaction.RecurringId, transaction.RecurringKind, transaction.RecurringMatch);
+        item.IsExcludedFromBudget = transaction.ExcludedFromBudget;
         return item;
     }
 }

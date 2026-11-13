@@ -8,7 +8,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Joint.Api.Features.Accounts;
 
-/// <summary>Lists every account in the caller's household with its current balance.</summary>
+/// <summary>
+/// Lists every account in the caller's household with its current balance and, where it
+/// holds investments, what those have gained or lost.
+/// </summary>
 public class ListAccounts : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app) =>
@@ -35,6 +38,15 @@ public class ListAccounts : IEndpoint
             orderby owner.DisplayName, account.Institution, account.Name
             select new { account, owner.DisplayName }).ToListAsync(cancellationToken);
 
+        // One figure per account that holds anything; the rest have no entry.
+        var accountIds = rows.Select(row => row.account.Id).ToList();
+        var profitLoss = (await db.Holdings
+                .Where(h => accountIds.Contains(h.AccountId))
+                .Select(h => new { h.AccountId, h.UnrealizedProfitLoss })
+                .ToListAsync(cancellationToken))
+            .GroupBy(h => h.AccountId)
+            .ToDictionary(g => g.Key, g => g.Sum(h => h.UnrealizedProfitLoss));
+
         return TypedResults.Ok(rows
             .Select(row => new AccountResponse(
                 row.account.Id,
@@ -43,7 +55,8 @@ public class ListAccounts : IEndpoint
                 row.account.Kind.ToString(),
                 row.account.Currency,
                 row.account.Balance,
-                row.DisplayName))
+                row.DisplayName,
+                profitLoss.TryGetValue(row.account.Id, out var gained) ? gained : null))
             .ToList());
     }
 }

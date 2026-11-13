@@ -216,16 +216,21 @@
                                     </Label.Triggers>
                                 </Label>
 
-                                <!-- Counts towards a tracked subscription or regular payment. -->
-                                <Label
-                                    Grid.Row="2"
-                                    Grid.Column="1"
-                                    Grid.ColumnSpan="2"
-                                    Text="{Binding RecurringLabel}"
-                                    FontSize="12"
-                                    FontFamily="OpenSansSemibold"
-                                    IsVisible="{Binding IsTracked}"
-                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                <!-- What sets this payment apart: tracked as recurring, or kept out of the budget. -->
+                                <HorizontalStackLayout Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Spacing="10">
+                                    <Label
+                                        Text="{Binding RecurringLabel}"
+                                        FontSize="12"
+                                        FontFamily="OpenSansSemibold"
+                                        IsVisible="{Binding IsTracked}"
+                                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                    <Label
+                                        Text="Not in budget"
+                                        FontSize="12"
+                                        FontFamily="OpenSansSemibold"
+                                        IsVisible="{Binding IsExcludedFromBudget}"
+                                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                                </HorizontalStackLayout>
 
                                 <!-- The choices: what every payment to this payee is. -->
                                 <VerticalStackLayout Grid.Row="3" Grid.ColumnSpan="3" Spacing="8" Margin="0,10,0,2" IsVisible="{Binding IsTrackMenuOpen}">
@@ -290,6 +295,33 @@
                                                 FontSize="13"
                                                 FontFamily="OpenSansSemibold"
                                                 TextColor="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}" />
+                                        </Border>
+                                    </HorizontalStackLayout>
+
+                                    <!-- The manual correction for the budget. -->
+                                    <Label
+                                        Text="If this is not everyday spending, such as money moved to an account Joint cannot see, keep it out of the budget."
+                                        Style="{StaticResource Caption}"
+                                        Margin="0,6,0,0" />
+                                    <HorizontalStackLayout>
+                                        <Border Style="{StaticResource Chip}">
+                                            <Border.Triggers>
+                                                <DataTrigger TargetType="Border" Binding="{Binding IsExcludedFromBudget}" Value="True">
+                                                    <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                                </DataTrigger>
+                                            </Border.Triggers>
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding ToggleBudgetExclusionCommand, Source={RelativeSource AncestorType={x:Type transactions:TransactionsViewModel}}, x:DataType=transactions:TransactionsViewModel}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Border.GestureRecognizers>
+                                            <Label Text="{Binding BudgetChoice}" FontSize="13" FontFamily="OpenSansSemibold">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding IsExcludedFromBudget}" Value="True">
+                                                        <Setter Property="TextColor" Value="White" />
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
                                         </Border>
                                     </HorizontalStackLayout>
                                 </VerticalStackLayout>
