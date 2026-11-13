@@ -69,6 +69,34 @@ public class OwnTransferTests
     }
 
     [Fact]
+    public async Task A_mark_matches_on_a_transactions_name_not_on_the_detail_under_it()
+    {
+        await using var db = NewDb();
+        var ana = Principal("ana@example.com");
+        var account = await AccountAsync(db, ana);
+        var withdrawal = Add(db, account, -3000, "Nikolay Tsay");
+
+        // The bank writes the account holder's name into the detail of unrelated payments.
+        var groceries = Add(db, account, -300, "Albert");
+        groceries.Description = "Card payment, Nikolay Tsay";
+        var unnamed = Add(db, account, -150, "x");
+        unnamed.Counterparty = null;
+        unnamed.Description = "Nikolay Tsay standing order";
+        await db.SaveChangesAsync();
+
+        await MarkRecurring.HandleAsync(
+            new MarkRecurringRequest(withdrawal.Id, "Transfer"), ana, new CurrentUserService(db), db, CancellationToken.None);
+
+        var listed = await ListAsync(db, ana);
+        Assert.Equal("Transfer", listed.Single(t => t.Id == withdrawal.Id).RecurringKind);
+        Assert.Null(listed.Single(t => t.Id == groceries.Id).RecurringKind);
+
+        // With no counterparty, the description is the name the app shows, so it is searched.
+        Assert.Equal("Transfer", listed.Single(t => t.Id == unnamed.Id).RecurringKind);
+        Assert.Equal(300m, (await BudgetAsync(db, ana)).Spent);
+    }
+
+    [Fact]
     public async Task Other_income_is_never_labelled_with_a_subscription_it_happens_to_match()
     {
         await using var db = NewDb();

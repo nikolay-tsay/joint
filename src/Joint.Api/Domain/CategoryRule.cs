@@ -2,7 +2,7 @@ namespace Joint.Api.Domain;
 
 /// <summary>
 /// Says which category payments to a payee belong to. Every outgoing transaction whose
-/// counterparty or description contains the match text gets the category, past and future;
+/// name (the counterparty, or the description when there is none) contains the match text gets the category, past and future;
 /// nothing is stored on transactions. It works like a tracked payment and is independent of
 /// one: a payee can be a subscription and also have a category. A rule belongs to the person
 /// who made it and applies to their whole household, so it follows them if they change household.

@@ -4,7 +4,7 @@ namespace Joint.Api.Features.Recurring;
 
 /// <summary>
 /// Works out the text that identifies a payee. A tracked payment counts every transaction
-/// whose counterparty or description contains its match text, so the text has to be the
+/// whose name (see <see cref="Matches"/>) contains its match text, so the text has to be the
 /// part that stays the same from one payment to the next. This class makes the first
 /// guess; the user can correct it when marking.
 /// </summary>
@@ -46,9 +46,15 @@ public static partial class PaymentKey
         return name.Length > MaxLength ? name[..MaxLength] : name;
     }
 
-    /// <summary>Whether a transaction's counterparty or description contains the match text.</summary>
+    /// <summary>
+    /// Whether a transaction's name contains the match text. The name is what the app shows
+    /// as the row's title: the counterparty, or the description when the bank gives no
+    /// counterparty. The description of a transaction that has a counterparty is not
+    /// searched: banks put the account holder's own name and other shared text there, and
+    /// a rule made from one payment then caught unrelated ones.
+    /// </summary>
     public static bool Matches(string matchText, string? counterparty, string? description) =>
-        $"{Tidy(counterparty)} {Tidy(description)}".Contains(matchText, StringComparison.OrdinalIgnoreCase);
+        (Tidy(counterparty) ?? Tidy(description) ?? "").Contains(matchText, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Match text as it is stored: trimmed, single-spaced, upper case.</summary>
     public static string? Normalize(string? matchText) => Tidy(matchText)?.ToUpperInvariant();
