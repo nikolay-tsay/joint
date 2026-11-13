@@ -38,7 +38,8 @@ public static class RecurringCalculator
                     .Select(p => p.Row)
                     .FirstOrDefault();
                 return new RecurringPaymentResponse(
-                    payment.Id, payment.Kind.ToString(), payment.Name, -last?.Amount, last?.Currency, last?.BookedOn);
+                    payment.Id, payment.Kind.ToString(), payment.Name, -last?.Amount, last?.Currency, last?.BookedOn,
+                    payment.MatchKey);
             })
             .OrderBy(p => p.Kind)
             .ThenByDescending(p => p.LastAmount ?? 0)

@@ -85,26 +85,31 @@ public class ListTransactions : IEndpoint
 
     /// <summary>
     /// Says which of the listed payments count towards a tracked subscription or regular
-    /// payment. Done on the page just read, because the payee key is worked out in code.
+    /// payment, and for the rest what text tracking them would match on. Done on the page
+    /// just read, because matching is decided in code.
     /// </summary>
     private static async Task<List<TransactionResponse>> WithRecurringAsync(
         List<TransactionResponse> transactions, Guid householdId, JointDbContext db, CancellationToken cancellationToken)
     {
-        var tracked = (await db.RecurringOf(householdId).ToListAsync(cancellationToken))
-            .GroupBy(r => r.MatchKey)
-            .ToDictionary(g => g.Key, g => g.First());
-        if (tracked.Count == 0)
-        {
-            return transactions;
-        }
+        var matcher = new RecurringMatcher(await db.RecurringOf(householdId).ToListAsync(cancellationToken));
 
         return transactions
             .Select(t =>
-                t.Amount < 0
-                && PaymentKey.From(t.Counterparty, t.Description) is { } key
-                && tracked.TryGetValue(key, out var recurring)
-                    ? t with { RecurringId = recurring.Id, RecurringKind = recurring.Kind.ToString() }
-                    : t)
+            {
+                if (t.Amount >= 0)
+                {
+                    return t;
+                }
+
+                return matcher.Find(t.Counterparty, t.Description) is { } recurring
+                    ? t with
+                    {
+                        RecurringId = recurring.Id,
+                        RecurringKind = recurring.Kind.ToString(),
+                        RecurringMatch = recurring.MatchKey,
+                    }
+                    : t with { RecurringMatch = PaymentKey.From(t.Counterparty, t.Description) };
+            })
             .ToList();
     }
 }

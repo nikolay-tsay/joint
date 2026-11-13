@@ -97,12 +97,16 @@ public class ApiClient(AuthService auth)
         return await ReadAsync<RecurringOverviewResponse>(response, cancellationToken);
     }
 
-    /// <summary>Tracks the payee of a payment as a subscription or a regular payment.</summary>
-    /// <returns>False when the payment cannot be tracked or is no longer there.</returns>
-    public async Task<bool> MarkRecurringAsync(Guid transactionId, string kind, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Tracks a payment as a subscription or a regular payment: every payment containing
+    /// <paramref name="matchText"/> is then counted with it.
+    /// </summary>
+    /// <returns>False when the text does not fit the payment, or the payment cannot be tracked.</returns>
+    public async Task<bool> MarkRecurringAsync(
+        Guid transactionId, string kind, string? matchText, CancellationToken cancellationToken = default)
     {
         using var response = await SendAsync(
-            HttpMethod.Post, "api/recurring", new MarkRecurringRequest(transactionId, kind),
+            HttpMethod.Post, "api/recurring", new MarkRecurringRequest(transactionId, kind, matchText),
             cancellationToken, HttpStatusCode.BadRequest, HttpStatusCode.NotFound);
         return response.IsSuccessStatusCode;
     }

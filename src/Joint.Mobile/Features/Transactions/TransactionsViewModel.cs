@@ -189,14 +189,14 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
 
     private Task MarkAsync(TransactionItem item, string kind) => RunAsync(async () =>
     {
-        item.IsMenuOpen = false;
-        if (await _api.MarkRecurringAsync(item.Id, kind))
+        if (await _api.MarkRecurringAsync(item.Id, kind, item.MatchText))
         {
+            item.IsMenuOpen = false;
             await RefreshRecurringAsync();
         }
         else
         {
-            Error = "This payment can't be tracked: the bank did not say who it went to.";
+            Error = "That didn't work. The text to match must be part of this payment and at least 3 characters long.";
         }
     });
 
@@ -221,7 +221,7 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
         {
             if (fresh.TryGetValue(item.Id, out var transaction))
             {
-                item.SetRecurring(transaction.RecurringId, transaction.RecurringKind);
+                item.SetRecurring(transaction.RecurringId, transaction.RecurringKind, transaction.RecurringMatch);
             }
         }
     }

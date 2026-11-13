@@ -11,8 +11,9 @@ namespace Joint.Api.Features.Recurring;
 
 /// <summary>
 /// Marks the payee of a transaction as a subscription or a regular payment. From then on
-/// every payment to that payee counts, earlier ones included. Marking a payee that is
-/// already tracked changes its kind.
+/// every payment containing the match text counts, earlier ones included. The text is
+/// suggested from the transaction and may be corrected by the caller. Marking a payment
+/// that is already tracked changes that tracked payment's kind and match text.
 /// </summary>
 public class MarkRecurring : IEndpoint
 {
@@ -38,9 +39,7 @@ public class MarkRecurring : IEndpoint
         if (!Enum.GetNames<RecurringKind>().Contains(request.Kind, StringComparer.OrdinalIgnoreCase)
             || !Enum.TryParse<RecurringKind>(request.Kind, ignoreCase: true, out var kind))
         {
-            return TypedResults.Problem(
-                $"Kind must be one of: {string.Join(", ", Enum.GetNames<RecurringKind>())}.",
-                statusCode: StatusCodes.Status400BadRequest);
+            return Invalid($"Kind must be one of: {string.Join(", ", Enum.GetNames<RecurringKind>())}.");
         }
 
         var transaction = await (
@@ -54,19 +53,31 @@ public class MarkRecurring : IEndpoint
             return TypedResults.NotFound();
         }
 
-        var key = PaymentKey.From(transaction.Counterparty, transaction.Description);
-        if (transaction.Amount >= 0 || key is null)
+        var name = PaymentKey.NameOf(transaction.Counterparty, transaction.Description);
+        if (transaction.Amount >= 0 || name is null)
         {
-            return TypedResults.Problem(
-                "Only a payment that names who it went to can be tracked.",
-                statusCode: StatusCodes.Status400BadRequest);
+            return Invalid("Only a payment that names who it went to can be tracked.");
         }
 
-        var existing = await db.RecurringOf(user.HouseholdId)
-            .FirstOrDefaultAsync(r => r.MatchKey == key, cancellationToken);
+        var matchText = PaymentKey.Normalize(request.MatchText) ?? name.ToUpperInvariant();
+        if (matchText.Length is < PaymentKey.MinLength or > PaymentKey.MaxLength)
+        {
+            return Invalid($"The text to match needs at least {PaymentKey.MinLength} characters.");
+        }
+
+        // A text that misses the very payment being marked is a typo, not a choice.
+        if (!PaymentKey.Matches(matchText, transaction.Counterparty, transaction.Description))
+        {
+            return Invalid("The text to match must appear in this payment.");
+        }
+
+        var tracked = await db.RecurringOf(user.HouseholdId).ToListAsync(cancellationToken);
+        var existing = tracked.FirstOrDefault(r => r.MatchKey == matchText)
+            ?? new RecurringMatcher(tracked).Find(transaction.Counterparty, transaction.Description);
         if (existing is not null)
         {
             existing.Kind = kind;
+            existing.MatchKey = matchText;
         }
         else
         {
@@ -75,12 +86,15 @@ public class MarkRecurring : IEndpoint
                 Id = Guid.NewGuid(),
                 UserId = user.Id,
                 Kind = kind,
-                Name = PaymentKey.NameOf(transaction.Counterparty, transaction.Description)!,
-                MatchKey = key,
+                Name = name,
+                MatchKey = matchText,
             });
         }
 
         await db.SaveChangesAsync(cancellationToken);
         return TypedResults.NoContent();
     }
+
+    private static ProblemHttpResult Invalid(string detail) =>
+        TypedResults.Problem(detail, statusCode: StatusCodes.Status400BadRequest);
 }
