@@ -59,11 +59,10 @@ public class GetInsights : IEndpoint
             })
             .ToListAsync(cancellationToken);
 
-        // What the household marked as a transfer to or from its own account is neither
-        // income nor spending, whichever way it went.
+        // A payment the household marked as a transfer to its own account is not spending.
         var matcher = new RecurringMatcher(await db.RecurringOf(user.HouseholdId).ToListAsync(cancellationToken));
         var flows = rows
-            .Where(r => !matcher.IsOwnTransfer(r.Counterparty, r.Description))
+            .Where(r => !matcher.IsOwnTransfer(r.Flow.Amount, r.Counterparty, r.Description))
             .Select(r => r.Flow)
             .ToList();
 

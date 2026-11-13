@@ -17,10 +17,11 @@ public class RecurringMatcher(IEnumerable<RecurringPayment> payments)
         _payments.FirstOrDefault(p => PaymentKey.Matches(p.MatchKey, counterparty, description));
 
     /// <summary>
-    /// Whether a transaction, in either direction, was marked as money moved between the
-    /// household's own accounts. Insights, Budget and Categories all drop these through
-    /// this one test, so they agree on what spending and income are.
+    /// Whether a payment was marked as money moved to one of the household's own accounts.
+    /// Insights, Budget and Categories all drop these through this one test, so they agree
+    /// on what spending is. Only money going out: whatever arrives under the same name is
+    /// still income, at the user's request.
     /// </summary>
-    public bool IsOwnTransfer(string? counterparty, string? description) =>
-        Find(counterparty, description)?.Kind == RecurringKind.Transfer;
+    public bool IsOwnTransfer(decimal amount, string? counterparty, string? description) =>
+        amount < 0 && Find(counterparty, description)?.Kind == RecurringKind.Transfer;
 }

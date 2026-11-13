@@ -56,9 +56,10 @@ public static class GuideContent
                 "This can be wrong both ways. Paying 500 and being paid 500 by someone else the same day is dropped "
                     + "as if it were a transfer. Money sent to Trading 212 has no matching arrival, because no Trading 212 "
                     + "transactions are read, so on its own it counts as spending.",
-                "For those, open one such payment in Transactions and mark it \"Own transfer\". Every payment or "
-                    + "arrival containing the match text shown there is then left out of income, spending, the budget "
-                    + "and the categories, past and future. The text works as it does for subscriptions and you can edit it.",
+                "For those, open one such payment in Transactions and mark it \"Own transfer\". Every payment "
+                    + "whose name contains the match text shown there is then left out of spending, the budget "
+                    + "and the categories, past and future. The text works as it does for subscriptions and you can edit it. "
+                    + "Money arriving under the same name still counts as income.",
                 "Own transfers are not shown or added up anywhere; the mark only keeps them out of the figures. "
                     + "To undo it, open any payment that carries the \"Own transfer\" label and choose \"Stop tracking\".",
             ]),
