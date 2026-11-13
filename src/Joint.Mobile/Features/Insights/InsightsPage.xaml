@@ -1,0 +1,143 @@
+<ContentPage
+    x:Class="Joint.Mobile.Features.Insights.InsightsPage"
+    xmlns:insights="clr-namespace:Joint.Mobile.Features.Insights"
+    x:DataType="insights:InsightsViewModel"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
+
+    <ContentPage.Resources>
+        <!-- The colored dot in front of a legend entry. -->
+        <Style x:Key="LegendDot" TargetType="BoxView">
+            <Setter Property="WidthRequest" Value="10" />
+            <Setter Property="HeightRequest" Value="10" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="VerticalOptions" Value="Center" />
+        </Style>
+    </ContentPage.Resources>
+
+    <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
+        <ScrollView>
+            <VerticalStackLayout Padding="12,24,12,24" Spacing="12">
+                <Label Text="Insights" FontSize="24" FontFamily="OpenSansSemibold" Margin="4,0" />
+
+                <Label
+                    Text="{Binding Error}"
+                    Style="{StaticResource ErrorText}"
+                    IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
+
+                <Border Style="{StaticResource Card}" IsVisible="{Binding HasNoData}">
+                    <Label
+                        Text="Nothing to chart yet. Once a connected account has transactions, they show up here."
+                        Style="{StaticResource Caption}" />
+                </Border>
+
+                <VerticalStackLayout Spacing="12" IsVisible="{Binding HasData}">
+
+                    <!-- This month at a glance. -->
+                    <Border Style="{StaticResource HeroCard}">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding SavedTitle}" TextColor="White" Opacity="0.8" FontSize="13" />
+                            <Label Text="{Binding Saved}" TextColor="White" FontSize="32" FontFamily="OpenSansSemibold" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
+                                <VerticalStackLayout Spacing="2">
+                                    <Label Text="Income" TextColor="White" Opacity="0.8" FontSize="13" />
+                                    <Label Text="{Binding Income}" TextColor="White" FontSize="16" FontFamily="OpenSansSemibold" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                    <Label Text="Spent" TextColor="White" Opacity="0.8" FontSize="13" />
+                                    <Label Text="{Binding Spending}" TextColor="White" FontSize="16" FontFamily="OpenSansSemibold" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Income against spending, month by month. -->
+                    <Border Style="{StaticResource Card}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="Income and spending" Style="{StaticResource RowTitle}" />
+                            <HorizontalStackLayout Spacing="6">
+                                <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource Positive}, Dark={StaticResource PositiveDark}}" />
+                                <Label Text="Income" Style="{StaticResource Caption}" Margin="0,0,10,0" />
+                                <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                <Label Text="Spending" Style="{StaticResource Caption}" />
+                            </HorizontalStackLayout>
+                            <GraphicsView Drawable="{Binding FlowChart}" HeightRequest="190" InputTransparent="True" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- What was left over each month. -->
+                    <Border Style="{StaticResource Card}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="Left over each month" Style="{StaticResource RowTitle}" />
+                            <Label Text="Income minus spending. Red months cost more than came in." Style="{StaticResource Caption}" />
+                            <GraphicsView Drawable="{Binding SavedChart}" HeightRequest="160" InputTransparent="True" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- This month's running spending against last month's. -->
+                    <Border Style="{StaticResource Card}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="Spending this month" Style="{StaticResource RowTitle}" />
+                            <Label Text="{Binding PaceSummary}" Style="{StaticResource Caption}" />
+                            <HorizontalStackLayout Spacing="6">
+                                <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                <Label Text="This month" Style="{StaticResource Caption}" Margin="0,0,10,0" />
+                                <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                                <Label Text="Last month" Style="{StaticResource Caption}" />
+                            </HorizontalStackLayout>
+                            <GraphicsView Drawable="{Binding PaceChart}" HeightRequest="190" InputTransparent="True" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Who spent this month. -->
+                    <Border Style="{StaticResource Card}" IsVisible="{Binding HasSeveralSpenders}">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="Who spent this month" Style="{StaticResource RowTitle}" />
+                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Members}" Spacing="12">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="insights:MemberSpendingItem">
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                            <Border
+                                                WidthRequest="36"
+                                                HeightRequest="36"
+                                                StrokeThickness="0"
+                                                StrokeShape="Ellipse"
+                                                VerticalOptions="Center"
+                                                BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackground}, Dark={StaticResource AvatarBackgroundDark}}">
+                                                <Grid>
+                                                    <Label
+                                                        Text="{Binding Initial}"
+                                                        FontFamily="OpenSansSemibold"
+                                                        HorizontalOptions="Center"
+                                                        VerticalOptions="Center"
+                                                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                                    <!-- Covers the initial once the picture has loaded. -->
+                                                    <Image Source="{Binding AvatarUrl}" Aspect="AspectFill" />
+                                                </Grid>
+                                            </Border>
+                                            <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                                    <Label Text="{Binding Name}" LineBreakMode="TailTruncation" />
+                                                    <Label Grid.Column="1" Text="{Binding Amount}" FontFamily="OpenSansSemibold" />
+                                                </Grid>
+                                                <ProgressBar
+                                                    Progress="{Binding Share}"
+                                                    ProgressColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                            </VerticalStackLayout>
+                                        </Grid>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Label
+                        Text="Money moved between your own accounts is left out where it can be recognized: the same amount leaving one account and arriving in another within two days."
+                        Style="{StaticResource Caption}"
+                        Margin="4,0" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+
+</ContentPage>
