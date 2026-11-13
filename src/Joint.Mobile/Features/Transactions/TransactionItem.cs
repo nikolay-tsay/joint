@@ -5,8 +5,9 @@ using Joint.Mobile.Common;
 namespace Joint.Mobile.Features.Transactions;
 
 /// <summary>
-/// One transaction row, already formatted for display. A payment can be tapped open to
-/// mark its payee as a subscription or a regular payment, in place.
+/// One transaction row, already formatted for display. Tapping it opens it in place: the
+/// texts that were cut to one line are shown in full, and a payment also offers to mark
+/// its payee as a subscription or a regular payment.
 /// </summary>
 public partial class TransactionItem(
     Guid id, string title, string subtitle, string ownerInitial, string? ownerAvatarUrl, string amount, bool isIncome)
@@ -40,9 +41,13 @@ public partial class TransactionItem(
     [NotifyPropertyChangedFor(nameof(RecurringLabel), nameof(IsTracked), nameof(IsSubscription), nameof(IsBill))]
     public partial string? RecurringKind { get; set; }
 
-    /// <summary>True while the row shows its choices under the transaction.</summary>
+    /// <summary>True while the row is open: full texts, and the choices for a payment.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsTrackMenuOpen))]
     public partial bool IsMenuOpen { get; set; }
+
+    /// <summary>Whether the open row offers the tracking choices.</summary>
+    public bool IsTrackMenuOpen => IsMenuOpen && CanTrack;
 
     public string? RecurringLabel => RecurringKind is { } kind ? RecurringKinds.Label(kind) : null;
 
