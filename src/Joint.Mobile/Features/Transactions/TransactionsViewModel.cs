@@ -156,11 +156,11 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
     [RelayCommand]
     private void ToggleTypeMenu() => IsTypeMenuOpen = !IsTypeMenuOpen;
 
-    /// <summary>Opens a payment's choices in place, closing any other row's.</summary>
+    /// <summary>Opens a row in place, closing any other; tapping an open row closes it.</summary>
     [RelayCommand]
     private void ToggleMenu(TransactionItem item)
     {
-        var open = item.CanTrack && !item.IsMenuOpen;
+        var open = !item.IsMenuOpen;
         foreach (var other in Groups.SelectMany(group => group))
         {
             other.IsMenuOpen = false;
