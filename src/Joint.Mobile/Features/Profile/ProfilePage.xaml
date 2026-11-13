@@ -441,6 +441,17 @@
                     </VerticalStackLayout>
                 </Border>
 
+                <Label Text="Help" Style="{StaticResource SectionTitle}" />
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="How the numbers work" Style="{StaticResource RowTitle}" />
+                        <Label
+                            Text="What the budget, goals, charts and balances mean, how each is worked out and where the data comes from."
+                            Style="{StaticResource Caption}" />
+                        <Button Text="Open the guide" Style="{StaticResource SecondaryButton}" Command="{Binding OpenGuideCommand}" />
+                    </VerticalStackLayout>
+                </Border>
+
                 <Button
                     Text="Sign out"
                     Style="{StaticResource DangerButton}"

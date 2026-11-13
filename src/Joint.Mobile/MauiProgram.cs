@@ -1,6 +1,7 @@
 using Joint.Mobile.Api;
 using Joint.Mobile.Features.Auth;
 using Joint.Mobile.Features.Budget;
+using Joint.Mobile.Features.Guide;
 using Joint.Mobile.Features.Home;
 using Joint.Mobile.Features.Insights;
 using Joint.Mobile.Features.Lock;
@@ -35,6 +36,9 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IScreenPrivacy, AndroidScreenPrivacy>();
 
 		builder.Services.AddTransient<StartPage>();
+		builder.Services.AddTransient<GuidePage>();
+		builder.Services.AddTransient<LockSetupPage>();
+		builder.Services.AddTransient<LockSetupViewModel>();
 		builder.Services.AddTransient<LockPage>();
 		builder.Services.AddTransient<LockViewModel>();
 		builder.Services.AddTransient<LoginPage>();

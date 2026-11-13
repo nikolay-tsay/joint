@@ -49,6 +49,25 @@ public class LockScreen(AppLock appLock, IServiceProvider services)
         }
     }
 
+    /// <summary>
+    /// Offers the app lock right after signing in, when it is not on yet. Returns once the
+    /// user has turned it on or said "not now". It is asked once per sign-in and never at
+    /// launch; signing out removes the lock, so the next sign-in asks again.
+    /// </summary>
+    public async Task OfferSetupAsync()
+    {
+        if (await appLock.IsEnabledAsync())
+        {
+            return;
+        }
+
+        var page = services.GetRequiredService<LockSetupPage>();
+        var navigation = Shell.Current.Navigation;
+        await navigation.PushModalAsync(page, animated: true);
+        await page.WaitAsync();
+        await navigation.PopModalAsync(animated: true);
+    }
+
     private async Task<bool> ShowAsync()
     {
         var page = services.GetRequiredService<LockPage>();

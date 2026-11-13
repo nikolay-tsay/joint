@@ -530,6 +530,10 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth, AppLock a
         await LoadAsync();
     });
 
+    /// <summary>Opens the guide to how the app's figures are worked out.</summary>
+    [RelayCommand]
+    private static Task OpenGuideAsync() => Shell.Current.GoToAsync(Routes.Guide);
+
     [RelayCommand]
     private Task SignOutNowAsync() => SignOutAsync();
 }
