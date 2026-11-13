@@ -229,7 +229,17 @@
 
                                 <!-- The choices: what every payment to this payee is. -->
                                 <VerticalStackLayout Grid.Row="3" Grid.ColumnSpan="3" Spacing="8" Margin="0,10,0,2" IsVisible="{Binding IsTrackMenuOpen}">
-                                    <Label Text="Track every payment to this payee as" Style="{StaticResource Caption}" />
+                                    <Label Text="Count every payment containing" Style="{StaticResource Caption}" />
+                                    <!-- Pre-filled with a guess; edit it when the bank adds something that changes each time. -->
+                                    <Border Style="{StaticResource Field}">
+                                        <Entry
+                                            Text="{Binding MatchText}"
+                                            Placeholder="Text every payment has in common"
+                                            IsSpellCheckEnabled="False"
+                                            IsTextPredictionEnabled="False"
+                                            ReturnType="Done" />
+                                    </Border>
+                                    <Label Text="as" Style="{StaticResource Caption}" />
                                     <HorizontalStackLayout Spacing="6">
                                         <Border Style="{StaticResource Chip}">
                                             <Border.Triggers>

@@ -48,8 +48,8 @@ public class GetRecurring : IEndpoint
             return TypedResults.Ok(RecurringCalculator.Build([], [], today, span));
         }
 
-        // The payee key is worked out in code, so matching happens in memory over a year
-        // of the household's outgoing transactions: a few thousand small rows.
+        // Matching is "contains", decided in code, so it happens in memory over a year of
+        // the household's outgoing transactions: a few thousand small rows.
         var start = new DateOnly(today.Year, today.Month, 1).AddMonths(1 - MaxMonths);
         var outgoing = await (
             from transaction in db.Transactions
@@ -58,8 +58,10 @@ public class GetRecurring : IEndpoint
             select new { transaction.BookedOn, transaction.Amount, transaction.Currency, transaction.Counterparty, transaction.Description })
             .ToListAsync(cancellationToken);
 
+        var matcher = new RecurringMatcher(payments);
         var rows = outgoing
-            .Select(t => new RecurringRow(t.BookedOn, t.Amount, t.Currency, PaymentKey.From(t.Counterparty, t.Description)))
+            .Select(t => new RecurringRow(
+                t.BookedOn, t.Amount, t.Currency, matcher.Find(t.Counterparty, t.Description)?.MatchKey))
             .ToList();
 
         return TypedResults.Ok(RecurringCalculator.Build(payments, rows, today, span));

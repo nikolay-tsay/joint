@@ -41,6 +41,13 @@ public partial class TransactionItem(
     [NotifyPropertyChangedFor(nameof(RecurringLabel), nameof(IsTracked), nameof(IsSubscription), nameof(IsBill))]
     public partial string? RecurringKind { get; set; }
 
+    /// <summary>
+    /// The text a payment must contain to be counted with this one. It starts as the
+    /// backend's suggestion, or what is already tracked, and the user may edit it in the open row.
+    /// </summary>
+    [ObservableProperty]
+    public partial string? MatchText { get; set; }
+
     /// <summary>True while the row is open: full texts, and the choices for a payment.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsTrackMenuOpen))]
@@ -58,10 +65,11 @@ public partial class TransactionItem(
     public bool IsBill => RecurringKind == RecurringKinds.Bill;
 
     /// <summary>Takes over what the backend now says about this row's payee.</summary>
-    public void SetRecurring(Guid? recurringId, string? kind)
+    public void SetRecurring(Guid? recurringId, string? kind, string? matchText)
     {
         RecurringId = recurringId;
         RecurringKind = kind;
+        MatchText = matchText;
     }
 
     /// <param name="showAccount">Name the account when the list mixes several.</param>
@@ -82,7 +90,7 @@ public partial class TransactionItem(
             transaction.OwnerAvatarUrl,
             Money.FormatSigned(transaction.Amount, transaction.Currency),
             transaction.Amount > 0);
-        item.SetRecurring(transaction.RecurringId, transaction.RecurringKind);
+        item.SetRecurring(transaction.RecurringId, transaction.RecurringKind, transaction.RecurringMatch);
         return item;
     }
 }

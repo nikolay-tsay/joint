@@ -20,8 +20,13 @@ public class RecurringTests
     [InlineData(null, "Nákup: NETFLIX.COM, Los Gatos, dne 3.11.2026, částka 259.00 CZK", "NETFLIX.COM")]
     [InlineData(null, "Nákup: NETFLIX.COM, Los Gatos, dne 3.10.2026, částka 259.00 CZK", "NETFLIX.COM")]
     [InlineData(null, "Rent November", "RENT NOVEMBER")]
+    [InlineData(null, "Spotify P2F3A9C1", "SPOTIFY")]
+    [InlineData("ALBERT 0123", null, "ALBERT")]
+    [InlineData("O2 Czech Republic", null, "O2 CZECH REPUBLIC")]
+    [InlineData("Trading 212", null, "TRADING 212")]
+    [InlineData("20261103", null, "20261103")]
     [InlineData(" ", "", null)]
-    public void A_payee_key_is_the_part_that_stays_the_same_between_payments(
+    public void The_suggested_match_text_is_the_part_that_stays_the_same_between_payments(
         string? counterparty, string? description, string? expected) =>
         Assert.Equal(expected, PaymentKey.From(counterparty, description));
 
@@ -93,6 +98,102 @@ public class RecurringTests
     }
 
     [Fact]
+    public async Task A_payment_reference_in_the_description_does_not_stop_payments_matching()
+    {
+        await using var db = NewDb();
+        var ana = Principal("ana@example.com");
+        var account = await AccountAsync(db, ana);
+        var october = Add(db, account, "2026-10-03", -169, null, "Spotify P1A2B3C4D5");
+        var november = Add(db, account, "2026-11-03", -169, null, "Spotify P9Z8Y7X6W5");
+        await db.SaveChangesAsync();
+        var users = new CurrentUserService(db);
+
+        await MarkRecurring.HandleAsync(
+            new MarkRecurringRequest(november.Id, "Subscription"), ana, users, db, CancellationToken.None);
+
+        Assert.Equal("SPOTIFY", db.RecurringPayments.Single().MatchKey);
+        Assert.Equal("Spotify", db.RecurringPayments.Single().Name);
+        var transactions = await ListAsync(db, ana);
+        Assert.All(transactions, t => Assert.Equal("Subscription", t.RecurringKind));
+        Assert.Contains(transactions, t => t.Id == october.Id);
+    }
+
+    [Fact]
+    public async Task The_match_text_can_be_set_by_hand_and_must_appear_in_the_payment()
+    {
+        await using var db = NewDb();
+        var ana = Principal("ana@example.com");
+        var account = await AccountAsync(db, ana);
+        var rent = Add(db, account, "2026-11-01", -18000, null, "Najem 11/2026 byt Vinohrady");
+        var earlier = Add(db, account, "2026-10-01", -18000, null, "Najem 10/2026 byt Vinohrady");
+        await db.SaveChangesAsync();
+        var users = new CurrentUserService(db);
+
+        var typo = await MarkRecurring.HandleAsync(
+            new MarkRecurringRequest(rent.Id, "Bill", "Vinohrdy"), ana, users, db, CancellationToken.None);
+        var tooShort = await MarkRecurring.HandleAsync(
+            new MarkRecurringRequest(rent.Id, "Bill", "by"), ana, users, db, CancellationToken.None);
+        Assert.IsType<ProblemHttpResult>(typo.Result);
+        Assert.IsType<ProblemHttpResult>(tooShort.Result);
+        Assert.Empty(db.RecurringPayments);
+
+        var marked = await MarkRecurring.HandleAsync(
+            new MarkRecurringRequest(rent.Id, "Bill", " byt vinohrady "), ana, users, db, CancellationToken.None);
+        Assert.IsType<NoContent>(marked.Result);
+        Assert.Equal("BYT VINOHRADY", db.RecurringPayments.Single().MatchKey);
+
+        var transactions = await ListAsync(db, ana);
+        Assert.Equal("Bill", transactions.Single(t => t.Id == earlier.Id).RecurringKind);
+        Assert.Equal("BYT VINOHRADY", transactions.Single(t => t.Id == earlier.Id).RecurringMatch);
+    }
+
+    [Fact]
+    public async Task Marking_a_tracked_payment_again_with_other_text_changes_what_it_matches()
+    {
+        await using var db = NewDb();
+        var ana = Principal("ana@example.com");
+        var account = await AccountAsync(db, ana);
+        var payment = Add(db, account, "2026-11-03", -169, null, "Spotify P9Z8Y7X6W5");
+        await db.SaveChangesAsync();
+        var users = new CurrentUserService(db);
+
+        await MarkRecurring.HandleAsync(
+            new MarkRecurringRequest(payment.Id, "Subscription", "Spotify P9Z8Y7X6W5"), ana, users, db, CancellationToken.None);
+        await MarkRecurring.HandleAsync(
+            new MarkRecurringRequest(payment.Id, "Subscription", "Spotify"), ana, users, db, CancellationToken.None);
+
+        Assert.Equal("SPOTIFY", Assert.Single(db.RecurringPayments).MatchKey);
+    }
+
+    [Fact]
+    public void The_longest_match_text_wins_when_several_fit()
+    {
+        var apple = Payment(RecurringKind.Subscription, "Apple");
+        var music = Payment(RecurringKind.Subscription, "Apple Music");
+        var matcher = new RecurringMatcher([apple, music]);
+
+        Assert.Same(music, matcher.Find("APPLE MUSIC", null));
+        Assert.Same(apple, matcher.Find(null, "Apple.com/bill"));
+        Assert.Null(matcher.Find("Albert", "Groceries"));
+    }
+
+    [Fact]
+    public async Task An_untracked_payment_comes_with_a_suggested_match_text()
+    {
+        await using var db = NewDb();
+        var ana = Principal("ana@example.com");
+        var account = await AccountAsync(db, ana);
+        Add(db, account, "2026-11-03", -169, null, "Spotify P9Z8Y7X6W5");
+        Add(db, account, "2026-11-10", 40000, "Employer");
+        await db.SaveChangesAsync();
+
+        var transactions = await ListAsync(db, ana);
+
+        Assert.Equal("SPOTIFY", transactions.Single(t => t.Amount < 0).RecurringMatch);
+        Assert.Null(transactions.Single(t => t.Amount > 0).RecurringMatch);
+    }
+
+    [Fact]
     public async Task Marking_a_tracked_payee_again_changes_its_kind_instead_of_adding_another()
     {
         await using var db = NewDb();
@@ -156,7 +257,15 @@ public class RecurringTests
     private static RecurringPayment Payment(RecurringKind kind, string name) =>
         new() { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), Kind = kind, Name = name, MatchKey = name.ToUpperInvariant() };
 
-    private static Transaction Add(JointDbContext db, Account account, string bookedOn, decimal amount, string counterparty)
+    private static async Task<List<TransactionResponse>> ListAsync(JointDbContext db, ClaimsPrincipal principal)
+    {
+        var listed = await ListTransactions.HandleAsync(
+            null, null, null, null, principal, new CurrentUserService(db), db, CancellationToken.None);
+        return Assert.IsType<Ok<List<TransactionResponse>>>(listed.Result).Value!;
+    }
+
+    private static Transaction Add(
+        JointDbContext db, Account account, string bookedOn, decimal amount, string? counterparty, string? description = null)
     {
         var transaction = new Transaction
         {
@@ -167,6 +276,7 @@ public class RecurringTests
             Amount = amount,
             Currency = "CZK",
             Counterparty = counterparty,
+            Description = description,
         };
         db.Transactions.Add(transaction);
         return transaction;
