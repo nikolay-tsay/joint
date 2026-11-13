@@ -153,6 +153,10 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
         await LoadAsync();
     }
 
+    /// <summary>Back to Home from one account's transactions.</summary>
+    [RelayCommand]
+    private static Task GoBackAsync() => Shell.Current.GoToAsync("..");
+
     [RelayCommand]
     private void ToggleTypeMenu() => IsTypeMenuOpen = !IsTypeMenuOpen;
 
