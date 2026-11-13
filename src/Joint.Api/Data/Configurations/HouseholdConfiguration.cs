@@ -12,5 +12,6 @@ public class HouseholdConfiguration : IEntityTypeConfiguration<Household>
             .WithOne()
             .HasForeignKey(u => u.HouseholdId)
             .OnDelete(DeleteBehavior.Restrict);
+        builder.Property(h => h.MonthlyBudget).HasPrecision(18, 4);
     }
 }

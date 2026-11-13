@@ -1,5 +1,6 @@
 using Joint.Mobile.Api;
 using Joint.Mobile.Features.Auth;
+using Joint.Mobile.Features.Budget;
 using Joint.Mobile.Features.Home;
 using Joint.Mobile.Features.Insights;
 using Joint.Mobile.Features.Lock;
@@ -40,6 +41,8 @@ public static class MauiProgram
 		builder.Services.AddTransient<HomeViewModel>();
 		builder.Services.AddTransient<TransactionsPage>();
 		builder.Services.AddTransient<TransactionsViewModel>();
+		builder.Services.AddTransient<BudgetPage>();
+		builder.Services.AddTransient<BudgetViewModel>();
 		builder.Services.AddTransient<InsightsPage>();
 		builder.Services.AddTransient<InsightsViewModel>();
 		builder.Services.AddTransient<ProfilePage>();

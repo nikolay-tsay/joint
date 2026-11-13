@@ -4,6 +4,7 @@
     xmlns:auth="clr-namespace:Joint.Mobile.Features.Auth"
     xmlns:home="clr-namespace:Joint.Mobile.Features.Home"
     xmlns:transactions="clr-namespace:Joint.Mobile.Features.Transactions"
+    xmlns:budget="clr-namespace:Joint.Mobile.Features.Budget"
     xmlns:insights="clr-namespace:Joint.Mobile.Features.Insights"
     xmlns:profile="clr-namespace:Joint.Mobile.Features.Profile"
     Title="Joint"
@@ -20,7 +21,18 @@
     <ShellContent Route="start" ContentTemplate="{DataTemplate start:StartPage}" />
     <ShellContent Route="login" ContentTemplate="{DataTemplate auth:LoginPage}" />
 
+    <!-- Home sits in the middle of the bar; the app still opens on it (Routes.Home). -->
     <TabBar Route="main">
+        <ShellContent
+            Title="Budget"
+            Icon="tab_budget.png"
+            Route="budget"
+            ContentTemplate="{DataTemplate budget:BudgetPage}" />
+        <ShellContent
+            Title="Insights"
+            Icon="tab_insights.png"
+            Route="insights"
+            ContentTemplate="{DataTemplate insights:InsightsPage}" />
         <ShellContent
             Title="Home"
             Icon="tab_home.png"
@@ -31,11 +43,6 @@
             Icon="tab_transactions.png"
             Route="transactions"
             ContentTemplate="{DataTemplate transactions:TransactionsPage}" />
-        <ShellContent
-            Title="Insights"
-            Icon="tab_insights.png"
-            Route="insights"
-            ContentTemplate="{DataTemplate insights:InsightsPage}" />
         <ShellContent
             Title="Profile"
             Icon="tab_profile.png"

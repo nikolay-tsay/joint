@@ -83,6 +83,22 @@ public class ApiClient(AuthService auth)
         return await ReadAsync<List<TransactionResponse>>(response, cancellationToken);
     }
 
+    /// <summary>The household's monthly budget and how this month stands against it.</summary>
+    public async Task<BudgetResponse> GetBudgetAsync(CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(HttpMethod.Get, "api/budget", null, cancellationToken);
+        return await ReadAsync<BudgetResponse>(response, cancellationToken);
+    }
+
+    /// <summary>Sets the household's monthly budget; null removes it.</summary>
+    /// <returns>False when the amount was not accepted.</returns>
+    public async Task<bool> SetBudgetAsync(decimal? limit, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Put, "api/budget", new SetBudgetRequest(limit), cancellationToken, HttpStatusCode.BadRequest);
+        return response.IsSuccessStatusCode;
+    }
+
     /// <summary>Income, spending and who spent, for the charts on the Insights tab.</summary>
     public async Task<InsightsResponse> GetInsightsAsync(int months, CancellationToken cancellationToken = default)
     {
