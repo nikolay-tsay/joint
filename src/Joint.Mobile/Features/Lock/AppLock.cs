@@ -8,7 +8,7 @@ namespace Joint.Mobile.Features.Lock;
 /// It guards this device only and is separate from the Google session; signing out
 /// removes it, which is also the way back in for someone who forgot the PIN.
 /// </summary>
-public class AppLock
+public class AppLock(IScreenPrivacy screenPrivacy)
 {
     public const int PinLength = 4;
 
@@ -32,7 +32,14 @@ public class AppLock
         await SecureStorage.Default.SetAsync(
             PinKey, $"{Convert.ToBase64String(salt)}:{Convert.ToBase64String(Hash(pin, salt))}");
         SecureStorage.Default.Remove(FailuresKey);
+        screenPrivacy.SetHidden(true);
     }
+
+    /// <summary>
+    /// Makes the app switcher match the lock: a locked app shows no preview of its contents.
+    /// Called at launch, since the setting does not survive the app being closed.
+    /// </summary>
+    public async Task ApplyScreenPrivacyAsync() => screenPrivacy.SetHidden(await IsEnabledAsync());
 
     public async Task SetBiometricsAsync(bool enabled)
     {
@@ -74,6 +81,7 @@ public class AppLock
         SecureStorage.Default.Remove(PinKey);
         SecureStorage.Default.Remove(BiometricsKey);
         SecureStorage.Default.Remove(FailuresKey);
+        screenPrivacy.SetHidden(false);
     }
 
     private static byte[] Hash(string pin, byte[] salt) =>

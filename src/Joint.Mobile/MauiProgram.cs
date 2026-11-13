@@ -29,6 +29,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<AppLock>();
 		builder.Services.AddSingleton<LockScreen>();
 		builder.Services.AddSingleton<IBiometrics, AndroidBiometrics>();
+		builder.Services.AddSingleton<IScreenPrivacy, AndroidScreenPrivacy>();
 
 		builder.Services.AddTransient<StartPage>();
 		builder.Services.AddTransient<LockPage>();
