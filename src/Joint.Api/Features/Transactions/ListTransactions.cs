@@ -104,7 +104,16 @@ public class ListTransactions : IEndpoint
             {
                 if (t.Amount >= 0)
                 {
-                    return t;
+                    // Money arriving is only ever labelled as a transfer back from an own
+                    // account, so the app can show why it is not counted as income.
+                    return matcher.Find(t.Counterparty, t.Description) is { Kind: RecurringKind.Transfer } transfer
+                        ? t with
+                        {
+                            RecurringId = transfer.Id,
+                            RecurringKind = transfer.Kind.ToString(),
+                            RecurringMatch = transfer.MatchKey,
+                        }
+                        : t;
                 }
 
                 var suggestion = PaymentKey.From(t.Counterparty, t.Description);

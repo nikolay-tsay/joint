@@ -23,7 +23,10 @@ public static class RecurringCalculator
             .ToList();
 
         // Amounts are never converted, so the chart follows the currency most payments are in.
+        // Own transfers are listed with the rest but are not a cost, so they have no say here
+        // and no place in the monthly totals.
         var currency = paid
+            .Where(p => p.Payment.Kind != RecurringKind.Transfer)
             .GroupBy(p => p.Row.Currency)
             .OrderByDescending(g => g.Count())
             .Select(g => g.Key)

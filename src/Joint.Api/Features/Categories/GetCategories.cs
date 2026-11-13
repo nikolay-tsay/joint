@@ -4,6 +4,7 @@ using Joint.Api.Common;
 using Joint.Api.Common.Auth;
 using Joint.Api.Data;
 using Joint.Api.Features.Insights;
+using Joint.Api.Features.Recurring;
 using Joint.Contracts;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -45,7 +46,7 @@ public class GetCategories : IEndpoint
         // A few days either side, so a transfer straddling the month's edge is still paired up.
         var from = first.AddDays(-InternalTransfers.WindowDays);
         var to = first.AddMonths(1).AddDays(InternalTransfers.WindowDays);
-        var rows = await (
+        var loaded = await (
             from transaction in db.Transactions
             join account in db.AccountsOf(user.HouseholdId) on transaction.AccountId equals account.Id
             where transaction.BookedOn >= @from && transaction.BookedOn < to
@@ -53,6 +54,12 @@ public class GetCategories : IEndpoint
                 account.Id, transaction.BookedOn, transaction.Amount, transaction.Currency,
                 transaction.Counterparty, transaction.Description))
             .ToListAsync(cancellationToken);
+
+        // Same as Insights: what was marked as a transfer to the household's own account is not spending.
+        var transfers = new RecurringMatcher(await db.RecurringOf(user.HouseholdId).ToListAsync(cancellationToken));
+        var rows = loaded
+            .Where(r => !transfers.IsOwnTransfer(r.Counterparty, r.Description))
+            .ToList();
 
         var rules = await db.CategoryRulesOf(user.HouseholdId).ToListAsync(cancellationToken);
         return TypedResults.Ok(CategoryCalculator.Build(rows, rules, first));

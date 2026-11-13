@@ -340,6 +340,29 @@
                                                 </Label.Triggers>
                                             </Label>
                                         </Border>
+                                    </HorizontalStackLayout>
+                                    <!-- A second row: four chips do not fit across a phone. -->
+                                    <HorizontalStackLayout Spacing="6">
+                                        <!-- Not a cost at all: money moved to an own account Joint cannot pair up. -->
+                                        <Border Style="{StaticResource Chip}">
+                                            <Border.Triggers>
+                                                <DataTrigger TargetType="Border" Binding="{Binding IsTransfer}" Value="True">
+                                                    <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                                </DataTrigger>
+                                            </Border.Triggers>
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding MarkTransferCommand, Source={RelativeSource AncestorType={x:Type transactions:TransactionsViewModel}}, x:DataType=transactions:TransactionsViewModel}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Border.GestureRecognizers>
+                                            <Label Text="Own transfer" FontSize="13" FontFamily="OpenSansSemibold">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding IsTransfer}" Value="True">
+                                                        <Setter Property="TextColor" Value="White" />
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
+                                        </Border>
                                         <Border Style="{StaticResource Chip}" BackgroundColor="Transparent" IsVisible="{Binding IsTracked}">
                                             <Border.GestureRecognizers>
                                                 <TapGestureRecognizer
@@ -356,7 +379,7 @@
 
                                     <!-- The manual correction for the budget. -->
                                     <Label
-                                        Text="If this is not everyday spending, such as money moved to an account Joint cannot see, keep it out of the budget."
+                                        Text="Own transfer is for money moved to an account of yours that Joint cannot match up, such as Trading 212: it stops counting as spending everywhere. To keep only this one payment out of the budget, exclude it."
                                         Style="{StaticResource Caption}"
                                         Margin="0,6,0,0" />
                                     <HorizontalStackLayout>
