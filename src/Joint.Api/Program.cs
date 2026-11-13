@@ -4,6 +4,7 @@ using Joint.Api.Features.Accounts;
 using Joint.Api.Features.Connections;
 using Joint.Api.Features.Health;
 using Joint.Api.Features.Households;
+using Joint.Api.Features.Insights;
 using Joint.Api.Features.Me;
 using Joint.Api.Features.Sync;
 using Joint.Api.Features.Transactions;
@@ -54,6 +55,7 @@ app.MapEndpoint<ListAccounts>();
 app.MapEndpoint<UpdateAccount>();
 app.MapEndpoint<ListAccountHoldings>();
 app.MapEndpoint<ListTransactions>();
+app.MapEndpoint<GetInsights>();
 
 app.ScheduleSync();
 app.ScheduleInvitationPurge();

@@ -4,6 +4,7 @@
     xmlns:auth="clr-namespace:Joint.Mobile.Features.Auth"
     xmlns:home="clr-namespace:Joint.Mobile.Features.Home"
     xmlns:transactions="clr-namespace:Joint.Mobile.Features.Transactions"
+    xmlns:insights="clr-namespace:Joint.Mobile.Features.Insights"
     xmlns:profile="clr-namespace:Joint.Mobile.Features.Profile"
     Title="Joint"
     FlyoutBehavior="Disabled"
@@ -30,6 +31,11 @@
             Icon="tab_transactions.png"
             Route="transactions"
             ContentTemplate="{DataTemplate transactions:TransactionsPage}" />
+        <ShellContent
+            Title="Insights"
+            Icon="tab_insights.png"
+            Route="insights"
+            ContentTemplate="{DataTemplate insights:InsightsPage}" />
         <ShellContent
             Title="Profile"
             Icon="tab_profile.png"

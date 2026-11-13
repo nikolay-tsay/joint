@@ -83,6 +83,13 @@ public class ApiClient(AuthService auth)
         return await ReadAsync<List<TransactionResponse>>(response, cancellationToken);
     }
 
+    /// <summary>Income, spending and who spent, for the charts on the Insights tab.</summary>
+    public async Task<InsightsResponse> GetInsightsAsync(int months, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(HttpMethod.Get, $"api/insights?months={months}", null, cancellationToken);
+        return await ReadAsync<InsightsResponse>(response, cancellationToken);
+    }
+
     /// <summary>
     /// Asks the backend to sync a connection now. Debug builds only: the backend does not
     /// offer this in production.
