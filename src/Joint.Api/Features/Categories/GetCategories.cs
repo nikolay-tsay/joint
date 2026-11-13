@@ -58,7 +58,7 @@ public class GetCategories : IEndpoint
         // Same as Insights: what was marked as a transfer to the household's own account is not spending.
         var transfers = new RecurringMatcher(await db.RecurringOf(user.HouseholdId).ToListAsync(cancellationToken));
         var rows = loaded
-            .Where(r => !transfers.IsOwnTransfer(r.Counterparty, r.Description))
+            .Where(r => !transfers.IsOwnTransfer(r.Amount, r.Counterparty, r.Description))
             .ToList();
 
         var rules = await db.CategoryRulesOf(user.HouseholdId).ToListAsync(cancellationToken);

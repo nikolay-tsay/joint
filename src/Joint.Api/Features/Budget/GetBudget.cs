@@ -61,10 +61,10 @@ public class GetBudget : IEndpoint
             })
             .ToListAsync(cancellationToken);
 
-        // Money marked as moved to or from the household's own account is not spending at all.
+        // Money marked as moved to the household's own account is not spending at all.
         var matcher = new RecurringMatcher(await db.RecurringOf(user.HouseholdId).ToListAsync(cancellationToken));
         var transactions = loaded
-            .Where(t => !matcher.IsOwnTransfer(t.Counterparty, t.Description))
+            .Where(t => !matcher.IsOwnTransfer(t.Amount, t.Counterparty, t.Description))
             .ToList();
 
         var flows = transactions

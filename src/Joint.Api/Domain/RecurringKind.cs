@@ -10,8 +10,8 @@ public enum RecurringKind
     Bill,
 
     /// <summary>
-    /// Money moved to or from an account of the household's own that the app cannot pair
-    /// up, such as a broker whose movements are not imported. Neither spending nor income.
+    /// Money moved to an account of the household's own that the app cannot pair
+    /// up, such as a broker whose movements are not imported. Not spending.
     /// </summary>
     Transfer,
 }

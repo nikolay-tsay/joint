@@ -80,7 +80,7 @@ public partial class TransactionItem(
 
     public bool IsBill => RecurringKind == RecurringKinds.Bill;
 
-    /// <summary>Marked as money moved to or from an own account, so not counted as spending or income.</summary>
+    /// <summary>Marked as money moved to an own account, so not counted as spending.</summary>
     public bool IsTransfer => RecurringKind == RecurringKinds.Transfer;
 
     /// <summary>Takes over what the backend now says about this row's payee.</summary>

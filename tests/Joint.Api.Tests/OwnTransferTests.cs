@@ -47,7 +47,7 @@ public class OwnTransferTests
     }
 
     [Fact]
-    public async Task Money_coming_back_from_an_own_transfer_payee_is_not_income_and_is_labelled()
+    public async Task Money_arriving_from_an_own_transfer_payee_still_counts_as_income()
     {
         await using var db = NewDb();
         var ana = Principal("ana@example.com");
@@ -61,10 +61,12 @@ public class OwnTransferTests
         await MarkRecurring.HandleAsync(
             new MarkRecurringRequest(topUp.Id, "Transfer"), ana, new CurrentUserService(db), db, CancellationToken.None);
 
-        Assert.Equal(40000m, (await InsightsAsync(db, ana)).Months[^1].Income);
+        // Only the payment is taken out; what arrives under the same name is income as before.
+        var month = (await InsightsAsync(db, ana)).Months[^1];
+        Assert.Equal((41200m, 0m), (month.Income, month.Spending));
         var listed = await ListAsync(db, ana);
         Assert.Equal("Transfer", listed.Single(t => t.Id == topUp.Id).RecurringKind);
-        Assert.Equal("Transfer", listed.Single(t => t.Id == withdrawal.Id).RecurringKind);
+        Assert.Null(listed.Single(t => t.Id == withdrawal.Id).RecurringKind);
         Assert.Null(listed.Single(t => t.Id == salary.Id).RecurringKind);
     }
 

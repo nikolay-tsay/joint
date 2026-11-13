@@ -6,7 +6,7 @@ public static class RecurringKinds
     public const string Subscription = "Subscription";
     public const string Bill = "Bill";
 
-    /// <summary>Money moved to or from an own account the app cannot pair up; not spending.</summary>
+    /// <summary>Money moved to an own account the app cannot pair up; not spending.</summary>
     public const string Transfer = "Transfer";
 
     public static string Label(string kind) => kind switch
