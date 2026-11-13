@@ -1,6 +1,7 @@
 <ContentPage
     x:Class="Joint.Mobile.Features.Budget.BudgetPage"
     xmlns:budget="clr-namespace:Joint.Mobile.Features.Budget"
+    xmlns:common="clr-namespace:Joint.Mobile.Common"
     x:DataType="budget:BudgetViewModel"
     Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
@@ -11,140 +12,403 @@
             <Setter Property="FontFamily" Value="OpenSansSemibold" />
             <Setter Property="HorizontalTextAlignment" Value="End" />
         </Style>
+
+        <!-- The caption inside a chip; the selected one is recolored by a trigger. -->
+        <Style x:Key="ChipLabel" TargetType="Label">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontFamily" Value="OpenSansSemibold" />
+        </Style>
+
+        <!-- One saving or investment goal. -->
+        <DataTemplate x:Key="GoalRow" x:DataType="budget:GoalItem">
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Label Text="{Binding Name}" Style="{StaticResource RowTitle}" />
+                        <Label
+                            Grid.Column="1"
+                            Text="{Binding Percent}"
+                            FontSize="16"
+                            FontFamily="OpenSansSemibold"
+                            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                    </Grid>
+                    <ProgressBar
+                        Progress="{Binding Progress}"
+                        ProgressColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                    <Label Text="{Binding SavedOf}" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Label Text="{Binding Detail}" Style="{StaticResource Caption}" VerticalOptions="Center" />
+                        <Label
+                            Grid.Column="1"
+                            Text="Change"
+                            FontSize="13"
+                            FontFamily="OpenSansSemibold"
+                            Padding="8,4,0,4"
+                            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Goals.StartEditCommand, Source={RelativeSource AncestorType={x:Type budget:BudgetViewModel}}, x:DataType=budget:BudgetViewModel}"
+                                    CommandParameter="{Binding .}" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+        </DataTemplate>
+
+        <!-- ===== Budget page ===== -->
+        <DataTemplate x:Key="BudgetTemplate" x:DataType="budget:BudgetView">
+            <RefreshView IsRefreshing="{Binding Model.IsRefreshing}" Command="{Binding Model.LoadCommand}">
+                <ScrollView>
+                    <VerticalStackLayout Padding="12,12,12,24" Spacing="12">
+                        <Border Style="{StaticResource Card}" IsVisible="{Binding Model.HasNoData}">
+                            <Label
+                                Text="Nothing to budget yet. Once a connected account has transactions, you can set a monthly budget here."
+                                Style="{StaticResource Caption}" />
+                        </Border>
+
+                        <VerticalStackLayout Spacing="12" IsVisible="{Binding Model.HasData}">
+
+                            <!-- With a budget: what is left of it. -->
+                            <Border Style="{StaticResource HeroCard}" IsVisible="{Binding Model.IsSummaryVisible}">
+                                <VerticalStackLayout Spacing="4">
+                                    <Label Text="{Binding Model.Title}" TextColor="White" Opacity="0.8" FontSize="13" />
+                                    <Label Text="{Binding Model.LeftAmount}" TextColor="White" FontSize="32" FontFamily="OpenSansSemibold" />
+                                    <Label Text="{Binding Model.LeftTitle}" TextColor="White" Opacity="0.8" FontSize="13" />
+                                    <ProgressBar Progress="{Binding Model.Progress}" ProgressColor="White" Margin="0,10,0,2" />
+                                    <Label Text="{Binding Model.SpentOf}" TextColor="White" FontSize="14" />
+                                    <Label
+                                        Text="{Binding Model.DailyAllowance}"
+                                        TextColor="White"
+                                        Opacity="0.8"
+                                        FontSize="13"
+                                        IsVisible="{Binding Model.DailyAllowance, Converter={StaticResource HasText}}" />
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <!-- With a budget: where the month is heading. -->
+                            <Border Style="{StaticResource Card}" IsVisible="{Binding Model.IsSummaryVisible}">
+                                <VerticalStackLayout Spacing="6">
+                                    <Label Text="Where this month is heading" Style="{StaticResource RowTitle}" />
+                                    <Label Text="{Binding Model.Projection}" Style="{StaticResource Caption}" />
+                                    <Label
+                                        Text="{Binding Model.Verdict}"
+                                        FontFamily="OpenSansSemibold"
+                                        TextColor="{AppThemeBinding Light={StaticResource Positive}, Dark={StaticResource PositiveDark}}">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding Model.IsProjectedOver}" Value="True">
+                                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <!-- Without a budget: an invitation to set one. -->
+                            <Border Style="{StaticResource Card}" IsVisible="{Binding Model.IsPromptVisible}">
+                                <VerticalStackLayout Spacing="12">
+                                    <Label Text="No budget yet" Style="{StaticResource RowTitle}" />
+                                    <Label
+                                        Text="Set what your household wants to spend per month on everyday things, after subscriptions and regular payments. This page then shows what is left and where the month is heading."
+                                        Style="{StaticResource Caption}" />
+                                    <Label Text="{Binding Model.Projection}" Style="{StaticResource Caption}" />
+                                    <Button Text="Set a monthly budget" Style="{StaticResource PrimaryButton}" Command="{Binding Model.StartEditCommand}" />
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <!-- Typing the budget, in place. -->
+                            <Border Style="{StaticResource Card}" IsVisible="{Binding Model.IsEditing}">
+                                <VerticalStackLayout Spacing="12">
+                                    <Label Text="Monthly budget" Style="{StaticResource RowTitle}" />
+                                    <Label
+                                        Text="One amount for the whole household's everyday spending in a calendar month. Payments you track as subscriptions or regular payments do not count against it."
+                                        Style="{StaticResource Caption}" />
+                                    <Border Style="{StaticResource Field}">
+                                        <Entry
+                                            Text="{Binding Model.LimitInput}"
+                                            Placeholder="{Binding Model.LimitPlaceholder}"
+                                            Keyboard="Numeric"
+                                            ReturnType="Done"
+                                            ReturnCommand="{Binding Model.SaveCommand}"
+                                            IsVisible="{Binding Model.IsEditing}">
+                                            <Entry.Behaviors>
+                                                <common:FocusWhenShownBehavior />
+                                            </Entry.Behaviors>
+                                        </Entry>
+                                    </Border>
+                                    <Label
+                                        Text="{Binding Model.LimitError}"
+                                        Style="{StaticResource ErrorText}"
+                                        IsVisible="{Binding Model.LimitError, Converter={StaticResource HasText}}" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                        <Button Text="Save" Style="{StaticResource PrimaryButton}" Command="{Binding Model.SaveCommand}" />
+                                        <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding Model.CancelEditCommand}" />
+                                    </Grid>
+                                    <Button
+                                        Text="Remove the budget"
+                                        Style="{StaticResource DangerButton}"
+                                        IsVisible="{Binding Model.HasBudget}"
+                                        Command="{Binding Model.RemoveCommand}" />
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <!-- The month's figures. -->
+                            <Border Style="{StaticResource Card}">
+                                <VerticalStackLayout Spacing="10">
+                                    <Label Text="This month so far" Style="{StaticResource RowTitle}" />
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                                        <Label Text="Subscriptions and regular payments" />
+                                        <Label Grid.Column="1" Text="{Binding Model.FixedPaid}" Style="{StaticResource FigureAmount}" />
+                                        <Label Grid.Row="1" Text="Everything else" />
+                                        <Label Grid.Row="1" Grid.Column="1" Text="{Binding Model.Spent}" Style="{StaticResource FigureAmount}" />
+                                        <Label Grid.Row="2" Text="Spent in total" FontFamily="OpenSansSemibold" />
+                                        <Label Grid.Row="2" Grid.Column="1" Text="{Binding Model.Total}" Style="{StaticResource FigureAmount}" />
+                                        <Label Grid.Row="3" Text="Fixed costs still to come" Style="{StaticResource Caption}" />
+                                        <Label Grid.Row="3" Grid.Column="1" Text="{Binding Model.FixedExpected}" Style="{StaticResource Caption}" HorizontalTextAlignment="End" />
+                                    </Grid>
+                                    <Label
+                                        Text="Fixed costs are the payments you track as subscriptions or regular payments. One paid last month and not yet this month counts as still to come."
+                                        Style="{StaticResource Caption}" />
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <Border Style="{StaticResource Card}">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <Label Text="Everyday spending last month" />
+                                    <Label Grid.Column="1" Text="{Binding Model.LastMonth}" Style="{StaticResource FigureAmount}" />
+                                </Grid>
+                            </Border>
+
+                            <Button
+                                Text="Change the budget"
+                                Style="{StaticResource SecondaryButton}"
+                                IsVisible="{Binding Model.IsSummaryVisible}"
+                                Command="{Binding Model.StartEditCommand}" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </ScrollView>
+            </RefreshView>
+        </DataTemplate>
+
+        <!-- ===== Goals page: saving goals and investment goals ===== -->
+        <DataTemplate x:Key="GoalsTemplate" x:DataType="budget:BudgetView">
+            <RefreshView IsRefreshing="{Binding Model.Goals.IsRefreshing}" Command="{Binding Model.Goals.LoadCommand}">
+                <ScrollView>
+                    <VerticalStackLayout Padding="12,12,12,24" Spacing="12">
+                        <Label
+                            Text="{Binding Model.Goals.Error}"
+                            Style="{StaticResource ErrorText}"
+                            IsVisible="{Binding Model.Goals.Error, Converter={StaticResource HasText}}" />
+
+                        <Border Style="{StaticResource Card}" IsVisible="{Binding Model.Goals.IsEmptyVisible}">
+                            <Label
+                                Text="No goals yet. Add one for something you are putting money aside for, like a holiday or a reserve, or for a portfolio you are building. A goal can follow the balance of an account, or you can keep the amount by hand."
+                                Style="{StaticResource Caption}" />
+                        </Border>
+
+                        <!-- Adding or changing a goal, in place. -->
+                        <Border Style="{StaticResource Card}" IsVisible="{Binding Model.Goals.IsFormOpen}">
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="{Binding Model.Goals.FormTitle}" Style="{StaticResource RowTitle}" />
+
+                                <!-- Which list the goal belongs to. -->
+                                <HorizontalStackLayout Spacing="6">
+                                    <Border Style="{StaticResource Chip}">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding Model.Goals.IsSavingKind}" Value="True">
+                                                <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Model.Goals.PickSavingCommand}" />
+                                        </Border.GestureRecognizers>
+                                        <Label Text="Saving" Style="{StaticResource ChipLabel}">
+                                            <Label.Triggers>
+                                                <DataTrigger TargetType="Label" Binding="{Binding Model.Goals.IsSavingKind}" Value="True">
+                                                    <Setter Property="TextColor" Value="White" />
+                                                </DataTrigger>
+                                            </Label.Triggers>
+                                        </Label>
+                                    </Border>
+                                    <Border Style="{StaticResource Chip}">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding Model.Goals.IsInvestmentKind}" Value="True">
+                                                <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Model.Goals.PickInvestmentCommand}" />
+                                        </Border.GestureRecognizers>
+                                        <Label Text="Investment" Style="{StaticResource ChipLabel}">
+                                            <Label.Triggers>
+                                                <DataTrigger TargetType="Label" Binding="{Binding Model.Goals.IsInvestmentKind}" Value="True">
+                                                    <Setter Property="TextColor" Value="White" />
+                                                </DataTrigger>
+                                            </Label.Triggers>
+                                        </Label>
+                                    </Border>
+                                </HorizontalStackLayout>
+
+                                <Border Style="{StaticResource Field}">
+                                    <Entry
+                                        Text="{Binding Model.Goals.NameInput}"
+                                        Placeholder="{Binding Model.Goals.NamePlaceholder}"
+                                        MaxLength="100"
+                                        ReturnType="Next"
+                                        IsVisible="{Binding Model.Goals.IsFormOpen}">
+                                        <Entry.Behaviors>
+                                            <common:FocusWhenShownBehavior />
+                                        </Entry.Behaviors>
+                                    </Entry>
+                                </Border>
+                                <Border Style="{StaticResource Field}">
+                                    <Entry
+                                        Text="{Binding Model.Goals.TargetInput}"
+                                        Placeholder="Target amount"
+                                        Keyboard="Numeric"
+                                        ReturnType="Done" />
+                                </Border>
+
+                                <Label Text="Where the progress comes from" Style="{StaticResource Caption}" />
+                                <!-- One line; scrolls sideways when there are many accounts. -->
+                                <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                                    <HorizontalStackLayout BindableLayout.ItemsSource="{Binding Model.Goals.Sources}" Spacing="6">
+                                        <BindableLayout.ItemTemplate>
+                                            <DataTemplate x:DataType="budget:GoalSourceItem">
+                                                <Border Style="{StaticResource Chip}">
+                                                    <Border.Triggers>
+                                                        <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                                        </DataTrigger>
+                                                    </Border.Triggers>
+                                                    <Border.GestureRecognizers>
+                                                        <TapGestureRecognizer
+                                                            Command="{Binding Goals.SelectSourceCommand, Source={RelativeSource AncestorType={x:Type budget:BudgetViewModel}}, x:DataType=budget:BudgetViewModel}"
+                                                            CommandParameter="{Binding .}" />
+                                                    </Border.GestureRecognizers>
+                                                    <Label Text="{Binding Label}" Style="{StaticResource ChipLabel}">
+                                                        <Label.Triggers>
+                                                            <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                                                <Setter Property="TextColor" Value="White" />
+                                                            </DataTrigger>
+                                                        </Label.Triggers>
+                                                    </Label>
+                                                </Border>
+                                            </DataTemplate>
+                                        </BindableLayout.ItemTemplate>
+                                    </HorizontalStackLayout>
+                                </ScrollView>
+
+                                <Border Style="{StaticResource Field}" IsVisible="{Binding Model.Goals.IsKeptByHand}">
+                                    <Entry
+                                        Text="{Binding Model.Goals.SavedInput}"
+                                        Placeholder="{Binding Model.Goals.SavedPlaceholder}"
+                                        Keyboard="Numeric"
+                                        ReturnType="Done" />
+                                </Border>
+                                <Label
+                                    Text="The goal's progress is this account's balance, updated with every sync."
+                                    Style="{StaticResource Caption}"
+                                    IsVisible="{Binding Model.Goals.IsFollowing}" />
+
+                                <Label
+                                    Text="{Binding Model.Goals.FormError}"
+                                    Style="{StaticResource ErrorText}"
+                                    IsVisible="{Binding Model.Goals.FormError, Converter={StaticResource HasText}}" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                    <Button Text="Save" Style="{StaticResource PrimaryButton}" Command="{Binding Model.Goals.SaveCommand}" />
+                                    <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding Model.Goals.CancelFormCommand}" />
+                                </Grid>
+                                <Button
+                                    Text="{Binding Model.Goals.DeleteLabel}"
+                                    Style="{StaticResource DangerButton}"
+                                    IsVisible="{Binding Model.Goals.CanDelete}"
+                                    Command="{Binding Model.Goals.DeleteCommand}" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <!-- Saving goals. -->
+                        <Label Text="Saving goals" Style="{StaticResource SectionTitle}" IsVisible="{Binding Model.Goals.HasSavingGoals}" />
+                        <VerticalStackLayout
+                            BindableLayout.ItemsSource="{Binding Model.Goals.SavingGoals}"
+                            BindableLayout.ItemTemplate="{StaticResource GoalRow}"
+                            Spacing="12" />
+
+                        <!-- Investment goals. -->
+                        <Label Text="Investment goals" Style="{StaticResource SectionTitle}" IsVisible="{Binding Model.Goals.HasInvestmentGoals}" />
+                        <VerticalStackLayout
+                            BindableLayout.ItemsSource="{Binding Model.Goals.InvestmentGoals}"
+                            BindableLayout.ItemTemplate="{StaticResource GoalRow}"
+                            Spacing="12" />
+
+                        <Button
+                            Text="Add a goal"
+                            Style="{StaticResource PrimaryButton}"
+                            IsVisible="{Binding Model.Goals.IsAddVisible}"
+                            Command="{Binding Model.Goals.StartAddCommand}" />
+                    </VerticalStackLayout>
+                </ScrollView>
+            </RefreshView>
+        </DataTemplate>
+
+        <budget:BudgetViewTemplateSelector
+            x:Key="ViewTemplate"
+            Budget="{StaticResource BudgetTemplate}"
+            Goals="{StaticResource GoalsTemplate}" />
     </ContentPage.Resources>
 
-    <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
-        <ScrollView>
-            <VerticalStackLayout Padding="12,24,12,24" Spacing="12">
-                <Label Text="Budget" FontSize="24" FontFamily="OpenSansSemibold" Margin="4,0" />
+    <Grid RowDefinitions="Auto,Auto,Auto,*">
+        <Label Text="Budget" FontSize="24" FontFamily="OpenSansSemibold" Margin="16,24,16,0" />
 
-                <Label
-                    Text="{Binding Error}"
-                    Style="{StaticResource ErrorText}"
-                    IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
+        <!-- The two pages as tabs. Tapping one slides to it; so does dragging the page sideways. -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,1" Margin="12,12,12,0">
+            <Grid ColumnDefinitions="*,*">
+                <Grid RowDefinitions="Auto,3" RowSpacing="8" Padding="0,6,0,0">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ShowBudgetCommand}" />
+                    </Grid.GestureRecognizers>
+                    <Label Text="Budget" Style="{StaticResource TabLabel}">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsBudgetTab}" Value="True">
+                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    <BoxView Grid.Row="1" Style="{StaticResource TabLine}" IsVisible="{Binding IsBudgetTab}" />
+                </Grid>
+                <Grid Grid.Column="1" RowDefinitions="Auto,3" RowSpacing="8" Padding="0,6,0,0">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ShowGoalsCommand}" />
+                    </Grid.GestureRecognizers>
+                    <Label Text="Goals" Style="{StaticResource TabLabel}">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsGoalsTab}" Value="True">
+                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    <BoxView Grid.Row="1" Style="{StaticResource TabLine}" IsVisible="{Binding IsGoalsTab}" />
+                </Grid>
+            </Grid>
+            <BoxView Grid.Row="1" BackgroundColor="Transparent" Color="{AppThemeBinding Light={StaticResource InsetStroke}, Dark={StaticResource InsetStrokeDark}}" />
+        </Grid>
 
-                <Border Style="{StaticResource Card}" IsVisible="{Binding HasNoData}">
-                    <Label
-                        Text="Nothing to budget yet. Once a connected account has transactions, you can set a monthly budget here."
-                        Style="{StaticResource Caption}" />
-                </Border>
+        <Label
+            Grid.Row="2"
+            Text="{Binding Error}"
+            Style="{StaticResource ErrorText}"
+            Margin="16,8,16,0"
+            IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
 
-                <VerticalStackLayout Spacing="12" IsVisible="{Binding HasData}">
-
-                    <!-- With a budget: what is left of it. -->
-                    <Border Style="{StaticResource HeroCard}" IsVisible="{Binding IsSummaryVisible}">
-                        <VerticalStackLayout Spacing="4">
-                            <Label Text="{Binding Title}" TextColor="White" Opacity="0.8" FontSize="13" />
-                            <Label Text="{Binding LeftAmount}" TextColor="White" FontSize="32" FontFamily="OpenSansSemibold" />
-                            <Label Text="{Binding LeftTitle}" TextColor="White" Opacity="0.8" FontSize="13" />
-                            <ProgressBar Progress="{Binding Progress}" ProgressColor="White" Margin="0,10,0,2" />
-                            <Label Text="{Binding SpentOf}" TextColor="White" FontSize="14" />
-                            <Label
-                                Text="{Binding DailyAllowance}"
-                                TextColor="White"
-                                Opacity="0.8"
-                                FontSize="13"
-                                IsVisible="{Binding DailyAllowance, Converter={StaticResource HasText}}" />
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- With a budget: where the month is heading. -->
-                    <Border Style="{StaticResource Card}" IsVisible="{Binding IsSummaryVisible}">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="Where this month is heading" Style="{StaticResource RowTitle}" />
-                            <Label Text="{Binding Projection}" Style="{StaticResource Caption}" />
-                            <Label
-                                Text="{Binding Verdict}"
-                                FontFamily="OpenSansSemibold"
-                                TextColor="{AppThemeBinding Light={StaticResource Positive}, Dark={StaticResource PositiveDark}}">
-                                <Label.Triggers>
-                                    <DataTrigger TargetType="Label" Binding="{Binding IsProjectedOver}" Value="True">
-                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}" />
-                                    </DataTrigger>
-                                </Label.Triggers>
-                            </Label>
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Without a budget: an invitation to set one. -->
-                    <Border Style="{StaticResource Card}" IsVisible="{Binding IsPromptVisible}">
-                        <VerticalStackLayout Spacing="12">
-                            <Label Text="No budget yet" Style="{StaticResource RowTitle}" />
-                            <Label
-                                Text="Set what your household wants to spend per month on everyday things, after subscriptions and regular payments. This page then shows what is left and where the month is heading."
-                                Style="{StaticResource Caption}" />
-                            <Label Text="{Binding Projection}" Style="{StaticResource Caption}" />
-                            <Button Text="Set a monthly budget" Style="{StaticResource PrimaryButton}" Command="{Binding StartEditCommand}" />
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Typing the budget, in place. -->
-                    <Border Style="{StaticResource Card}" IsVisible="{Binding IsEditing}">
-                        <VerticalStackLayout Spacing="12">
-                            <Label Text="Monthly budget" Style="{StaticResource RowTitle}" />
-                            <Label
-                                Text="One amount for the whole household's everyday spending in a calendar month. Payments you track as subscriptions or regular payments do not count against it."
-                                Style="{StaticResource Caption}" />
-                            <Border Style="{StaticResource Field}">
-                                <Entry
-                                    x:Name="LimitEntry"
-                                    Text="{Binding LimitInput}"
-                                    Placeholder="{Binding LimitPlaceholder}"
-                                    Keyboard="Numeric"
-                                    ReturnType="Done"
-                                    ReturnCommand="{Binding SaveCommand}" />
-                            </Border>
-                            <Label
-                                Text="{Binding LimitError}"
-                                Style="{StaticResource ErrorText}"
-                                IsVisible="{Binding LimitError, Converter={StaticResource HasText}}" />
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                                <Button Text="Save" Style="{StaticResource PrimaryButton}" Command="{Binding SaveCommand}" />
-                                <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding CancelEditCommand}" />
-                            </Grid>
-                            <Button
-                                Text="Remove the budget"
-                                Style="{StaticResource DangerButton}"
-                                IsVisible="{Binding HasBudget}"
-                                Command="{Binding RemoveCommand}" />
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- The month's figures. -->
-                    <Border Style="{StaticResource Card}">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="This month so far" Style="{StaticResource RowTitle}" />
-                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
-                                <Label Text="Subscriptions and regular payments" />
-                                <Label Grid.Column="1" Text="{Binding FixedPaid}" Style="{StaticResource FigureAmount}" />
-                                <Label Grid.Row="1" Text="Everything else" />
-                                <Label Grid.Row="1" Grid.Column="1" Text="{Binding Spent}" Style="{StaticResource FigureAmount}" />
-                                <Label Grid.Row="2" Text="Spent in total" FontFamily="OpenSansSemibold" />
-                                <Label Grid.Row="2" Grid.Column="1" Text="{Binding Total}" Style="{StaticResource FigureAmount}" />
-                                <Label Grid.Row="3" Text="Fixed costs still to come" Style="{StaticResource Caption}" />
-                                <Label Grid.Row="3" Grid.Column="1" Text="{Binding FixedExpected}" Style="{StaticResource Caption}" HorizontalTextAlignment="End" />
-                            </Grid>
-                            <Label
-                                Text="Fixed costs are the payments you track as subscriptions or regular payments. One paid last month and not yet this month counts as still to come."
-                                Style="{StaticResource Caption}" />
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <Border Style="{StaticResource Card}">
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                            <Label Text="Everyday spending last month" />
-                            <Label Grid.Column="1" Text="{Binding LastMonth}" Style="{StaticResource FigureAmount}" />
-                        </Grid>
-                    </Border>
-
-                    <Button
-                        Text="Change the budget"
-                        Style="{StaticResource SecondaryButton}"
-                        IsVisible="{Binding IsSummaryVisible}"
-                        Command="{Binding StartEditCommand}" />
-                </VerticalStackLayout>
-            </VerticalStackLayout>
-        </ScrollView>
-    </RefreshView>
+        <!-- A native pager: the page follows the finger and snaps to the nearer side. -->
+        <CarouselView
+            Grid.Row="3"
+            ItemsSource="{Binding Views}"
+            ItemTemplate="{StaticResource ViewTemplate}"
+            Position="{Binding TabIndex, Mode=TwoWay}"
+            Loop="False"
+            IsBounceEnabled="False"
+            HorizontalScrollBarVisibility="Never" />
+    </Grid>
 
 </ContentPage>

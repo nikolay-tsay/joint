@@ -1,4 +1,3 @@
-using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Joint.Contracts;
@@ -13,9 +12,35 @@ namespace Joint.Mobile.Features.Budget;
 /// month is heading. Subscriptions and regular payments are outside it and only shown for
 /// context. The budget is set and changed in place on the page.
 /// </summary>
-public partial class BudgetViewModel(ApiClient api, AuthService auth) : PageViewModel(auth)
+public partial class BudgetViewModel(ApiClient api, AuthService auth, GoalsViewModel goals) : PageViewModel(auth)
 {
     private string _currency = "";
+    private IReadOnlyList<BudgetView>? _views;
+
+    /// <summary>The saving goals, shown on the page's second tab.</summary>
+    public GoalsViewModel Goals { get; } = goals;
+
+    /// <summary>The pages the carousel slides between, in tab order.</summary>
+    public IReadOnlyList<BudgetView> Views =>
+        _views ??= [new BudgetView(BudgetView.Budget, this), new BudgetView(BudgetView.Goals, this)];
+
+    /// <summary>
+    /// Which page is showing. The carousel sets it when the user drags, and slides to it
+    /// when a tab sets it.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsBudgetTab), nameof(IsGoalsTab))]
+    public partial int TabIndex { get; set; }
+
+    public bool IsBudgetTab => TabIndex == 0;
+
+    public bool IsGoalsTab => TabIndex == 1;
+
+    [RelayCommand]
+    private void ShowBudget() => TabIndex = 0;
+
+    [RelayCommand]
+    private void ShowGoals() => TabIndex = 1;
 
     /// <summary>"November budget".</summary>
     [ObservableProperty]
@@ -119,7 +144,7 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth) : PageView
     [RelayCommand]
     private async Task SaveAsync()
     {
-        if (!TryReadAmount(LimitInput, out var limit) || limit <= 0)
+        if (!Money.TryRead(LimitInput, out var limit) || limit <= 0)
         {
             LimitError = "Enter an amount above zero.";
             return;
@@ -166,7 +191,7 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth) : PageView
             return;
         }
 
-        LimitInput = limit.ToString("0.##", CultureInfo.CurrentCulture);
+        LimitInput = Money.ForInput(limit);
 
         var left = limit - budget.Spent;
         LeftTitle = left < 0 ? "Over budget" : "Left to spend";
@@ -202,12 +227,4 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth) : PageView
     }
 
     private string Format(decimal amount) => Money.Format(amount, _currency);
-
-    /// <summary>Reads an amount typed with either a comma or a point, and with or without spaces.</summary>
-    private static bool TryReadAmount(string? text, out decimal amount)
-    {
-        var cleaned = (text ?? "").Replace(" ", "").Replace(" ", "");
-        return decimal.TryParse(cleaned, NumberStyles.Number, CultureInfo.CurrentCulture, out amount)
-            || decimal.TryParse(cleaned, NumberStyles.Number, CultureInfo.InvariantCulture, out amount);
-    }
 }
