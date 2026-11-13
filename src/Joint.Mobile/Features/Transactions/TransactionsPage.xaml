@@ -101,10 +101,46 @@
                         Style="{StaticResource ErrorText}"
                         IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
                     <Label
-                        Text="No transactions here yet."
+                        Text="Nothing here yet."
                         Style="{StaticResource Caption}"
                         Margin="4,0"
                         IsVisible="{Binding IsEmpty}" />
+
+                    <!-- An investment account: what it holds. -->
+                    <Label Text="Holdings" Style="{StaticResource SectionTitle}" IsVisible="{Binding HasHoldings}" />
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Holdings}" Spacing="6">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="transactions:HoldingItem">
+                                <Border Style="{StaticResource Card}" Padding="16,12">
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="2">
+                                        <Label Text="{Binding Name}" Style="{StaticResource RowTitle}" />
+                                        <Label
+                                            Grid.Column="1"
+                                            Text="{Binding Value}"
+                                            FontSize="16"
+                                            FontFamily="OpenSansSemibold"
+                                            HorizontalTextAlignment="End" />
+                                        <Label Grid.Row="1" Text="{Binding Detail}" Style="{StaticResource Caption}" />
+                                        <Label
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            Text="{Binding ProfitLoss}"
+                                            Style="{StaticResource Caption}"
+                                            HorizontalTextAlignment="End">
+                                            <Label.Triggers>
+                                                <DataTrigger TargetType="Label" Binding="{Binding IsGain}" Value="True">
+                                                    <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Positive}, Dark={StaticResource PositiveDark}}" />
+                                                </DataTrigger>
+                                                <DataTrigger TargetType="Label" Binding="{Binding IsLoss}" Value="True">
+                                                    <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}" />
+                                                </DataTrigger>
+                                            </Label.Triggers>
+                                        </Label>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </CollectionView.Header>
 

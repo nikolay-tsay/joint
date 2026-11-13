@@ -92,7 +92,12 @@ Bank data comes through [Lunch Flow](https://www.lunchflow.app/). Each person:
    "Account Access", and copies the API key.
 3. Pastes the key into the app under "Connect Lunch Flow".
 
-The key is stored encrypted with `Credentials:EncryptionKey`. Locally, set it with:
+Investments come straight from Trading 212. In its app, open Settings, then API, generate
+a key with only the "Account data" and "Portfolio" permissions, and paste the key and the
+secret into the app under Connect. The key cannot trade. Only Invest and Stocks ISA
+accounts are supported by Trading 212's API.
+
+Credentials are stored encrypted with `Credentials:EncryptionKey`. Locally, set it with:
 
 ```bash
 dotnet user-secrets set "Credentials:EncryptionKey" "<output of: openssl rand -base64 32>" --project src/Joint.Api

@@ -26,7 +26,7 @@ public partial class ConnectionItem(Guid id, string title, string status, bool i
 
     public static ConnectionItem From(ConnectionResponse connection)
     {
-        var provider = connection.Provider == "LunchFlow" ? "Lunch Flow" : connection.Provider;
+        var provider = ProviderOption.DisplayName(connection.Provider);
         var status = connection.Status switch
         {
             "Active" when connection.LastSyncedAt is { } synced => $"Synced {synced.ToLocalTime():g}",

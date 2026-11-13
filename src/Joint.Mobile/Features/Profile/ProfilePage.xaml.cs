@@ -32,6 +32,7 @@ public partial class ProfilePage : ContentPage
         else if (e.PropertyName == nameof(ProfileViewModel.ConnectStep))
         {
             SyncKeyboard(LunchFlowKeyEntry, _viewModel.IsLunchFlowOpen);
+            SyncKeyboard(Trading212KeyEntry, _viewModel.IsTrading212Open);
         }
     }
 

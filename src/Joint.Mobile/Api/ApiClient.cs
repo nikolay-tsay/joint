@@ -104,6 +104,33 @@ public class ApiClient(AuthService auth)
         };
     }
 
+    /// <returns>Null on success, otherwise a message to show the user.</returns>
+    public async Task<string?> ConnectTrading212Async(
+        string apiKey, string apiSecret, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Post, "api/connections/trading212", new ConnectTrading212Request(apiKey, apiSecret),
+            cancellationToken, HttpStatusCode.BadRequest, HttpStatusCode.BadGateway);
+        return response.StatusCode switch
+        {
+            HttpStatusCode.BadRequest =>
+                "Trading 212 rejected this key. Check the key and secret, and that the key has the "
+                + "Account data and Portfolio permissions.",
+            HttpStatusCode.BadGateway => "Trading 212 could not be reached. Try again shortly.",
+            _ => null,
+        };
+    }
+
+    /// <summary>What an investment account currently holds, largest position first.</summary>
+    public async Task<List<HoldingResponse>> GetHoldingsAsync(Guid accountId, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Get, $"api/accounts/{accountId}/holdings", null, cancellationToken, HttpStatusCode.NotFound);
+        return response.IsSuccessStatusCode
+            ? await ReadAsync<List<HoldingResponse>>(response, cancellationToken)
+            : [];
+    }
+
     /// <param name="expected">Non-success statuses the caller handles itself; any other failure throws.</param>
     private async Task<HttpResponseMessage> SendAsync(
         HttpMethod method, string path, object? body, CancellationToken cancellationToken,

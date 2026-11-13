@@ -130,6 +130,8 @@ public class ConnectionSyncer(
                 Quantity = holding.Quantity,
                 AveragePrice = holding.AveragePrice,
                 CurrentPrice = holding.CurrentPrice,
+                Value = holding.Value,
+                UnrealizedProfitLoss = holding.UnrealizedProfitLoss,
                 Currency = holding.Currency,
             });
         }

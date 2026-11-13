@@ -6,4 +6,5 @@ public enum ConnectStep
     Closed,
     ChoosingProvider,
     LunchFlow,
+    Trading212,
 }

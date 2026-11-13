@@ -268,6 +268,41 @@
                                 <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding CancelConnectCommand}" />
                             </Grid>
                         </VerticalStackLayout>
+
+                        <!-- Connect, step 2 for Trading 212: key and secret. -->
+                        <VerticalStackLayout Spacing="12" IsVisible="{Binding IsTrading212Open}">
+                            <Label Text="Trading 212" Style="{StaticResource RowTitle}" />
+                            <Label
+                                Text="In the Trading 212 app, open Settings, then API, and generate a key with only the Account data and Portfolio permissions. Paste the key and the secret here. They are stored encrypted and can only read; they cannot trade."
+                                Style="{StaticResource Caption}" />
+                            <Border Style="{StaticResource Field}">
+                                <Entry
+                                    x:Name="Trading212KeyEntry"
+                                    Text="{Binding Trading212Key}"
+                                    Placeholder="API key"
+                                    IsSpellCheckEnabled="False"
+                                    IsTextPredictionEnabled="False"
+                                    ReturnType="Next" />
+                            </Border>
+                            <Border Style="{StaticResource Field}">
+                                <Entry
+                                    Text="{Binding Trading212Secret}"
+                                    Placeholder="API secret"
+                                    IsPassword="True"
+                                    IsSpellCheckEnabled="False"
+                                    IsTextPredictionEnabled="False"
+                                    ReturnType="Done"
+                                    ReturnCommand="{Binding ConfirmTrading212Command}" />
+                            </Border>
+                            <Label
+                                Text="{Binding ConnectError}"
+                                Style="{StaticResource ErrorText}"
+                                IsVisible="{Binding ConnectError, Converter={StaticResource HasText}}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Text="Connect" Style="{StaticResource PrimaryButton}" Command="{Binding ConfirmTrading212Command}" />
+                                <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding CancelConnectCommand}" />
+                            </Grid>
+                        </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>
 

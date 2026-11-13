@@ -57,6 +57,12 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
 
     public ObservableCollection<TransactionGroup> Groups { get; } = [];
 
+    /// <summary>What an investment account holds; empty for bank accounts and the household tab.</summary>
+    public ObservableCollection<HoldingItem> Holdings { get; } = [];
+
+    [ObservableProperty]
+    public partial bool HasHoldings { get; set; }
+
     /// <summary>Everyday, Savings, Investments, All: which accounts the household tab lists.</summary>
     public ObservableCollection<ChoiceItem> Filters { get; } = [];
 
@@ -92,11 +98,21 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
     private Task LoadAsync() => ReloadAsync(async () =>
     {
         var page = await _api.GetTransactionsAsync(_accountId, _kindFilter, 0, PageSize);
+        var holdings = _accountId is { } accountId ? await _api.GetHoldingsAsync(accountId) : [];
+
         Groups.Clear();
         _loaded = 0;
         Append(page);
+
+        Holdings.Clear();
+        foreach (var holding in holdings)
+        {
+            Holdings.Add(HoldingItem.From(holding));
+        }
+
+        HasHoldings = Holdings.Count > 0;
         HasLoaded = true;
-        IsEmpty = Groups.Count == 0;
+        IsEmpty = Groups.Count == 0 && !HasHoldings;
     });
 
     /// <summary>Fetches the next page when the list is scrolled near its end.</summary>

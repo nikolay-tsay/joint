@@ -137,6 +137,14 @@ namespace Joint.Api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<decimal>("UnrealizedProfitLoss")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal>("Value")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AccountId", "Ticker")
