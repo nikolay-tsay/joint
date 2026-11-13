@@ -11,11 +11,13 @@ namespace Joint.Mobile.Common;
 public abstract partial class PageViewModel(AuthService auth) : ObservableObject
 {
     private bool _isReloading;
+    private bool _hasLoaded;
 
     /// <summary>
-    /// Bound to the page's RefreshView. It is on only while the page's data is being
-    /// reloaded, never for other actions: a RefreshView runs its refresh command whenever
-    /// this turns on, so tying it to general busyness would reload on every button press.
+    /// Bound to the page's RefreshView, which shows its spinner while this is on. It is on
+    /// for the page's first load and while the user pulls to refresh, never for other
+    /// actions: a RefreshView runs its refresh command whenever this turns on, so tying it
+    /// to general busyness would reload on every button press.
     /// </summary>
     [ObservableProperty]
     public partial bool IsRefreshing { get; set; }
@@ -26,6 +28,9 @@ public abstract partial class PageViewModel(AuthService auth) : ObservableObject
     /// <summary>
     /// Reloads the page's data. A request that arrives while a reload is already running
     /// is dropped, which also absorbs the echo the RefreshView sends when the flag turns on.
+    /// Pages reload every time they are shown; after the first time that happens quietly,
+    /// with what is on screen staying put until the new data replaces it. A pull shows the
+    /// spinner because the RefreshView itself turns the flag on before calling in.
     /// </summary>
     protected async Task ReloadAsync(Func<Task> load)
     {
@@ -35,13 +40,18 @@ public abstract partial class PageViewModel(AuthService auth) : ObservableObject
         }
 
         _isReloading = true;
-        IsRefreshing = true;
+        if (!_hasLoaded)
+        {
+            IsRefreshing = true;
+        }
+
         try
         {
             await RunAsync(load);
         }
         finally
         {
+            _hasLoaded = true;
             IsRefreshing = false;
             _isReloading = false;
         }
