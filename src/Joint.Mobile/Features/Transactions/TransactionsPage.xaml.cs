@@ -19,5 +19,10 @@ public partial class TransactionsPage : ContentPage
         {
             _viewModel.LoadCommand.Execute(null);
         }
+        else
+        {
+            // Back from the category page or another tab: the labels may have changed there.
+            _viewModel.RefreshMarksCommand.Execute(null);
+        }
     }
 }

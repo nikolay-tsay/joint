@@ -12,8 +12,9 @@ public class LineChart(IReadOnlyList<ChartSeries> series) : Chart
 
     private int Days => series.Count == 0 ? 0 : series.Max(s => s.Values.Count);
 
-    protected override int? IndexAt(float x)
+    protected override int? IndexAt(PointF point)
     {
+        var x = point.X;
         var plot = ChartStyle.PlotArea(Bounds);
         if (Days < 2 || plot.Width <= 0)
         {

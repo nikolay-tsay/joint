@@ -28,5 +28,6 @@ public partial class InsightsPage : ContentPage
     {
         base.OnAppearing();
         _viewModel.LoadCommand.Execute(null);
+        _viewModel.Categories.LoadCommand.Execute(null);
     }
 }

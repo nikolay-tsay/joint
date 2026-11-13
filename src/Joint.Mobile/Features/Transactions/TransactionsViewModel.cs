@@ -192,6 +192,27 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
     });
 
     /// <summary>
+    /// Opens the page for choosing the payment's category. The list of categories can be
+    /// long, which is why this one choice is not made in the row.
+    /// </summary>
+    [RelayCommand]
+    private static Task OpenCategoryAsync(TransactionItem item) =>
+        Shell.Current.GoToAsync(
+            $"{Routes.CategoryPicker}?transactionId={item.Id}"
+            + $"&payee={Uri.EscapeDataString(item.Title)}"
+            + $"&category={Uri.EscapeDataString(item.Category ?? "")}"
+            + $"&ruleId={item.CategoryRuleId}"
+            + $"&match={Uri.EscapeDataString(item.CategoryMatch ?? "")}");
+
+    /// <summary>
+    /// Brings the rows on screen up to date with what was marked elsewhere: a category
+    /// chosen on the picker page, or tracking stopped from Insights. Called when the page
+    /// comes back into view.
+    /// </summary>
+    [RelayCommand]
+    private Task RefreshMarksAsync() => HasLoaded ? RunAsync(RefreshRecurringAsync) : Task.CompletedTask;
+
+    /// <summary>
     /// Takes a payment out of the budget, or puts it back: the correction for when the app
     /// counts something as everyday spending that is not.
     /// </summary>
@@ -245,6 +266,7 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
             if (fresh.TryGetValue(item.Id, out var transaction))
             {
                 item.SetRecurring(transaction.RecurringId, transaction.RecurringKind, transaction.RecurringMatch);
+                item.SetCategory(transaction.Category, transaction.CategoryRuleId, transaction.CategoryMatch);
             }
         }
     }

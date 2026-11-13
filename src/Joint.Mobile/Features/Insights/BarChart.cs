@@ -11,8 +11,9 @@ public class BarChart(IReadOnlyList<string> labels, IReadOnlyList<ChartSeries> s
     private const float MaxBarWidth = 18;
     private const float BarGap = 3;
 
-    protected override int? IndexAt(float x)
+    protected override int? IndexAt(PointF point)
     {
+        var x = point.X;
         var plot = ChartStyle.PlotArea(Bounds);
         if (labels.Count == 0 || plot.Width <= 0)
         {

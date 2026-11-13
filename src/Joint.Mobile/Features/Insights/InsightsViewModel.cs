@@ -13,7 +13,8 @@ namespace Joint.Mobile.Features.Insights;
 /// month, what was left over, this month's pace against last month's, and who spent.
 /// Recurring: what subscriptions and regular payments cost per month, and the list of them.
 /// </summary>
-public partial class InsightsViewModel(ApiClient api, AuthService auth) : PageViewModel(auth)
+public partial class InsightsViewModel(ApiClient api, AuthService auth, CategoriesViewModel categories)
+    : PageViewModel(auth)
 {
     private const int Months = 6;
 
@@ -80,19 +81,29 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth) : PageVi
 
     /// <summary>The pages the carousel slides between, in tab order.</summary>
     public IReadOnlyList<InsightsView> Views =>
-        _views ??= [new InsightsView(InsightsView.Overview, this), new InsightsView(InsightsView.Recurring, this)];
+        _views ??=
+        [
+            new InsightsView(InsightsView.Overview, this),
+            new InsightsView(InsightsView.Recurring, this),
+            new InsightsView(InsightsView.Categories, this),
+        ];
+
+    /// <summary>Spending by category, shown on the page's third tab; it loads and reports errors by itself.</summary>
+    public CategoriesViewModel Categories { get; } = categories;
 
     /// <summary>
     /// Which page is showing. The carousel sets it when the user drags, and slides to it
     /// when a tab sets it.
     /// </summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsOverviewTab), nameof(IsRecurringTab))]
+    [NotifyPropertyChangedFor(nameof(IsOverviewTab), nameof(IsRecurringTab), nameof(IsCategoriesTab))]
     public partial int TabIndex { get; set; }
 
     public bool IsOverviewTab => TabIndex == 0;
 
     public bool IsRecurringTab => TabIndex == 1;
+
+    public bool IsCategoriesTab => TabIndex == 2;
 
     [ObservableProperty]
     public partial string? RecurringTitle { get; set; }
@@ -130,6 +141,9 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth) : PageVi
 
     [RelayCommand]
     private void ShowRecurring() => TabIndex = 1;
+
+    [RelayCommand]
+    private void ShowCategories() => TabIndex = 2;
 
     /// <summary>Stops tracking a payee; its transactions stay as they are.</summary>
     [RelayCommand]

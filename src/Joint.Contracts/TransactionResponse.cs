@@ -10,6 +10,12 @@ namespace Joint.Contracts;
 /// suggested text for tracking it. Null when it cannot be tracked.
 /// </param>
 /// <param name="ExcludedFromBudget">True when someone took this payment out of the budget by hand.</param>
+/// <param name="Category">The category a rule gives this payment, if any.</param>
+/// <param name="CategoryRuleId">The rule that gives it, for removing the category.</param>
+/// <param name="CategoryMatch">
+/// For a payment: the match text of its category rule, or the suggested text for making
+/// one. Null when it cannot be categorized.
+/// </param>
 public record TransactionResponse(
     Guid Id,
     Guid AccountId,
@@ -24,4 +30,7 @@ public record TransactionResponse(
     Guid? RecurringId = null,
     string? RecurringKind = null,
     string? RecurringMatch = null,
-    bool ExcludedFromBudget = false);
+    bool ExcludedFromBudget = false,
+    string? Category = null,
+    Guid? CategoryRuleId = null,
+    string? CategoryMatch = null);
