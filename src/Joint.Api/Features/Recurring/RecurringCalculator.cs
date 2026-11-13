@@ -12,7 +12,10 @@ public static class RecurringCalculator
         IReadOnlyList<RecurringPayment> payments, IReadOnlyList<RecurringRow> rows, DateOnly today, int months)
     {
         // Two members may have marked the same payee; it is still one payment.
+        // An own transfer is not a cost: it only keeps money out of the other figures, and
+        // has no place in this overview.
         var byKey = payments
+            .Where(p => p.Kind != RecurringKind.Transfer)
             .GroupBy(p => p.MatchKey)
             .ToDictionary(g => g.Key, g => g.First());
 
@@ -23,10 +26,7 @@ public static class RecurringCalculator
             .ToList();
 
         // Amounts are never converted, so the chart follows the currency most payments are in.
-        // Own transfers are listed with the rest but are not a cost, so they have no say here
-        // and no place in the monthly totals.
         var currency = paid
-            .Where(p => p.Payment.Kind != RecurringKind.Transfer)
             .GroupBy(p => p.Row.Currency)
             .OrderByDescending(g => g.Count())
             .Select(g => g.Key)

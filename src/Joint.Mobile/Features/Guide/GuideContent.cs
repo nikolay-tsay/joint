@@ -59,8 +59,8 @@ public static class GuideContent
                 "For those, open one such payment in Transactions and mark it \"Own transfer\". Every payment or "
                     + "arrival containing the match text shown there is then left out of income, spending, the budget "
                     + "and the categories, past and future. The text works as it does for subscriptions and you can edit it.",
-                "Own transfers are listed at the bottom of Insights, Recurring, where you can stop tracking one. "
-                    + "They are not part of the subscription and regular payment totals.",
+                "Own transfers are not shown or added up anywhere; the mark only keeps them out of the figures. "
+                    + "To undo it, open any payment that carries the \"Own transfer\" label and choose \"Stop tracking\".",
             ]),
         new(
             "Income and spending",
@@ -108,7 +108,7 @@ public static class GuideContent
             [
                 "The budget is one amount per calendar month for your household's everyday spending.",
                 "Everyday spending is all spending this month, minus what went to your subscriptions and regular "
-                    + "payments, minus any payment you excluded by hand. Transfers between your own accounts are already out.",
+                    + "payments. Transfers between your own accounts, recognised or marked, are already out.",
                 "\"Left to spend\" is the budget minus everyday spending so far.",
                 "The amount per day is what is left, divided by the days remaining in the month, today included.",
                 "\"Where this month is heading\" takes everyday spending so far, divides it by the days gone, and "
@@ -117,9 +117,8 @@ public static class GuideContent
                     + "have not been paid yet this month. They are shown for information and are not part of the budget.",
                 "The budget is not tied to a month: on the 1st the spending starts again from zero against the same "
                     + "amount. Nothing unspent carries over and no overspend is deducted.",
-                "A bill counts as everyday spending until you mark it as a regular payment. If something is counted "
-                    + "that should not be, open the payment in Transactions and choose \"Exclude from budget\" for that "
-                    + "one payment, or \"Own transfer\" when it is money moved to an account of yours.",
+                "A bill counts as everyday spending until you mark it as a regular payment. Money moved to an "
+                    + "account of yours that Joint cannot match up counts until you mark it as \"Own transfer\".",
             ]),
         new(
             "Goals",

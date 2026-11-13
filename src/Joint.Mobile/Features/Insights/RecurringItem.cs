@@ -12,9 +12,7 @@ public record RecurringItem(Guid Id, string Name, string Detail, string Amount)
         new(
             payment.Id,
             payment.Name,
-            (payment.LastPaidOn is { } paidOn
-                ? $"{(payment.Kind == RecurringKinds.Transfer ? "Last sent" : "Last paid")} {paidOn:d MMMM}"
-                : payment.Kind == RecurringKinds.Transfer ? "Nothing sent in the past year" : "Not paid in the past year")
+            (payment.LastPaidOn is { } paidOn ? $"Last paid {paidOn:d MMMM}" : "Not paid in the past year")
             + (payment.MatchText.Length > 0 ? $" · matches “{payment.MatchText}”" : ""),
             payment.LastAmount is { } amount ? Money.Format(amount, payment.Currency ?? "") : "");
 }

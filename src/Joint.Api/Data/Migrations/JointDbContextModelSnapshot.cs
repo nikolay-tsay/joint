@@ -330,9 +330,6 @@ namespace Joint.Api.Data.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<bool>("ExcludedFromBudget")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("ExternalId")
                         .IsRequired()
                         .HasColumnType("text");

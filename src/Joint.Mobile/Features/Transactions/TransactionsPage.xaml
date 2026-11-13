@@ -243,7 +243,7 @@
                                     </Label.Triggers>
                                 </Label>
 
-                                <!-- What sets this payment apart: tracked as recurring, or kept out of the budget. -->
+                                <!-- What sets this payment apart: its category, and what its payee is marked as. -->
                                 <HorizontalStackLayout Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Spacing="10">
                                     <Label
                                         Text="{Binding Category}"
@@ -257,12 +257,6 @@
                                         FontFamily="OpenSansSemibold"
                                         IsVisible="{Binding IsTracked}"
                                         TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                                    <Label
-                                        Text="Not in budget"
-                                        FontSize="12"
-                                        FontFamily="OpenSansSemibold"
-                                        IsVisible="{Binding IsExcludedFromBudget}"
-                                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
                                 </HorizontalStackLayout>
 
                                 <!-- The choices: what every payment to this payee is. -->
@@ -377,32 +371,10 @@
                                         </Border>
                                     </HorizontalStackLayout>
 
-                                    <!-- The manual correction for the budget. -->
                                     <Label
-                                        Text="Own transfer is for money moved to an account of yours that Joint cannot match up, such as Trading 212: it stops counting as spending everywhere. To keep only this one payment out of the budget, exclude it."
+                                        Text="Own transfer is for money moved to an account of yours that Joint cannot match up, such as Trading 212: it stops counting as spending everywhere."
                                         Style="{StaticResource Caption}"
                                         Margin="0,6,0,0" />
-                                    <HorizontalStackLayout>
-                                        <Border Style="{StaticResource Chip}">
-                                            <Border.Triggers>
-                                                <DataTrigger TargetType="Border" Binding="{Binding IsExcludedFromBudget}" Value="True">
-                                                    <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-                                                </DataTrigger>
-                                            </Border.Triggers>
-                                            <Border.GestureRecognizers>
-                                                <TapGestureRecognizer
-                                                    Command="{Binding ToggleBudgetExclusionCommand, Source={RelativeSource AncestorType={x:Type transactions:TransactionsViewModel}}, x:DataType=transactions:TransactionsViewModel}"
-                                                    CommandParameter="{Binding .}" />
-                                            </Border.GestureRecognizers>
-                                            <Label Text="{Binding BudgetChoice}" FontSize="13" FontFamily="OpenSansSemibold">
-                                                <Label.Triggers>
-                                                    <DataTrigger TargetType="Label" Binding="{Binding IsExcludedFromBudget}" Value="True">
-                                                        <Setter Property="TextColor" Value="White" />
-                                                    </DataTrigger>
-                                                </Label.Triggers>
-                                            </Label>
-                                        </Border>
-                                    </HorizontalStackLayout>
                                 </VerticalStackLayout>
                             </Grid>
                         </Border>

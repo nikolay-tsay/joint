@@ -86,7 +86,7 @@ public class OwnTransferTests
     }
 
     [Fact]
-    public void An_own_transfer_is_listed_with_the_tracked_payments_but_is_in_no_monthly_total()
+    public void An_own_transfer_does_not_appear_in_the_recurring_overview()
     {
         var broker = new RecurringPayment
         {
@@ -109,8 +109,7 @@ public class OwnTransferTests
         // The currency follows the costs, not the transfers.
         Assert.Equal("CZK", overview.Currency);
         Assert.Equal((289m, 0m), (overview.Months[0].Subscriptions, overview.Months[0].Bills));
-        var listed = overview.Payments.Single(p => p.Kind == "Transfer");
-        Assert.Equal((5000m, new DateOnly(2026, 11, 9)), (listed.LastAmount, listed.LastPaidOn));
+        Assert.Equal("Netflix", Assert.Single(overview.Payments).Name);
     }
 
     private static async Task<BudgetResponse> BudgetAsync(JointDbContext db, ClaimsPrincipal principal)
