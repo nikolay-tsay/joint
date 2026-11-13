@@ -76,6 +76,14 @@
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}" />
     </Style>
 
+    <!-- A small pill for a choice inside a card. Selected ones are recolored by the page. -->
+    <Style x:Key="Chip" TargetType="Border">
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 15" />
+        <Setter Property="Padding" Value="11,6" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}" />
+    </Style>
+
     <!-- Low-emphasis text button, for "Done" and the like. -->
     <Style x:Key="QuietButton" TargetType="Button">
         <Setter Property="CornerRadius" Value="12" />

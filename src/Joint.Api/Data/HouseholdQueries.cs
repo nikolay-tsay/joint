@@ -18,4 +18,11 @@ public static class HouseholdQueries
         from account in db.Accounts
         join connection in db.ConnectionsOf(householdId) on account.ConnectionId equals connection.Id
         select account;
+
+    /// <summary>The subscriptions and regular payments marked by anyone in the household.</summary>
+    public static IQueryable<RecurringPayment> RecurringOf(this JointDbContext db, Guid householdId) =>
+        from recurring in db.RecurringPayments
+        join marker in db.Users on recurring.UserId equals marker.Id
+        where marker.HouseholdId == householdId
+        select recurring;
 }

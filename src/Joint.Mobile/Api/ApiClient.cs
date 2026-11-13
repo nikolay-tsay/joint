@@ -90,6 +90,30 @@ public class ApiClient(AuthService auth)
         return await ReadAsync<InsightsResponse>(response, cancellationToken);
     }
 
+    /// <summary>The household's subscriptions and regular payments, with what they cost per month.</summary>
+    public async Task<RecurringOverviewResponse> GetRecurringAsync(int months, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(HttpMethod.Get, $"api/recurring?months={months}", null, cancellationToken);
+        return await ReadAsync<RecurringOverviewResponse>(response, cancellationToken);
+    }
+
+    /// <summary>Tracks the payee of a payment as a subscription or a regular payment.</summary>
+    /// <returns>False when the payment cannot be tracked or is no longer there.</returns>
+    public async Task<bool> MarkRecurringAsync(Guid transactionId, string kind, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Post, "api/recurring", new MarkRecurringRequest(transactionId, kind),
+            cancellationToken, HttpStatusCode.BadRequest, HttpStatusCode.NotFound);
+        return response.IsSuccessStatusCode;
+    }
+
+    /// <summary>Stops tracking a subscription or regular payment.</summary>
+    public async Task RemoveRecurringAsync(Guid recurringId, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Delete, $"api/recurring/{recurringId}", null, cancellationToken, HttpStatusCode.NotFound);
+    }
+
     /// <summary>
     /// Asks the backend to sync a connection now. Debug builds only: the backend does not
     /// offer this in production.

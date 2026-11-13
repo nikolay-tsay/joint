@@ -20,6 +20,9 @@ public static class ChartStyle
 
     public static Color Spending => Themed("Primary", "PrimaryDark");
 
+    /// <summary>The brand orange, for a second series next to the purple.</summary>
+    public static Color Accent => (Color)Application.Current!.Resources["Accent"];
+
     public static Color Negative => Themed("Negative", "NegativeDark");
 
     public static Color Muted => Themed("TextSecondary", "TextSecondaryDark");

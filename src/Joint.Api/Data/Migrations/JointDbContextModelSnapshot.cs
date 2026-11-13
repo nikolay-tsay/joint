@@ -210,6 +210,37 @@ namespace Joint.Api.Data.Migrations
                     b.ToTable("HouseholdInvitations", "joint");
                 });
 
+            modelBuilder.Entity("Joint.Api.Domain.RecurringPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MatchKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "MatchKey")
+                        .IsUnique();
+
+                    b.ToTable("RecurringPayments", "joint");
+                });
+
             modelBuilder.Entity("Joint.Api.Domain.Transaction", b =>
                 {
                     b.Property<Guid>("Id")
@@ -321,6 +352,15 @@ namespace Joint.Api.Data.Migrations
                     b.HasOne("Joint.Api.Domain.User", null)
                         .WithMany()
                         .HasForeignKey("InvitedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Joint.Api.Domain.RecurringPayment", b =>
+                {
+                    b.HasOne("Joint.Api.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

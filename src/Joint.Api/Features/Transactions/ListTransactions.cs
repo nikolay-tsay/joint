@@ -3,6 +3,7 @@ using Joint.Api.Common;
 using Joint.Api.Common.Auth;
 using Joint.Api.Data;
 using Joint.Api.Domain;
+using Joint.Api.Features.Recurring;
 using Joint.Contracts;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -79,6 +80,31 @@ public class ListTransactions : IEndpoint
             .Take(Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit))
             .ToListAsync(cancellationToken);
 
-        return TypedResults.Ok(transactions);
+        return TypedResults.Ok(await WithRecurringAsync(transactions, user.HouseholdId, db, cancellationToken));
+    }
+
+    /// <summary>
+    /// Says which of the listed payments count towards a tracked subscription or regular
+    /// payment. Done on the page just read, because the payee key is worked out in code.
+    /// </summary>
+    private static async Task<List<TransactionResponse>> WithRecurringAsync(
+        List<TransactionResponse> transactions, Guid householdId, JointDbContext db, CancellationToken cancellationToken)
+    {
+        var tracked = (await db.RecurringOf(householdId).ToListAsync(cancellationToken))
+            .GroupBy(r => r.MatchKey)
+            .ToDictionary(g => g.Key, g => g.First());
+        if (tracked.Count == 0)
+        {
+            return transactions;
+        }
+
+        return transactions
+            .Select(t =>
+                t.Amount < 0
+                && PaymentKey.From(t.Counterparty, t.Description) is { } key
+                && tracked.TryGetValue(key, out var recurring)
+                    ? t with { RecurringId = recurring.Id, RecurringKind = recurring.Kind.ToString() }
+                    : t)
+            .ToList();
     }
 }
