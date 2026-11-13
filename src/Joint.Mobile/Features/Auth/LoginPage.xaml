@@ -6,10 +6,13 @@
     BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
 
     <VerticalStackLayout Padding="32" Spacing="12" VerticalOptions="Center">
+        <!-- "cursive" is Android's built-in handwriting family (Dancing Script on stock Android),
+             so no font file is shipped for it. A phone without one falls back to its default font. -->
         <Label
             Text="Joint"
-            FontSize="44"
-            FontFamily="OpenSansSemibold"
+            FontSize="64"
+            FontFamily="cursive"
+            FontAttributes="Bold"
             HorizontalOptions="Center"
             TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
         <Label

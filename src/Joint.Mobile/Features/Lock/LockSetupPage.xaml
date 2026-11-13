@@ -49,7 +49,7 @@
 
             <Button Text="Not now" Style="{StaticResource QuietButton}" Command="{Binding SkipCommand}" />
             <Label
-                Text="You can turn it on later under Profile, in Security."
+                Text="You can turn it on later under Profile, in Security settings."
                 Style="{StaticResource Caption}"
                 HorizontalTextAlignment="Center" />
         </VerticalStackLayout>
