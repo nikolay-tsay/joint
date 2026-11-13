@@ -1,4 +1,5 @@
 using Joint.Mobile.Features.Auth;
+using Joint.Mobile.Features.Lock;
 
 namespace Joint.Mobile.Features.Start;
 
@@ -9,10 +10,13 @@ namespace Joint.Mobile.Features.Start;
 public class StartPage : ContentPage
 {
     private readonly AuthService _auth;
+    private readonly LockScreen _lockScreen;
+    private bool _started;
 
-    public StartPage(AuthService auth)
+    public StartPage(AuthService auth, LockScreen lockScreen)
     {
         _auth = auth;
+        _lockScreen = lockScreen;
         Shell.SetNavBarIsVisible(this, false);
         Shell.SetTabBarIsVisible(this, false);
         this.SetAppThemeColor(
@@ -33,7 +37,17 @@ public class StartPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        var signedIn = await _auth.TryRestoreAsync();
+
+        // Appearing fires again when the lock page closes over this one.
+        if (_started)
+        {
+            return;
+        }
+
+        _started = true;
+
+        // A saved session still has to get past the app lock, when that is on.
+        var signedIn = await _auth.TryRestoreAsync() && await _lockScreen.RequireUnlockAsync();
         await Shell.Current.GoToAsync(signedIn ? Routes.Home : Routes.Login);
     }
 }

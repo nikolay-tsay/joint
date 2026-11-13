@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Joint.Mobile.Config;
+using Joint.Mobile.Features.Lock;
 
 namespace Joint.Mobile.Features.Auth;
 
@@ -9,7 +10,7 @@ namespace Joint.Mobile.Features.Auth;
 /// Owns the signed-in session: Google sign-in through Supabase, keeping the session
 /// in the device's secure storage, and renewing the access token before it expires.
 /// </summary>
-public class AuthService(SupabaseAuthClient supabase)
+public class AuthService(SupabaseAuthClient supabase, AppLock appLock)
 {
     private const string StorageKey = "auth_session";
     private static readonly TimeSpan RefreshMargin = TimeSpan.FromMinutes(1);
@@ -129,6 +130,9 @@ public class AuthService(SupabaseAuthClient supabase)
     {
         _session = null;
         SecureStorage.Default.Remove(StorageKey);
+
+        // The lock belongs to the session: the next person to sign in starts without one.
+        appLock.Reset();
     }
 
     private static string Base64Url(byte[] bytes) =>

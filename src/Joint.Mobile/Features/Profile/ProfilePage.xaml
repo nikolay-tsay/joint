@@ -341,6 +341,106 @@
                     </VerticalStackLayout>
                 </Border>
 
+                <Label Text="Security" Style="{StaticResource SectionTitle}" />
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="App lock" Style="{StaticResource RowTitle}" />
+                        <Label Text="{Binding LockStatus}" Style="{StaticResource Caption}" />
+
+                        <Button
+                            Text="Turn on app lock"
+                            Style="{StaticResource PrimaryButton}"
+                            IsVisible="{Binding CanTurnLockOn}"
+                            Command="{Binding StartPinSetupCommand}" />
+
+                        <!-- Lock is on: biometrics switch, change PIN, turn off. -->
+                        <VerticalStackLayout Spacing="12" IsVisible="{Binding IsLockMenuOpen}">
+                            <Border Style="{StaticResource InsetRow}" IsVisible="{Binding CanUseBiometrics}">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <Label Text="Unlock with fingerprint or face" VerticalOptions="Center" />
+                                    <Switch Grid.Column="1" IsToggled="{Binding UseBiometrics}" />
+                                </Grid>
+                            </Border>
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Text="Change PIN" Style="{StaticResource SecondaryButton}" Command="{Binding StartPinSetupCommand}" />
+                                <Button Grid.Column="1" Text="Turn off" Style="{StaticResource DangerOutlineButton}" Command="{Binding StartTurnOffCommand}" />
+                            </Grid>
+                        </VerticalStackLayout>
+
+                        <!-- Turning the lock off asks for the PIN first. -->
+                        <VerticalStackLayout Spacing="12" IsVisible="{Binding IsTurnOffOpen}">
+                            <Label Text="Turn off app lock" Style="{StaticResource RowTitle}" />
+                            <Label Text="Enter your PIN to turn the lock off." Style="{StaticResource Caption}" />
+                            <Border Style="{StaticResource Field}">
+                                <Entry
+                                    x:Name="TurnOffPinEntry"
+                                    Text="{Binding CurrentPin}"
+                                    Placeholder="PIN"
+                                    Keyboard="Numeric"
+                                    MaxLength="4"
+                                    IsPassword="True"
+                                    ReturnType="Done"
+                                    ReturnCommand="{Binding ConfirmTurnOffCommand}" />
+                            </Border>
+                            <Label
+                                Text="{Binding LockError}"
+                                Style="{StaticResource ErrorText}"
+                                IsVisible="{Binding LockError, Converter={StaticResource HasText}}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Text="Turn off" Style="{StaticResource DangerOutlineButton}" Command="{Binding ConfirmTurnOffCommand}" />
+                                <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding CancelTurnOffCommand}" />
+                            </Grid>
+                        </VerticalStackLayout>
+
+                        <!-- Choosing or changing the PIN, in place. -->
+                        <VerticalStackLayout Spacing="12" IsVisible="{Binding IsPinSetupOpen}">
+                            <Label Text="{Binding PinSetupTitle}" Style="{StaticResource RowTitle}" />
+                            <Label
+                                Text="Four digits. If you forget it, signing out and back in with Google removes the lock."
+                                Style="{StaticResource Caption}" />
+                            <!-- Changing an existing PIN needs the current one. -->
+                            <Border Style="{StaticResource Field}" IsVisible="{Binding IsLockOn}">
+                                <Entry
+                                    x:Name="CurrentPinEntry"
+                                    Text="{Binding CurrentPin}"
+                                    Placeholder="Current PIN"
+                                    Keyboard="Numeric"
+                                    MaxLength="4"
+                                    IsPassword="True"
+                                    ReturnType="Next" />
+                            </Border>
+                            <Border Style="{StaticResource Field}">
+                                <Entry
+                                    x:Name="NewPinEntry"
+                                    Text="{Binding NewPin}"
+                                    Placeholder="New PIN"
+                                    Keyboard="Numeric"
+                                    MaxLength="4"
+                                    IsPassword="True"
+                                    ReturnType="Next" />
+                            </Border>
+                            <Border Style="{StaticResource Field}">
+                                <Entry
+                                    Text="{Binding RepeatPin}"
+                                    Placeholder="Repeat PIN"
+                                    Keyboard="Numeric"
+                                    MaxLength="4"
+                                    IsPassword="True"
+                                    ReturnType="Done"
+                                    ReturnCommand="{Binding ConfirmPinCommand}" />
+                            </Border>
+                            <Label
+                                Text="{Binding LockError}"
+                                Style="{StaticResource ErrorText}"
+                                IsVisible="{Binding LockError, Converter={StaticResource HasText}}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Text="Save" Style="{StaticResource PrimaryButton}" Command="{Binding ConfirmPinCommand}" />
+                                <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding CancelPinSetupCommand}" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
                 <Button
                     Text="Sign out"
                     Style="{StaticResource DangerButton}"

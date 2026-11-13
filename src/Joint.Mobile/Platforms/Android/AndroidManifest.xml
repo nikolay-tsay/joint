@@ -3,6 +3,8 @@
 	<application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true"></application>
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 	<uses-permission android:name="android.permission.INTERNET" />
+	<!-- Fingerprint or face for the app lock. -->
+	<uses-permission android:name="android.permission.USE_BIOMETRIC" />
 	<!-- Lets the app open the sign-in page in a browser tab. -->
 	<queries>
 		<intent>
