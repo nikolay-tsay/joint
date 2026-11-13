@@ -17,6 +17,11 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth) : PageVi
 {
     private const int Months = 6;
 
+    /// <summary>Shown under a chart until it is touched.</summary>
+    private const string MonthHint = "Touch a month to see its exact amounts.";
+
+    private const string DayHint = "Touch a day to see the totals up to it.";
+
     /// <summary>"Saved in November", or "Overspent in November" when more went out than came in.</summary>
     [ObservableProperty]
     public partial string? SavedTitle { get; set; }
@@ -33,6 +38,20 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth) : PageVi
     /// <summary>This month's spending against the same day last month, in words.</summary>
     [ObservableProperty]
     public partial string? PaceSummary { get; set; }
+
+    // The exact numbers of the month or day last touched on each chart.
+
+    [ObservableProperty]
+    public partial string FlowDetail { get; set; } = MonthHint;
+
+    [ObservableProperty]
+    public partial string SavedDetail { get; set; } = MonthHint;
+
+    [ObservableProperty]
+    public partial string PaceDetail { get; set; } = DayHint;
+
+    [ObservableProperty]
+    public partial string RecurringDetail { get; set; } = MonthHint;
 
     [ObservableProperty]
     public partial IDrawable? FlowChart { get; set; }
@@ -142,21 +161,55 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth) : PageVi
         PaceSummary = DescribePace(insights);
 
         var labels = insights.Months.Select(m => m.Month.ToString("MMM")).ToList();
+        // New charts start with nothing picked, so the lines under them go back to the hint.
+        FlowDetail = MonthHint;
+        SavedDetail = MonthHint;
+        PaceDetail = DayHint;
+
         FlowChart = new BarChart(
             labels,
             [
                 new ChartSeries(insights.Months.Select(m => m.Income).ToList(), ChartStyle.Income),
                 new ChartSeries(insights.Months.Select(m => m.Spending).ToList(), ChartStyle.Spending),
-            ]);
+            ])
+        {
+            Selected = index =>
+            {
+                var month = insights.Months[index];
+                FlowDetail = $"{month.Month:MMMM yyyy}: income {Money.Format(month.Income, currency)}, "
+                    + $"spending {Money.Format(month.Spending, currency)}";
+            },
+        };
         SavedChart = new BarChart(
             labels,
             [new ChartSeries(insights.Months.Select(m => m.Income - m.Spending).ToList(), ChartStyle.Income)],
-            negativeColor: ChartStyle.Negative);
+            negativeColor: ChartStyle.Negative)
+        {
+            Selected = index =>
+            {
+                var month = insights.Months[index];
+                var left = month.Income - month.Spending;
+                SavedDetail = left < 0
+                    ? $"{month.Month:MMMM yyyy}: {Money.Format(-left, currency)} more spent than came in"
+                    : $"{month.Month:MMMM yyyy}: {Money.Format(left, currency)} left over";
+            },
+        };
         PaceChart = new LineChart(
         [
             new ChartSeries(insights.SpendingLastMonth, ChartStyle.Muted),
             new ChartSeries(insights.SpendingThisMonth, ChartStyle.Spending),
-        ]);
+        ])
+        {
+            Selected = index =>
+            {
+                // A day this month has not reached yet, or last month never had, has no figure.
+                string At(List<decimal> running) =>
+                    index < running.Count ? Money.Format(running[index], currency) : "no figure yet";
+
+                PaceDetail = $"By day {index + 1}: {At(insights.SpendingThisMonth)} this month, "
+                    + $"{At(insights.SpendingLastMonth)} last month";
+            },
+        };
 
         var biggest = insights.Members.Select(m => m.Spending).DefaultIfEmpty().Max();
         Members.Clear();
@@ -180,12 +233,21 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth) : PageVi
         SubscriptionsTotal = Money.Format(current.Subscriptions, currency);
         BillsTotal = Money.Format(current.Bills, currency);
 
+        RecurringDetail = MonthHint;
         RecurringChart = new BarChart(
             recurring.Months.Select(m => m.Month.ToString("MMM")).ToList(),
             [
                 new ChartSeries(recurring.Months.Select(m => m.Subscriptions).ToList(), ChartStyle.Spending),
                 new ChartSeries(recurring.Months.Select(m => m.Bills).ToList(), ChartStyle.Accent),
-            ]);
+            ])
+        {
+            Selected = index =>
+            {
+                var month = recurring.Months[index];
+                RecurringDetail = $"{month.Month:MMMM yyyy}: subscriptions {Money.Format(month.Subscriptions, currency)}, "
+                    + $"regular payments {Money.Format(month.Bills, currency)}";
+            },
+        };
 
         Subscriptions.Clear();
         Bills.Clear();
