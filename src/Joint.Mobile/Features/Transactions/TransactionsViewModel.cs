@@ -187,6 +187,25 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
         }
     });
 
+    /// <summary>
+    /// Takes a payment out of the budget, or puts it back: the correction for when the app
+    /// counts something as everyday spending that is not.
+    /// </summary>
+    [RelayCommand]
+    private Task ToggleBudgetExclusionAsync(TransactionItem item) => RunAsync(async () =>
+    {
+        var exclude = !item.IsExcludedFromBudget;
+        if (await _api.SetBudgetExclusionAsync(item.Id, exclude))
+        {
+            item.IsExcludedFromBudget = exclude;
+            item.IsMenuOpen = false;
+        }
+        else
+        {
+            Error = "This payment is no longer available.";
+        }
+    });
+
     private Task MarkAsync(TransactionItem item, string kind) => RunAsync(async () =>
     {
         if (await _api.MarkRecurringAsync(item.Id, kind, item.MatchText))

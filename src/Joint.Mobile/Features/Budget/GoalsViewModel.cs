@@ -9,22 +9,18 @@ using Joint.Mobile.Features.Auth;
 namespace Joint.Mobile.Features.Budget;
 
 /// <summary>
-/// What the household is saving and investing towards, as two lists. A goal's progress
-/// follows the balance of an account set aside for it, or is a figure kept by hand. Goals
-/// of both kinds are added and changed in one form that opens in place.
+/// What the household is saving and investing towards, as two lists. Progress is not
+/// entered anywhere: a saving goal is measured against the combined balance of the accounts
+/// of the Savings type, an investment goal against those of the Investments type. Goals of
+/// both kinds are added and changed in one form that opens in place.
 /// </summary>
 public partial class GoalsViewModel(ApiClient api, AuthService auth) : PageViewModel(auth)
 {
     private const string DeleteFirstTap = "Delete this goal";
     private const string DeleteSecondTap = "Tap again to delete it";
 
-    private List<AccountResponse> _accounts = [];
-
     /// <summary>The goal the form is changing; null while it is adding a new one.</summary>
     private Guid? _editingId;
-
-    /// <summary>The account picked in the form; null for "by hand".</summary>
-    private Guid? _sourceAccountId;
 
     public ObservableCollection<GoalItem> SavingGoals { get; } = [];
 
@@ -56,14 +52,19 @@ public partial class GoalsViewModel(ApiClient api, AuthService auth) : PageViewM
 
     /// <summary>Whether the form's goal is an investment goal; a saving goal otherwise.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsSavingKind), nameof(SavedPlaceholder), nameof(NamePlaceholder))]
+    [NotifyPropertyChangedFor(nameof(IsSavingKind), nameof(NamePlaceholder), nameof(ProgressNote))]
     public partial bool IsInvestmentKind { get; set; }
 
     public bool IsSavingKind => !IsInvestmentKind;
 
     public string NamePlaceholder => IsInvestmentKind ? "What you are investing towards" : "What you are saving for";
 
-    public string SavedPlaceholder => IsInvestmentKind ? "Invested so far" : "Saved so far";
+    /// <summary>How the goal's progress is worked out, since there is nothing to choose.</summary>
+    public string ProgressNote => IsInvestmentKind
+        ? "Progress is the combined balance of every account set to the Investments type. "
+            + "You set an account's type by opening it from Home. Investment goals all share that one figure."
+        : "Progress is the combined balance of every account set to the Savings type. "
+            + "You set an account's type by opening it from Home. Saving goals all share that one figure.";
 
     [ObservableProperty]
     public partial string? NameInput { get; set; }
@@ -71,22 +72,8 @@ public partial class GoalsViewModel(ApiClient api, AuthService auth) : PageViewM
     [ObservableProperty]
     public partial string? TargetInput { get; set; }
 
-    /// <summary>What is put aside so far, for a goal kept by hand.</summary>
-    [ObservableProperty]
-    public partial string? SavedInput { get; set; }
-
     [ObservableProperty]
     public partial string? FormError { get; set; }
-
-    /// <summary>"By hand" and the household's accounts that suit the goal's kind.</summary>
-    public ObservableCollection<GoalSourceItem> Sources { get; } = [];
-
-    /// <summary>True when the form's goal has no account to follow, so the amount is typed.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsFollowing))]
-    public partial bool IsKeptByHand { get; set; } = true;
-
-    public bool IsFollowing => !IsKeptByHand;
 
     /// <summary>True when the form is changing a goal, which can then also be deleted.</summary>
     [ObservableProperty]
@@ -97,13 +84,7 @@ public partial class GoalsViewModel(ApiClient api, AuthService auth) : PageViewM
     public partial string DeleteLabel { get; set; } = DeleteFirstTap;
 
     [RelayCommand]
-    private Task LoadAsync() => ReloadAsync(async () =>
-    {
-        // Fetch first, then swap: clearing before the await lets two loads interleave and double up.
-        var goals = await api.GetGoalsAsync();
-        _accounts = await api.GetAccountsAsync();
-        Show(goals);
-    });
+    private Task LoadAsync() => ReloadAsync(async () => Show(await api.GetGoalsAsync()));
 
     [RelayCommand]
     private void StartAdd() => OpenForm(null);
@@ -115,18 +96,10 @@ public partial class GoalsViewModel(ApiClient api, AuthService auth) : PageViewM
     private void CancelForm() => IsFormOpen = false;
 
     [RelayCommand]
-    private void PickSaving() => SetKind(isInvestment: false);
+    private void PickSaving() => IsInvestmentKind = false;
 
     [RelayCommand]
-    private void PickInvestment() => SetKind(isInvestment: true);
-
-    /// <summary>Picks where the goal's progress comes from.</summary>
-    [RelayCommand]
-    private void SelectSource(GoalSourceItem source)
-    {
-        _sourceAccountId = source.AccountId;
-        RebuildSources();
-    }
+    private void PickInvestment() => IsInvestmentKind = true;
 
     [RelayCommand]
     private async Task SaveAsync()
@@ -143,15 +116,8 @@ public partial class GoalsViewModel(ApiClient api, AuthService auth) : PageViewM
             return;
         }
 
-        var saved = 0m;
-        if (IsKeptByHand && !string.IsNullOrWhiteSpace(SavedInput) && (!Money.TryRead(SavedInput, out saved) || saved < 0))
-        {
-            FormError = "Enter the amount so far as a number, or leave it empty.";
-            return;
-        }
-
         var request = new SaveGoalRequest(
-            NameInput.Trim(), target, _sourceAccountId, saved, IsInvestmentKind ? GoalKinds.Investment : GoalKinds.Saving);
+            NameInput.Trim(), target, IsInvestmentKind ? GoalKinds.Investment : GoalKinds.Saving);
         await RunAsync(async () =>
         {
             if (await api.SaveGoalAsync(_editingId, request))
@@ -161,7 +127,7 @@ public partial class GoalsViewModel(ApiClient api, AuthService auth) : PageViewM
             }
             else
             {
-                FormError = "That was not accepted. Check the name and the amounts.";
+                FormError = "That was not accepted. Check the name and the amount.";
             }
         });
     }
@@ -191,47 +157,14 @@ public partial class GoalsViewModel(ApiClient api, AuthService auth) : PageViewM
     private void OpenForm(GoalItem? goal)
     {
         _editingId = goal?.Id;
-        _sourceAccountId = goal?.AccountId;
         IsInvestmentKind = goal?.Kind == GoalKinds.Investment;
         FormTitle = goal is null ? "New goal" : "Change goal";
         NameInput = goal?.Name;
         TargetInput = goal is null ? null : Money.ForInput(goal.TargetAmount);
-        SavedInput = goal is { AccountId: null } ? Money.ForInput(goal.Saved) : null;
         FormError = null;
         CanDelete = goal is not null;
         DeleteLabel = DeleteFirstTap;
-        RebuildSources();
         IsFormOpen = true;
-    }
-
-    private void SetKind(bool isInvestment)
-    {
-        IsInvestmentKind = isInvestment;
-        RebuildSources();
-    }
-
-    /// <summary>
-    /// An investment goal can follow an investment account, a saving goal any other. An
-    /// account already followed stays offered even if its type has since been changed.
-    /// </summary>
-    private void RebuildSources()
-    {
-        var fitting = _accounts
-            .Where(a => (a.Kind == AccountKinds.Investment) == IsInvestmentKind || a.Id == _sourceAccountId)
-            .ToList();
-        if (_sourceAccountId is { } picked && fitting.All(a => a.Id != picked))
-        {
-            _sourceAccountId = null;
-        }
-
-        Sources.Clear();
-        Sources.Add(new GoalSourceItem(null, "By hand", _sourceAccountId is null));
-        foreach (var account in fitting)
-        {
-            Sources.Add(new GoalSourceItem(account.Id, account.Name, account.Id == _sourceAccountId));
-        }
-
-        IsKeptByHand = _sourceAccountId is null;
     }
 
     private void Show(List<GoalResponse> goals)

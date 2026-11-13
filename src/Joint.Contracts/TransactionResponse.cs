@@ -9,6 +9,7 @@ namespace Joint.Contracts;
 /// For a payment: the match text of the tracked payment it counts towards, or the
 /// suggested text for tracking it. Null when it cannot be tracked.
 /// </param>
+/// <param name="ExcludedFromBudget">True when someone took this payment out of the budget by hand.</param>
 public record TransactionResponse(
     Guid Id,
     Guid AccountId,
@@ -22,4 +23,5 @@ public record TransactionResponse(
     string? Description,
     Guid? RecurringId = null,
     string? RecurringKind = null,
-    string? RecurringMatch = null);
+    string? RecurringMatch = null,
+    bool ExcludedFromBudget = false);

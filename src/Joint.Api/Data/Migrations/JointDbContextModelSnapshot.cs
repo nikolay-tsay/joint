@@ -110,15 +110,8 @@ namespace Joint.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("AccountId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<string>("Kind")
                         .IsRequired()
@@ -129,10 +122,6 @@ namespace Joint.Api.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<decimal>("SavedAmount")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
                     b.Property<decimal>("TargetAmount")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
@@ -141,8 +130,6 @@ namespace Joint.Api.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AccountId");
 
                     b.HasIndex("UserId");
 
@@ -316,6 +303,9 @@ namespace Joint.Api.Data.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<bool>("ExcludedFromBudget")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("ExternalId")
                         .IsRequired()
                         .HasColumnType("text");
@@ -379,11 +369,6 @@ namespace Joint.Api.Data.Migrations
 
             modelBuilder.Entity("Joint.Api.Domain.Goal", b =>
                 {
-                    b.HasOne("Joint.Api.Domain.Account", null)
-                        .WithMany()
-                        .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("Joint.Api.Domain.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")

@@ -34,11 +34,10 @@ public class CreateGoal : IEndpoint
             Id = Guid.NewGuid(),
             UserId = user.Id,
             Name = "",
-            Currency = "",
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
-        if (await GoalRules.ApplyAsync(goal, request, user.HouseholdId, db, cancellationToken) is { } problem)
+        if (GoalRules.Apply(goal, request) is { } problem)
         {
             return TypedResults.Problem(problem, statusCode: StatusCodes.Status400BadRequest);
         }

@@ -12,4 +12,10 @@ public class Transaction
     public required string Currency { get; set; }
     public string? Counterparty { get; set; }
     public string? Description { get; set; }
+
+    /// <summary>
+    /// Set by hand to keep a payment out of the budget, when the automatic rules count
+    /// something as everyday spending that is not. Sync never touches it.
+    /// </summary>
+    public bool ExcludedFromBudget { get; set; }
 }

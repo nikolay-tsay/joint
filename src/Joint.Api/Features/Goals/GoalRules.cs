@@ -1,11 +1,12 @@
-using Joint.Api.Data;
 using Joint.Api.Domain;
 using Joint.Contracts;
-using Microsoft.EntityFrameworkCore;
 
 namespace Joint.Api.Features.Goals;
 
-/// <summary>What creating and changing a goal have in common: checking the request and applying it.</summary>
+/// <summary>
+/// What the goal endpoints have in common: checking a request and applying it, and working
+/// out how far along a kind of goal is.
+/// </summary>
 public static class GoalRules
 {
     public const int MaxNameLength = 100;
@@ -13,12 +14,9 @@ public static class GoalRules
     /// <summary>Keeps a slip of the finger from storing something absurd.</summary>
     public const decimal Largest = 1_000_000_000_000m;
 
-    /// <summary>
-    /// Checks a request and writes it onto the goal. Nothing is written when it is refused.
-    /// </summary>
+    /// <summary>Checks a request and writes it onto the goal. Nothing is written when it is refused.</summary>
     /// <returns>Null when applied, otherwise what is wrong with the request.</returns>
-    public static async Task<string?> ApplyAsync(
-        Goal goal, SaveGoalRequest request, Guid householdId, JointDbContext db, CancellationToken cancellationToken)
+    public static string? Apply(Goal goal, SaveGoalRequest request)
     {
         // Names only: Enum.TryParse would also accept a bare number.
         if (!Enum.GetNames<GoalKind>().Contains(request.Kind, StringComparer.OrdinalIgnoreCase)
@@ -38,40 +36,31 @@ public static class GoalRules
             return "The target is an amount above zero.";
         }
 
-        var saved = request.SavedAmount ?? 0;
-        if (saved is < 0 or > Largest)
-        {
-            return "The amount saved cannot be below zero.";
-        }
-
-        string currency;
-        if (request.AccountId is { } accountId)
-        {
-            // Only the household's own accounts can be followed.
-            var account = await db.AccountsOf(householdId).FirstOrDefaultAsync(a => a.Id == accountId, cancellationToken);
-            if (account is null)
-            {
-                return "That account is not available.";
-            }
-
-            currency = account.Currency;
-        }
-        else
-        {
-            // Kept by hand: assume the currency most of the household's accounts are in.
-            currency = (await db.AccountsOf(householdId).Select(a => a.Currency).ToListAsync(cancellationToken))
-                .GroupBy(c => c)
-                .OrderByDescending(g => g.Count())
-                .Select(g => g.Key)
-                .FirstOrDefault() ?? goal.Currency;
-        }
-
         goal.Kind = kind;
         goal.Name = name;
         goal.TargetAmount = request.TargetAmount;
-        goal.SavedAmount = saved;
-        goal.AccountId = request.AccountId;
-        goal.Currency = currency;
         return null;
     }
+
+    /// <summary>
+    /// What counts towards goals of a kind: the combined balance of the household's
+    /// accounts of the matching type. Balances are never converted, so with several
+    /// currencies only the one most of those accounts are in is added up.
+    /// </summary>
+    public static (decimal Reached, string Currency) Progress(GoalKind kind, IReadOnlyList<Account> accounts)
+    {
+        var wanted = kind == GoalKind.Investment ? AccountKind.Investment : AccountKind.Savings;
+        var counted = accounts.Where(a => a.Kind == wanted).ToList();
+
+        // No account of that type yet: still name a currency, so the target can be shown.
+        var currency = MostUsedCurrency(counted) ?? MostUsedCurrency(accounts) ?? "";
+        return (counted.Where(a => a.Currency == currency).Sum(a => a.Balance), currency);
+    }
+
+    private static string? MostUsedCurrency(IEnumerable<Account> accounts) =>
+        accounts
+            .GroupBy(a => a.Currency)
+            .OrderByDescending(g => g.Count())
+            .Select(g => g.Key)
+            .FirstOrDefault();
 }

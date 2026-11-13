@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Joint.Api.Features.Goals;
 
 /// <summary>
-/// Changes a goal: its kind, its name, target, what it follows, or the amount kept by hand.
+/// Changes a goal: its kind, its name or its target.
 /// Any household member may do it, whoever made the goal.
 /// </summary>
 public class UpdateGoal : IEndpoint
@@ -39,7 +39,7 @@ public class UpdateGoal : IEndpoint
             return TypedResults.NotFound();
         }
 
-        if (await GoalRules.ApplyAsync(goal, request, user.HouseholdId, db, cancellationToken) is { } problem)
+        if (GoalRules.Apply(goal, request) is { } problem)
         {
             return TypedResults.Problem(problem, statusCode: StatusCodes.Status400BadRequest);
         }

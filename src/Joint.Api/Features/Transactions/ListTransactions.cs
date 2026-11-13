@@ -75,7 +75,11 @@ public class ListTransactions : IEndpoint
                 transaction.Amount,
                 transaction.Currency,
                 transaction.Counterparty,
-                transaction.Description))
+                transaction.Description,
+                null,
+                null,
+                null,
+                transaction.ExcludedFromBudget))
             .Skip(Math.Max(skip ?? 0, 0))
             .Take(Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit))
             .ToListAsync(cancellationToken);

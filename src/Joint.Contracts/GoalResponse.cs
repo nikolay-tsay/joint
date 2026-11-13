@@ -1,15 +1,9 @@
 namespace Joint.Contracts;
 
 /// <summary>A saving or investment goal and how far along it is.</summary>
-/// <param name="Saved">The followed account's balance, or the figure kept by hand.</param>
-/// <param name="AccountId">The account the goal follows; null when it is kept by hand.</param>
+/// <param name="Saved">
+/// The combined balance of the household's accounts of the matching type: Savings for a
+/// saving goal, Investment for an investment goal. Goals of one kind share this figure.
+/// </param>
 /// <param name="Kind">Saving or Investment.</param>
-public record GoalResponse(
-    Guid Id,
-    string Name,
-    decimal TargetAmount,
-    decimal Saved,
-    string Currency,
-    Guid? AccountId,
-    string? AccountName,
-    string Kind = "Saving");
+public record GoalResponse(Guid Id, string Name, decimal TargetAmount, decimal Saved, string Currency, string Kind);

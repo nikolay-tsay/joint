@@ -202,7 +202,7 @@
 
                         <Border Style="{StaticResource Card}" IsVisible="{Binding Model.Goals.IsEmptyVisible}">
                             <Label
-                                Text="No goals yet. Add one for something you are putting money aside for, like a holiday or a reserve, or for a portfolio you are building. A goal can follow the balance of an account, or you can keep the amount by hand."
+                                Text="No goals yet. Add one for something you are putting money aside for, like a holiday or a reserve, or for a portfolio you are building. A saving goal is measured against your accounts of the Savings type, an investment goal against those of the Investments type."
                                 Style="{StaticResource Caption}" />
                         </Border>
 
@@ -266,50 +266,12 @@
                                         Text="{Binding Model.Goals.TargetInput}"
                                         Placeholder="Target amount"
                                         Keyboard="Numeric"
-                                        ReturnType="Done" />
+                                        ReturnType="Done"
+                                        ReturnCommand="{Binding Model.Goals.SaveCommand}" />
                                 </Border>
 
-                                <Label Text="Where the progress comes from" Style="{StaticResource Caption}" />
-                                <!-- One line; scrolls sideways when there are many accounts. -->
-                                <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
-                                    <HorizontalStackLayout BindableLayout.ItemsSource="{Binding Model.Goals.Sources}" Spacing="6">
-                                        <BindableLayout.ItemTemplate>
-                                            <DataTemplate x:DataType="budget:GoalSourceItem">
-                                                <Border Style="{StaticResource Chip}">
-                                                    <Border.Triggers>
-                                                        <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
-                                                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-                                                        </DataTrigger>
-                                                    </Border.Triggers>
-                                                    <Border.GestureRecognizers>
-                                                        <TapGestureRecognizer
-                                                            Command="{Binding Goals.SelectSourceCommand, Source={RelativeSource AncestorType={x:Type budget:BudgetViewModel}}, x:DataType=budget:BudgetViewModel}"
-                                                            CommandParameter="{Binding .}" />
-                                                    </Border.GestureRecognizers>
-                                                    <Label Text="{Binding Label}" Style="{StaticResource ChipLabel}">
-                                                        <Label.Triggers>
-                                                            <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
-                                                                <Setter Property="TextColor" Value="White" />
-                                                            </DataTrigger>
-                                                        </Label.Triggers>
-                                                    </Label>
-                                                </Border>
-                                            </DataTemplate>
-                                        </BindableLayout.ItemTemplate>
-                                    </HorizontalStackLayout>
-                                </ScrollView>
-
-                                <Border Style="{StaticResource Field}" IsVisible="{Binding Model.Goals.IsKeptByHand}">
-                                    <Entry
-                                        Text="{Binding Model.Goals.SavedInput}"
-                                        Placeholder="{Binding Model.Goals.SavedPlaceholder}"
-                                        Keyboard="Numeric"
-                                        ReturnType="Done" />
-                                </Border>
-                                <Label
-                                    Text="The goal's progress is this account's balance, updated with every sync."
-                                    Style="{StaticResource Caption}"
-                                    IsVisible="{Binding Model.Goals.IsFollowing}" />
+                                <!-- Nothing to choose: progress comes from the accounts of the matching type. -->
+                                <Label Text="{Binding Model.Goals.ProgressNote}" Style="{StaticResource Caption}" />
 
                                 <Label
                                     Text="{Binding Model.Goals.FormError}"

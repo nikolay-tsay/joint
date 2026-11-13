@@ -22,6 +22,15 @@ public partial class HomeViewModel(ApiClient api, AuthService auth) : PageViewMo
     [ObservableProperty]
     public partial string? OtherTotals { get; set; }
 
+    /// <summary>
+    /// How the main total splits between the household's members, biggest first. Empty
+    /// for a household of one, where the split would only repeat the total.
+    /// </summary>
+    public ObservableCollection<OwnerTotalItem> OwnerTotals { get; } = [];
+
+    [ObservableProperty]
+    public partial bool HasOwnerTotals { get; set; }
+
     [ObservableProperty]
     public partial bool HasNoAccounts { get; set; }
 
@@ -45,16 +54,49 @@ public partial class HomeViewModel(ApiClient api, AuthService auth) : PageViewMo
         Total = totals.FirstOrDefault() ?? Money.Format(0, "");
         OtherTotals = totals.Count > 1 ? string.Join("  ·  ", totals.Skip(1)) : null;
 
+        // Per person, in the same currency as the big number above it.
+        var mainCurrency = accounts
+            .GroupBy(a => a.Currency)
+            .OrderByDescending(g => g.Count())
+            .Select(g => g.Key)
+            .FirstOrDefault();
+        var perOwner = accounts
+            .Where(a => a.Currency == mainCurrency)
+            .GroupBy(a => a.OwnerDisplayName)
+            .Select(g => (Name: g.Key, Total: g.Sum(a => a.Balance)))
+            .OrderByDescending(o => o.Total)
+            .ToList();
+        OwnerTotals.Clear();
+        if (perOwner.Count > 1)
+        {
+            foreach (var owner in perOwner)
+            {
+                OwnerTotals.Add(new OwnerTotalItem(owner.Name, Money.Format(owner.Total, mainCurrency ?? "")));
+            }
+        }
+
+        HasOwnerTotals = OwnerTotals.Count > 0;
+
         Sections.Clear();
         foreach (var kind in AccountKinds.All)
         {
             var ofKind = accounts.Where(a => AccountKinds.Label(a.Kind) == AccountKinds.Label(kind)).ToList();
             if (ofKind.Count > 0)
             {
+                // What the holdings in this tile have gained or lost, per currency like the total.
+                var gains = ofKind
+                    .Where(a => a.UnrealizedProfitLoss is not null)
+                    .GroupBy(a => a.Currency)
+                    .OrderByDescending(g => g.Count())
+                    .Select(g => (Currency: g.Key, Amount: g.Sum(a => a.UnrealizedProfitLoss ?? 0)))
+                    .ToList();
+
                 Sections.Add(new AccountSection(
                     AccountKinds.Label(kind),
                     string.Join("\n", Totals(ofKind)),
-                    ofKind.Select(AccountItem.From).ToList()));
+                    ofKind.Select(AccountItem.From).ToList(),
+                    gains.Count > 0 ? string.Join("\n", gains.Select(g => Money.FormatSigned(g.Amount, g.Currency))) : null,
+                    IsLoss: gains.Count > 0 && gains[0].Amount < 0));
             }
         }
     });
