@@ -28,7 +28,9 @@ public static class CategoryCalculator
 
         // The same idea of "spending" as the Insights overview: money going out, own transfers aside.
         var spending = InternalTransfers
-            .Without(rows.Where(r => r.Currency == currency).ToList(), r => r.AccountId, r => r.BookedOn, r => r.Amount)
+            .Without(
+                rows.Where(r => r.Currency == currency).ToList(),
+                r => r.AccountId, r => r.BookedOn, r => r.Amount, r => r.MarkedAsTransfer)
             .Where(r => IsInMonth(r) && r.Amount < 0)
             .ToList();
 

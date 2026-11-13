@@ -53,6 +53,8 @@ public static class GuideContent
                 "Moving money between two of your household's accounts is neither income nor spending, so it is left out.",
                 "Banks do not mark such transfers, so Joint recognises them by a rule: the same amount leaving one "
                     + "account and arriving in a different one within two days.",
+                "In Transactions, both halves of a transfer recognised this way carry the label \"Between your "
+                    + "accounts\". A row with that label is already left out, so it needs no mark from you.",
                 "This can be wrong both ways. Paying 500 and being paid 500 by someone else the same day is dropped "
                     + "as if it were a transfer. Money sent to Trading 212 has no matching arrival, because no Trading 212 "
                     + "transactions are read, so on its own it counts as spending.",

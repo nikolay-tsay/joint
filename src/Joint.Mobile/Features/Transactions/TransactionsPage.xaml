@@ -257,10 +257,21 @@
                                         FontFamily="OpenSansSemibold"
                                         IsVisible="{Binding IsTracked}"
                                         TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                    <!-- Recognised by the app itself, on both halves: nothing for the user to do. -->
+                                    <Label
+                                        Text="Between your accounts"
+                                        FontSize="12"
+                                        FontFamily="OpenSansSemibold"
+                                        IsVisible="{Binding IsInternalTransfer}"
+                                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
                                 </HorizontalStackLayout>
 
                                 <!-- The choices: what every payment to this payee is. -->
                                 <VerticalStackLayout Grid.Row="3" Grid.ColumnSpan="3" Spacing="8" Margin="0,10,0,2" IsVisible="{Binding IsTrackMenuOpen}">
+                                    <Label
+                                        Text="Joint recognised this as money moved between your own accounts, so it is not counted as spending. There is no need to mark it as an own transfer."
+                                        Style="{StaticResource Caption}"
+                                        IsVisible="{Binding IsInternalTransfer}" />
                                     <!-- The category is chosen on its own page: the list can be long. -->
                                     <Border Style="{StaticResource InsetRow}">
                                         <Border.GestureRecognizers>

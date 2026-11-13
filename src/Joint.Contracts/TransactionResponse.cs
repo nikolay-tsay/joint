@@ -15,6 +15,11 @@ namespace Joint.Contracts;
 /// For a payment: the match text of its category rule, or the suggested text for making
 /// one. Null when it cannot be categorized.
 /// </param>
+/// <param name="IsInternalTransfer">
+/// True when the app recognises this as money moved between the household's own accounts:
+/// the same amount left one account and arrived in another within two days. It is then
+/// counted as neither income nor spending.
+/// </param>
 public record TransactionResponse(
     Guid Id,
     Guid AccountId,
@@ -31,4 +36,5 @@ public record TransactionResponse(
     string? RecurringMatch = null,
     string? Category = null,
     Guid? CategoryRuleId = null,
-    string? CategoryMatch = null);
+    string? CategoryMatch = null,
+    bool IsInternalTransfer = false);
