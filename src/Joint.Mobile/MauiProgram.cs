@@ -1,6 +1,7 @@
 using Joint.Mobile.Api;
 using Joint.Mobile.Features.Auth;
 using Joint.Mobile.Features.Home;
+using Joint.Mobile.Features.Lock;
 using Joint.Mobile.Features.Profile;
 using Joint.Mobile.Features.Start;
 using Joint.Mobile.Features.Transactions;
@@ -24,8 +25,13 @@ public static class MauiProgram
 		builder.Services.AddSingleton<SupabaseAuthClient>();
 		builder.Services.AddSingleton<AuthService>();
 		builder.Services.AddSingleton<ApiClient>();
+		builder.Services.AddSingleton<AppLock>();
+		builder.Services.AddSingleton<LockScreen>();
+		builder.Services.AddSingleton<IBiometrics, AndroidBiometrics>();
 
 		builder.Services.AddTransient<StartPage>();
+		builder.Services.AddTransient<LockPage>();
+		builder.Services.AddTransient<LockViewModel>();
 		builder.Services.AddTransient<LoginPage>();
 		builder.Services.AddTransient<LoginViewModel>();
 		builder.Services.AddTransient<HomePage>();

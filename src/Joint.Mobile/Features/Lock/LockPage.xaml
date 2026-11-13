@@ -1,0 +1,75 @@
+<ContentPage
+    x:Class="Joint.Mobile.Features.Lock.LockPage"
+    xmlns:lock="clr-namespace:Joint.Mobile.Features.Lock"
+    x:DataType="lock:LockViewModel"
+    BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
+
+    <ContentPage.Resources>
+        <Style x:Key="KeypadButton" TargetType="Button">
+            <Setter Property="WidthRequest" Value="72" />
+            <Setter Property="HeightRequest" Value="72" />
+            <Setter Property="CornerRadius" Value="36" />
+            <Setter Property="FontSize" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalOptions" Value="Center" />
+            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="*,Auto,Auto" Padding="32,24">
+
+        <VerticalStackLayout VerticalOptions="Center" Spacing="12">
+            <Image Source="logo.png" WidthRequest="88" HeightRequest="88" HorizontalOptions="Center" />
+            <Label Text="Enter your PIN" Style="{StaticResource RowTitle}" FontSize="20" HorizontalOptions="Center" />
+            <Label
+                Text="{Binding Dots}"
+                FontSize="30"
+                HorizontalOptions="Center"
+                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+            <!-- Always takes its line, so the pad does not jump when a message appears. -->
+            <Label
+                Text="{Binding Error}"
+                Style="{StaticResource ErrorText}"
+                MinimumHeightRequest="40"
+                HorizontalOptions="Center"
+                HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+
+        <Grid
+            Grid.Row="1"
+            ColumnDefinitions="*,*,*"
+            RowDefinitions="Auto,Auto,Auto,Auto"
+            RowSpacing="16"
+            MaximumWidthRequest="320">
+            <Button Text="1" Style="{StaticResource KeypadButton}" Command="{Binding DigitCommand}" CommandParameter="1" />
+            <Button Grid.Column="1" Text="2" Style="{StaticResource KeypadButton}" Command="{Binding DigitCommand}" CommandParameter="2" />
+            <Button Grid.Column="2" Text="3" Style="{StaticResource KeypadButton}" Command="{Binding DigitCommand}" CommandParameter="3" />
+            <Button Grid.Row="1" Text="4" Style="{StaticResource KeypadButton}" Command="{Binding DigitCommand}" CommandParameter="4" />
+            <Button Grid.Row="1" Grid.Column="1" Text="5" Style="{StaticResource KeypadButton}" Command="{Binding DigitCommand}" CommandParameter="5" />
+            <Button Grid.Row="1" Grid.Column="2" Text="6" Style="{StaticResource KeypadButton}" Command="{Binding DigitCommand}" CommandParameter="6" />
+            <Button Grid.Row="2" Text="7" Style="{StaticResource KeypadButton}" Command="{Binding DigitCommand}" CommandParameter="7" />
+            <Button Grid.Row="2" Grid.Column="1" Text="8" Style="{StaticResource KeypadButton}" Command="{Binding DigitCommand}" CommandParameter="8" />
+            <Button Grid.Row="2" Grid.Column="2" Text="9" Style="{StaticResource KeypadButton}" Command="{Binding DigitCommand}" CommandParameter="9" />
+            <Button Grid.Row="3" Grid.Column="1" Text="0" Style="{StaticResource KeypadButton}" Command="{Binding DigitCommand}" CommandParameter="0" />
+            <Button
+                Grid.Row="3"
+                Grid.Column="2"
+                Text="⌫"
+                Style="{StaticResource KeypadButton}"
+                BackgroundColor="Transparent"
+                SemanticProperties.Description="Delete the last digit"
+                Command="{Binding BackspaceCommand}" />
+        </Grid>
+
+        <VerticalStackLayout Grid.Row="2" Spacing="4" Margin="0,24,0,0">
+            <Button
+                Text="Use fingerprint or face"
+                Style="{StaticResource SecondaryButton}"
+                IsVisible="{Binding CanUseBiometrics}"
+                Command="{Binding UseBiometricsCommand}" />
+            <Button Text="Forgot PIN? Sign out" Style="{StaticResource QuietButton}" Command="{Binding SignOutCommand}" />
+        </VerticalStackLayout>
+    </Grid>
+
+</ContentPage>
