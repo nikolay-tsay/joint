@@ -1,184 +1,91 @@
-# joint
+# Joint
 
-A read-only overview of a household's finances across separate bank and investment
-accounts, for couples and families who don't want a joint account.
+One place to see a household's money when it lives in separate accounts.
 
-## Layout
+Joint is an Android app for couples and families who keep their own bank and investment
+accounts instead of opening a joint one. Each person connects their accounts, and everyone
+in the household sees the same picture: what there is, what came in, what went out, and
+who spent it.
 
-| Path | What it is |
+It only reads. Joint cannot move money, place orders or change anything at a bank.
+
+This is a personal project built for one household. It is not a hosted service and is not
+in any app store; the code is here for anyone who wants to read it or run their own copy.
+
+## What it does
+
+**Home.** The household's total balance, each person's share of it, and every account
+grouped into Everyday, Savings and Investments. Investment accounts show their holdings and
+how much they have gained or lost.
+
+**Transactions.** Everyone's transactions in one list, by day, with who made each one.
+Open a payment to give it a category, or to mark its payee as a subscription, a regular
+payment such as rent, or a transfer to another account of your own. A mark applies to every
+payment to that payee, past and future.
+
+**Insights.** Income against spending month by month, this month's spending compared with
+last month's day by day, and who spent what. A second view adds up subscriptions and
+regular payments; a third shows a month's spending by category.
+
+**Budget.** One monthly amount for everyday spending. Subscriptions and regular payments
+are kept out of it and shown alongside, and the app projects where the month is heading at
+the current pace.
+
+**Goals.** Saving and investment goals, measured automatically against the balances of
+your savings and investment accounts.
+
+**Households.** Invite someone with a one-time code and you both see the same data. Leave,
+and your accounts go with you.
+
+## Where the data comes from
+
+| Source | What it brings |
 |---|---|
-| `src/Joint.Api` | ASP.NET Core backend: REST API, EF Core data access, Hangfire sync jobs |
-| `src/Joint.Contracts` | DTOs shared by the backend and the clients |
-| `src/Joint.Mobile` | .NET MAUI app, Android only |
-| `tests/Joint.Api.Tests` | Backend tests |
+| [Lunch Flow](https://www.lunchflow.app/) | Balances and transactions from Air Bank and other banks it supports |
+| Fio banka | Balances and transactions, straight from Fio |
+| Trading 212 | Balances and holdings of Invest and Stocks ISA accounts |
 
-Everything targets .NET 11 with C# 15 and runtime async, set once in `Directory.Build.props`.
+Accounts are read when you connect them and then every six hours.
 
-The backend is a single project organized as vertical slices:
+### Connecting an account
 
-| Folder | What goes there |
-|---|---|
-| `Features/<Feature>` | One file per use case, holding its endpoint, handler and anything only it needs |
-| `Domain` | Entities shared by several slices |
-| `Data` | The EF Core context and migrations |
-| `Connectors` | The provider connector interface and its implementations |
-| `Common` | Cross-cutting plumbing such as auth and the endpoint interface |
+Each person connects their own accounts from the Profile tab.
 
-A new endpoint is a class implementing `IEndpoint` in its feature folder, plus one
-`app.MapEndpoint<T>()` line in `Program.cs`.
+- **Lunch Flow.** Create a Lunch Flow account and connect your bank there. Add a
+  destination of type "REST API", switch on the accounts to share, and paste its API key
+  into Joint.
+- **Fio.** In Fio internet banking, open Settings, then API, and add a token with the
+  "watch the account" right only. Paste it into Joint. A token covers one account, and Fio
+  hands out the last 90 days of history.
+- **Trading 212.** In its app, open Settings, then API, and generate a key with only the
+  "Account data" and "Portfolio" permissions. Paste the key and its secret into Joint.
 
-## Backend
+## Privacy and safety
 
-The backend needs two settings. Keep them out of the repo with user secrets:
+- Every connection uses a read-only key or token. None of them can make a payment or a trade.
+- Those keys are encrypted before they are stored, and are never sent back to the app.
+- Sign-in is with Google. Joint never sees or stores a password.
+- An optional app lock asks for a PIN or a fingerprint every time the app is opened, and
+  hides the app's preview in the recent-apps screen.
+- A household's data is visible only to its members.
 
-```bash
-dotnet user-secrets set "ConnectionStrings:Database" "<Supabase Postgres connection string>" --project src/Joint.Api
-```
+## Good to know
 
-```bash
-dotnet user-secrets set "Supabase:Url" "https://<project-ref>.supabase.co" --project src/Joint.Api
-```
+- Android only, installed from an APK.
+- Amounts are never converted between currencies. Totals are in the currency your
+  household uses most, and other currencies are listed separately or left out.
+- Transfers between your own accounts are recognised by a rule (the same amount leaving one
+  account and arriving in another within two days), so the odd one is missed or caught by
+  mistake. Trading 212 shares no transactions, so money sent there is marked by hand once.
+- The in-app guide, under Profile, explains how every figure is worked out.
 
-Use Supabase's direct connection or session pooler, not the transaction pooler: Hangfire
-needs session-level features.
+## Built with
 
-Apply the database schema, then run:
+.NET 11 throughout: an ASP.NET Core backend on Postgres, and a .NET MAUI app. Sign-in and
+the database are hosted on Supabase.
 
-```bash
-dotnet tool restore
-```
+To run your own copy, see [docs/setup.md](docs/setup.md).
 
-```bash
-dotnet ef database update --project src/Joint.Api
-```
+## Licence
 
-```bash
-dotnet run --project src/Joint.Api
-```
-
-Outside production the API serves a Scalar UI at `/scalar` for trying endpoints by hand
-(OpenAPI document at `/openapi/v1.json`). For endpoints that need sign-in, paste a Supabase
-access token into its Bearer authentication field.
-
-App tables live in the `joint` schema; Hangfire creates its own `hangfire` schema on first start.
-Sign-in is handled by Supabase Auth; the API validates the tokens it issues.
-
-### Deploying to Railway
-
-One Railway project with two environments, `production` and `development`, each running one
-service built from this repo. Railway's `railway.json` is being retired, so the service is
-configured in the dashboard. Set these per environment:
-
-| Setting | Value |
-|---|---|
-| Variable `RAILWAY_DOCKERFILE_PATH` | `src/Joint.Api/Dockerfile` (root directory stays the repo root) |
-| Variable `ConnectionStrings__Database` | That environment's Supabase session pooler string, Npgsql format |
-| Variable `Supabase__Url` | `https://<project-ref>.supabase.co` |
-| Variable `Credentials__EncryptionKey` | 32 random bytes, base64 (`openssl rand -base64 32`). Different per environment; never change it once connections exist |
-| Variable `ASPNETCORE_ENVIRONMENT` | `Development` in the development environment only, to expose `/scalar` there |
-| Watch paths | `src/Joint.Api/**`, `src/Joint.Contracts/**`, `Directory.Build.props`, `global.json` |
-| Healthcheck path | `/health` |
-| Serverless / app sleeping | Off, or scheduled sync stops running |
-
-The backend listens on the `PORT` Railway provides. Railway deploys on every push to the
-branch the environment tracks; database migrations are deployed separately (below).
-
-### Connecting bank accounts
-
-Bank data comes through [Lunch Flow](https://www.lunchflow.app/). Each person:
-
-1. Creates a Lunch Flow account and connects their bank there.
-2. Adds a destination of type "REST API", switches on the accounts to share under
-   "Account Access", and copies the API key.
-3. Pastes the key into the app under Connect.
-
-A Fio account connects directly. In Fio internet banking, open Settings, then API, and add
-a token with the "watch the account" right only (it cannot make payments); paste it into
-the app under Connect. A token covers one account and expires unless it is set to extend
-itself. Fio hands out only the last 90 days of movements to a token, so that is how far
-back the first sync reaches.
-
-Investments come straight from Trading 212. In its app, open Settings, then API, generate
-a key with only the "Account data" and "Portfolio" permissions, and paste the key and the
-secret into the app under Connect. The key cannot trade. Only Invest and Stocks ISA
-accounts are supported by Trading 212's API.
-
-Credentials are stored encrypted with `Credentials:EncryptionKey`. Locally, set it with:
-
-```bash
-dotnet user-secrets set "Credentials:EncryptionKey" "<output of: openssl rand -base64 32>" --project src/Joint.Api
-```
-
-Without `openssl`, PowerShell can generate the key:
-
-```powershell
-$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
-```
-
-Accounts sync right after connecting and then every six hours; Lunch Flow itself refreshes
-about once a day.
-
-### Deploying migrations
-
-There are two environments, each with its own Supabase project and Railway environment:
-the `development` branch deploys to development and `main` deploys to production.
-
-The `Deploy database` workflow runs `dotnet ef database update`. A push that changes
-`src/Joint.Api/Data/Migrations` migrates the database of the branch's environment. A manual
-run migrates the one environment you pick.
-
-Create two GitHub environments named `development` and `production`, and give each:
-
-- Secret `DATABASE_CONNECTION_STRING`: that project's Supabase session pooler connection
-  string in Npgsql format. GitHub runners have no IPv6, so the direct connection won't work.
-- Variable `SUPABASE_URL`: `https://<project-ref>.supabase.co`.
-
-To approve production migrations by hand, add a required reviewer to the `production`
-environment in GitHub.
-
-## Mobile
-
-Building needs the `maui-android` workload plus the Android SDK and a JDK:
-
-```bash
-dotnet workload install maui-android
-```
-
-```bash
-dotnet build src/Joint.Mobile
-```
-
-### Sign-in setup
-
-The app signs in with Google through Supabase Auth. Per Supabase project:
-
-1. In Google Cloud, create an OAuth client of type "Web application" and add
-   `https://<project-ref>.supabase.co/auth/v1/callback` as an authorized redirect URI.
-2. In Supabase, enable the Google provider under Authentication and paste the client id
-   and secret.
-3. In Supabase's URL configuration, add `joint://auth-callback` to Redirect URLs.
-4. Fill in `src/Joint.Mobile/Config/AppConfig.cs`: the Supabase URL, the publishable key
-   and the backend URL. Debug builds use the development values, Release builds production.
-
-### Releasing the APK
-
-Pushing a tag such as `v0.1.0` runs the `Release mobile` workflow, which builds a signed APK
-and attaches it to a GitHub release as `joint-0.1.0.apk`. The tag sets the version shown in
-the app.
-
-One-time setup: create a release keystore and keep it and its passwords somewhere safe.
-Updates only install over the existing app when signed with the same key.
-
-```bash
-keytool -genkeypair -v -keystore joint-release.keystore -alias joint -keyalg RSA -keysize 2048 -validity 10000
-```
-
-Then add four repository secrets: `ANDROID_KEYSTORE_BASE64` (the keystore file,
-base64-encoded), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`.
-Never commit the keystore.
-
-## Tests
-
-```bash
-dotnet test tests/Joint.Api.Tests
-```
+[MIT](LICENSE)
