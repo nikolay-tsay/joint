@@ -11,7 +11,7 @@ reference for screens and flows.
 - Auth and database: Supabase. The backend only validates Supabase-issued JWTs. Clients never query the Supabase database directly; all data goes through the backend.
 - Mobile: .NET MAUI, Android only, distributed as a sideloaded APK. No iOS, no store publishing.
 - A web client is planned later; `src/Joint.Contracts` holds the DTOs shared between backend and clients.
-- Providers are read-only. Lunch Flow (an aggregator, built) carries Air Bank and can carry other banks; each user pastes the API key of their own Lunch Flow "API destination". Trading 212 (built) is a direct connector taking an API key and secret with the Account data and Portfolio permissions; it yields one Investment account with holdings and no transactions. Fio (token API) is planned as a direct connector. Enable Banking was rejected: it does not serve Czech residents on its own licence.
+- Providers are read-only. Lunch Flow (an aggregator, built) carries Air Bank and can carry other banks; each user pastes the API key of their own Lunch Flow "API destination". Trading 212 (built) is a direct connector taking an API key and secret with the Account data and Portfolio permissions; it yields up to three accounts and no transactions: Investments (with holdings), Main pot (investable cash) and Spending pot. The API has no spending-pot field, so that one is the account total minus the other two and appears only when something is left over. Fio (token API) is planned as a direct connector. Enable Banking was rejected: it does not serve Czech residents on its own licence.
 
 ## Users, households and sharing
 
@@ -114,7 +114,7 @@ through `/api/me`.
 - The Release mobile workflow is untested (no keystore secrets yet).
 - The Lunch Flow connector is written from its API reference and tested only against canned responses. Unconfirmed against the real service: that transaction ids are stable between fetches, that negative amounts mean money out, whether long histories are paginated, and its rate limits.
 - Lunch Flow holdings (brokerage accounts) are not read yet.
-- The Trading 212 connector is written from its OpenAPI spec and tested only against canned responses. Unconfirmed against the real service: that `totalValue` is cash plus investments (the spec's description is ambiguous), and how the rate-limit retry behaves. Its trades, dividends and deposits are not imported.
+- The Trading 212 connector is written from its OpenAPI spec and tested only against canned responses. Confirmed by the user on 2026-11-13: it connects, syncs, and `totalValue` is the whole account including both pots. Unconfirmed: that the three-way split matches the app's Investments, Main pot and Spending pot figures (the spending pot is derived, not reported), and how the rate-limit retry behaves. A spending pot that drops to exactly zero keeps its last balance, because an absent account is left untouched by sync. Its trades, dividends and deposits are not imported.
 - The redesigned app (tabs, theme, Transactions and Profile screens) compiles but was written without seeing it run; layout, dark mode and the tab icons need a look on a device.
 
 Update this section as these get verified, and keep this file current when a decision above changes.

@@ -8,7 +8,8 @@ namespace Joint.Api.Connectors.Trading212;
 
 /// <summary>
 /// Trading 212's public API (v0, beta) for an Invest or Stocks ISA account. Reads the
-/// account's total value and its open positions; it never places orders. The user creates
+/// account's value, split into investments, main pot and spending pot, and its open
+/// positions; it never places orders. The user creates
 /// an API key with the "Account data" and "Portfolio" permissions and gives us key and secret.
 /// </summary>
 public class Trading212Connector(HttpClient http) : IProviderConnector
@@ -17,6 +18,9 @@ public class Trading212Connector(HttpClient http) : IProviderConnector
 
     /// <summary>How long to wait at most for a rate limit to clear before giving up.</summary>
     private static readonly TimeSpan MaxRateLimitWait = TimeSpan.FromSeconds(10);
+
+    /// <summary>Below this, a leftover is rounding noise, not a spending pot.</summary>
+    private const decimal SmallestPotWorthShowing = 0.01m;
 
     public ProviderKind Provider => ProviderKind.Trading212;
 
@@ -61,19 +65,34 @@ public class Trading212Connector(HttpClient http) : IProviderConnector
                 UnrealizedProfitLoss: p.WalletImpact?.UnrealizedProfitLoss ?? 0))
             .ToList();
 
-        // One Trading 212 key covers exactly one account. Trades and dividends are not
-        // imported as transactions; the app shows this account through its holdings.
-        return new ProviderSnapshot([
-            new ProviderAccount(
-                ExternalId: summary.Id.ToString(),
-                Name: "Trading 212",
-                Institution: "Trading 212",
-                Kind: AccountKind.Investment,
-                Currency: currency,
-                Balance: summary.TotalValue,
-                Transactions: [],
-                Holdings: holdings),
-        ]);
+        // One Trading 212 key covers one account, but its money sits in distinct places, so it
+        // is reported as up to three accounts. Trades and dividends are not imported as
+        // transactions; the investments account is shown through its holdings.
+        var invested = summary.Investments?.CurrentValue ?? 0;
+        var mainPot = (summary.Cash?.AvailableToTrade ?? 0)
+            + (summary.Cash?.InPies ?? 0)
+            + (summary.Cash?.ReservedForOrders ?? 0);
+
+        // The API has no field for the card's spending pot. It is what is left of the
+        // account's total once investments and investable cash are taken out.
+        var spendingPot = summary.TotalValue - invested - mainPot;
+
+        var accounts = new List<ProviderAccount>
+        {
+            // Keeps the plain account id, so it stays the same account it was before the split.
+            Part(summary.Id.ToString(), "Investments", AccountKind.Investment, invested, holdings),
+            Part($"{summary.Id}:cash", "Main pot", AccountKind.Savings, mainPot, []),
+        };
+        if (spendingPot > SmallestPotWorthShowing)
+        {
+            accounts.Add(Part($"{summary.Id}:spending", "Spending pot", AccountKind.Current, spendingPot, []));
+        }
+
+        return new ProviderSnapshot(accounts);
+
+        ProviderAccount Part(
+            string externalId, string name, AccountKind kind, decimal balance, IReadOnlyList<ProviderHolding> held) =>
+            new(externalId, name, "Trading 212", kind, currency, balance, [], held);
     }
 
     private async Task<T> GetAsync<T>(string path, string credential, CancellationToken cancellationToken)
@@ -130,7 +149,12 @@ public class Trading212Connector(HttpClient http) : IProviderConnector
         return Convert.ToBase64String(Encoding.UTF8.GetBytes($"{parts[0]}:{parts[1]}"));
     }
 
-    private sealed record AccountSummary(long Id, string? Currency, decimal TotalValue);
+    private sealed record AccountSummary(
+        long Id, string? Currency, decimal TotalValue, CashSummary? Cash, InvestmentSummary? Investments);
+
+    private sealed record CashSummary(decimal AvailableToTrade, decimal InPies, decimal ReservedForOrders);
+
+    private sealed record InvestmentSummary(decimal CurrentValue);
 
     private sealed record Position(
         decimal Quantity,

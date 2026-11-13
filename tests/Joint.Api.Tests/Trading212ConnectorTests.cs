@@ -29,7 +29,48 @@ public class Trading212ConnectorTests
     private static readonly string Credential = Trading212Connector.PackCredential(" my-key ", "my-secret");
 
     [Fact]
-    public async Task Fetch_returns_one_investment_account_with_its_value_and_holdings()
+    public async Task The_account_is_split_into_investments_main_pot_and_spending_pot()
+    {
+        // Total 3500 = 2880 invested + (120.5 + 30 + 9.5) investable cash + 460 left over.
+        const string summary = """
+            {"cash":{"availableToTrade":120.5,"inPies":30,"reservedForOrders":9.5},
+             "currency":"EUR","id":4455667,
+             "investments":{"currentValue":2880},"totalValue":3500}
+            """;
+        var handler = new StubHandler(request =>
+            request.RequestUri!.AbsolutePath.EndsWith("summary") ? Json(summary) : Json(Positions));
+
+        var snapshot = await Connector(handler).FetchAsync(Credential, null, CancellationToken.None);
+
+        Assert.Equal(["Investments", "Main pot", "Spending pot"], snapshot.Accounts.Select(a => a.Name));
+        Assert.Equal([2880m, 160m, 460m], snapshot.Accounts.Select(a => a.Balance));
+        Assert.Equal(
+            [AccountKind.Investment, AccountKind.Savings, AccountKind.Current],
+            snapshot.Accounts.Select(a => a.Kind));
+        Assert.Equal(["4455667", "4455667:cash", "4455667:spending"], snapshot.Accounts.Select(a => a.ExternalId));
+        Assert.All(snapshot.Accounts, a => Assert.Equal("Trading 212", a.Institution));
+
+        // Positions belong to the investments part only.
+        Assert.Equal(2, snapshot.Accounts[0].Holdings.Count);
+        Assert.Empty(snapshot.Accounts[1].Holdings);
+        Assert.Empty(snapshot.Accounts[2].Holdings);
+    }
+
+    [Fact]
+    public async Task No_spending_pot_is_reported_when_the_total_is_fully_accounted_for()
+    {
+        var handler = new StubHandler(request =>
+            request.RequestUri!.AbsolutePath.EndsWith("summary") ? Json(Summary) : Json("[]"));
+
+        var snapshot = await Connector(handler).FetchAsync(Credential, null, CancellationToken.None);
+
+        // 3000.5 total = 2880 invested + 120.5 cash, nothing left over.
+        Assert.Equal(["Investments", "Main pot"], snapshot.Accounts.Select(a => a.Name));
+        Assert.Equal([2880m, 120.5m], snapshot.Accounts.Select(a => a.Balance));
+    }
+
+    [Fact]
+    public async Task Fetch_returns_the_investments_with_their_holdings()
     {
         var handler = new StubHandler(request => request.RequestUri!.AbsolutePath switch
         {
@@ -40,12 +81,12 @@ public class Trading212ConnectorTests
 
         var snapshot = await Connector(handler).FetchAsync(Credential, null, CancellationToken.None);
 
-        var account = Assert.Single(snapshot.Accounts);
+        var account = snapshot.Accounts[0];
         Assert.Equal("4455667", account.ExternalId);
         Assert.Equal("Trading 212", account.Institution);
         Assert.Equal(AccountKind.Investment, account.Kind);
         Assert.Equal("EUR", account.Currency);
-        Assert.Equal(3000.5m, account.Balance);
+        Assert.Equal(2880m, account.Balance);
         Assert.Empty(account.Transactions);
 
         Assert.Equal(2, account.Holdings.Count);
@@ -130,7 +171,7 @@ public class Trading212ConnectorTests
 
         var snapshot = await connector.FetchAsync(Credential, null, CancellationToken.None);
 
-        Assert.Single(snapshot.Accounts);
+        Assert.NotEmpty(snapshot.Accounts);
         var wait = Assert.Single(waits);
         Assert.InRange(wait, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10));
     }
