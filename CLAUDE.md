@@ -11,7 +11,7 @@ reference for screens and flows.
 - Auth and database: Supabase. The backend only validates Supabase-issued JWTs. Clients never query the Supabase database directly; all data goes through the backend.
 - Mobile: .NET MAUI, Android only, distributed as a sideloaded APK. No iOS, no store publishing.
 - A web client is planned later; `src/Joint.Contracts` holds the DTOs shared between backend and clients.
-- Providers are read-only. Lunch Flow (an aggregator, built) carries Air Bank and can carry other banks; each user pastes the API key of their own Lunch Flow "API destination". Fio (token API) and Trading 212 (read-only API key) are planned as direct connectors. Enable Banking was rejected: it does not serve Czech residents on its own licence.
+- Providers are read-only. Lunch Flow (an aggregator, built) carries Air Bank and can carry other banks; each user pastes the API key of their own Lunch Flow "API destination". Trading 212 (built) is a direct connector taking an API key and secret with the Account data and Portfolio permissions; it yields one Investment account with holdings and no transactions. Fio (token API) is planned as a direct connector. Enable Banking was rejected: it does not serve Czech residents on its own licence.
 
 ## Users, households and sharing
 
@@ -58,6 +58,8 @@ variables). `dotnet ef` needs both set too; dummy values are enough for `migrati
 - App tables live in the `joint` schema, owned by EF migrations. Hangfire owns the `hangfire` schema. Don't touch Supabase's own schemas.
 - Each provider is an `IProviderConnector` (`Connectors/<Provider>/`) returning the normalized `ProviderSnapshot`, registered in `SyncSetup`. Adding a provider must not require changes to other slices; `ConnectionSyncer` stores whatever a connector returns.
 - Sync rules (`Features/Sync/ConnectionSyncer.cs`): accounts match on the provider's id, transactions are deduplicated on `ExternalId` and only booked ones are stored, holdings are replaced. A failed sync saves nothing and records a user-safe message in `BankConnection.LastError`. Connecting enqueues an immediate sync; the recurring job runs every six hours.
+- A "connect" endpoint only gathers its provider's credential and calls `ConnectionLinker.LinkAsync` (`Features/Connections`), which validates it with the connector, stores it encrypted and enqueues the first sync. A provider with a multi-part credential packs it into one string (see `Trading212Connector.PackCredential`).
+- Holdings carry both the instrument's price currency and a value in the account's currency; totals and profit/loss always use the latter. `GET /api/accounts/{id}/holdings` serves them and the app lists them on the account's screen.
 - Read household data through `Data/HouseholdQueries.cs` (`ConnectionsOf`, `AccountsOf`); that is the single place deciding what a household sees.
 - Provider credentials are encrypted with `CredentialProtector` (AES-GCM, key from `Credentials:EncryptionKey`) before storage and never returned to clients or logged. Changing that key makes every stored credential unreadable.
 
@@ -95,7 +97,7 @@ The database must stay small (Supabase bills by size). Before adding a table or 
 - Hangfire needs Supabase's direct connection or session pooler. The transaction pooler breaks it.
 - Railway is configured in its dashboard (see README), not in the repo. Don't add `railway.json`/`railway.toml`: Railway stops reading them on 2026-12-01. Its replacement, `.railway/railway.ts`, was skipped as overkill for one service.
 - Fio allows one request per token every 30 seconds (HTTP 409 otherwise). Respect this in sync and in any manual refresh.
-- Trading 212's API is beta; its limits apply per account and can change.
+- Trading 212's API is beta (v0); its limits apply per account and are tight (account summary: one call per five seconds, positions: one per second). `Trading212Connector` waits out a 429 using `x-ratelimit-reset` and retries, which matters because the first sync runs seconds after the connect-time validation. It only works for Invest and Stocks ISA accounts.
 - JWT validation assumes the Supabase project uses asymmetric signing keys (discovered through `Authority`). A legacy shared-secret project needs different setup in `Common/SupabaseAuth.cs`.
 - The Android SDK and JDK (21) live in `%LOCALAPPDATA%\Android`. The SDK's command-line tools and emulator are not installed. Android builds fail with "Java SDK directory could not be found" when run inside a sandbox that can't read that folder.
 - The mobile app is released by pushing a `v*` tag (`.github/workflows/release-mobile.yml`), which builds a signed APK into a GitHub release. The keystore exists only in repository secrets.
@@ -112,6 +114,7 @@ through `/api/me`.
 - The Release mobile workflow is untested (no keystore secrets yet).
 - The Lunch Flow connector is written from its API reference and tested only against canned responses. Unconfirmed against the real service: that transaction ids are stable between fetches, that negative amounts mean money out, whether long histories are paginated, and its rate limits.
 - Lunch Flow holdings (brokerage accounts) are not read yet.
+- The Trading 212 connector is written from its OpenAPI spec and tested only against canned responses. Unconfirmed against the real service: that `totalValue` is cash plus investments (the spec's description is ambiguous), and how the rate-limit retry behaves. Its trades, dividends and deposits are not imported.
 - The redesigned app (tabs, theme, Transactions and Profile screens) compiles but was written without seeing it run; layout, dark mode and the tab icons need a look on a device.
 
 Update this section as these get verified, and keep this file current when a decision above changes.

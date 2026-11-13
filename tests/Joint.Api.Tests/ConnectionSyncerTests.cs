@@ -145,6 +145,58 @@ public class ConnectionSyncerTests
     }
 
     [Fact]
+    public async Task Holdings_are_replaced_on_each_sync_and_listed_largest_first()
+    {
+        await using var db = NewDb();
+        var connector = new FakeConnector(ProviderKind.Trading212)
+        {
+            Snapshot = Portfolio(
+                new ProviderHolding("AAPL", "Apple", 2, 150, 180, "USD", 330, 55),
+                new ProviderHolding("IWDA", "World ETF", 10, 80, 76, "EUR", 760, -40)),
+        };
+        var connection = await ConnectAsync(db, Ana, ProviderKind.Trading212);
+        var syncer = Syncer(db, connector);
+        await syncer.SyncAsync(connection.Id, CancellationToken.None);
+        var account = await db.Accounts.SingleAsync();
+        Assert.Equal(AccountKind.Investment, account.Kind);
+
+        var first = await HoldingsAsync(db, Ana, account.Id);
+        Assert.Equal(["World ETF", "Apple"], first.Select(h => h.Name));
+        Assert.Equal("EUR", first[0].ValueCurrency);
+        Assert.Equal("USD", first[1].PriceCurrency);
+        Assert.Equal(55, first[1].UnrealizedProfitLoss);
+
+        // Apple was sold; a new position appeared.
+        connector.Snapshot = Portfolio(
+            new ProviderHolding("IWDA", "World ETF", 12, 79, 77, "EUR", 924, -24),
+            new ProviderHolding("MSFT", "Microsoft", 1, 400, 410, "USD", 380, 9));
+        await syncer.SyncAsync(connection.Id, CancellationToken.None);
+
+        var second = await HoldingsAsync(db, Ana, account.Id);
+        Assert.Equal(["World ETF", "Microsoft"], second.Select(h => h.Name));
+        Assert.Equal(12, second[0].Quantity);
+        Assert.Equal(2, await db.Holdings.CountAsync());
+    }
+
+    [Fact]
+    public async Task Someone_outside_the_household_cannot_see_holdings()
+    {
+        await using var db = NewDb();
+        var connector = new FakeConnector(ProviderKind.Trading212)
+        {
+            Snapshot = Portfolio(new ProviderHolding("AAPL", "Apple", 2, 150, 180, "USD", 330, 55)),
+        };
+        var connection = await ConnectAsync(db, Ana, ProviderKind.Trading212);
+        await Syncer(db, connector).SyncAsync(connection.Id, CancellationToken.None);
+        var accountId = (await db.Accounts.SingleAsync()).Id;
+
+        var result = await ListAccountHoldings.HandleAsync(
+            accountId, Ben, new CurrentUserService(db), db, CancellationToken.None);
+
+        Assert.IsType<NotFound>(result.Result);
+    }
+
+    [Fact]
     public async Task Transactions_can_be_narrowed_to_one_kind_of_account()
     {
         await using var db = NewDb();
@@ -255,14 +307,26 @@ public class ConnectionSyncerTests
     private static ConnectionSyncer Syncer(JointDbContext db, FakeConnector connector) =>
         new(db, new ConnectorRegistry([connector]), Protector, NullLogger<ConnectionSyncer>.Instance);
 
-    private static async Task<BankConnection> ConnectAsync(JointDbContext db, ClaimsPrincipal principal)
+    private static ProviderSnapshot Portfolio(params ProviderHolding[] holdings) =>
+        new([new ProviderAccount("42", "Trading 212", "Trading 212", AccountKind.Investment, "EUR", 1000, [], holdings)]);
+
+    private static async Task<List<HoldingResponse>> HoldingsAsync(
+        JointDbContext db, ClaimsPrincipal principal, Guid accountId)
+    {
+        var result = await ListAccountHoldings.HandleAsync(
+            accountId, principal, new CurrentUserService(db), db, CancellationToken.None);
+        return Assert.IsType<Ok<List<HoldingResponse>>>(result.Result).Value!;
+    }
+
+    private static async Task<BankConnection> ConnectAsync(
+        JointDbContext db, ClaimsPrincipal principal, ProviderKind provider = ProviderKind.LunchFlow)
     {
         var user = (await new CurrentUserService(db).GetOrCreateAsync(principal, CancellationToken.None))!;
         var connection = new BankConnection
         {
             Id = Guid.NewGuid(),
             OwnerUserId = user.Id,
-            Provider = ProviderKind.LunchFlow,
+            Provider = provider,
             Status = ConnectionStatus.Pending,
             EncryptedCredential = Protector.Protect("key"),
         };

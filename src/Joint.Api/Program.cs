@@ -40,10 +40,12 @@ app.MapEndpoint<CreateInvitation>();
 app.MapEndpoint<AcceptInvitation>();
 app.MapEndpoint<LeaveHousehold>();
 app.MapEndpoint<ConnectLunchFlow>();
+app.MapEndpoint<ConnectTrading212>();
 app.MapEndpoint<ListConnections>();
 app.MapEndpoint<DeleteConnection>();
 app.MapEndpoint<ListAccounts>();
 app.MapEndpoint<UpdateAccount>();
+app.MapEndpoint<ListAccountHoldings>();
 app.MapEndpoint<ListTransactions>();
 
 app.ScheduleSync();

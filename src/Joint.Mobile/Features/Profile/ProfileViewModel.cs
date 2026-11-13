@@ -73,7 +73,8 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
     // ----- Connections card -----
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsConnectClosed), nameof(IsChoosingProvider), nameof(IsLunchFlowOpen))]
+    [NotifyPropertyChangedFor(
+        nameof(IsConnectClosed), nameof(IsChoosingProvider), nameof(IsLunchFlowOpen), nameof(IsTrading212Open))]
     public partial ConnectStep ConnectStep { get; set; }
 
     public bool IsConnectClosed => ConnectStep == ConnectStep.Closed;
@@ -82,12 +83,21 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
 
     public bool IsLunchFlowOpen => ConnectStep == ConnectStep.LunchFlow;
 
+    public bool IsTrading212Open => ConnectStep == ConnectStep.Trading212;
+
     /// <summary>The connectors offered after tapping "Connect".</summary>
     public IReadOnlyList<ProviderOption> Providers { get; } = ProviderOption.All;
 
-    /// <summary>What the user is pasting into the connect panel.</summary>
+    /// <summary>What the user is pasting into the Lunch Flow panel.</summary>
     [ObservableProperty]
     public partial string? LunchFlowKey { get; set; }
+
+    /// <summary>What the user is pasting into the Trading 212 panel.</summary>
+    [ObservableProperty]
+    public partial string? Trading212Key { get; set; }
+
+    [ObservableProperty]
+    public partial string? Trading212Secret { get; set; }
 
     [ObservableProperty]
     public partial string? ConnectError { get; set; }
@@ -207,12 +217,16 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
     [RelayCommand]
     private void ChooseProvider(ProviderOption provider)
     {
-        if (provider.Key == ProviderOption.LunchFlowKey)
+        LunchFlowKey = null;
+        Trading212Key = null;
+        Trading212Secret = null;
+        ConnectError = null;
+        ConnectStep = provider.Key switch
         {
-            LunchFlowKey = null;
-            ConnectError = null;
-            ConnectStep = ConnectStep.LunchFlow;
-        }
+            ProviderOption.LunchFlowKey => ConnectStep.LunchFlow,
+            ProviderOption.Trading212Key => ConnectStep.Trading212,
+            _ => ConnectStep.Closed,
+        };
     }
 
     [RelayCommand]
@@ -234,6 +248,28 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth) : PageVie
             {
                 ConnectStep = ConnectStep.Closed;
                 LunchFlowKey = null;
+                await LoadAsync();
+            }
+        });
+    }
+
+    [RelayCommand]
+    private async Task ConfirmTrading212Async()
+    {
+        if (string.IsNullOrWhiteSpace(Trading212Key) || string.IsNullOrWhiteSpace(Trading212Secret))
+        {
+            ConnectError = "Paste both the API key and the API secret.";
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            ConnectError = await api.ConnectTrading212Async(Trading212Key, Trading212Secret);
+            if (ConnectError is null)
+            {
+                ConnectStep = ConnectStep.Closed;
+                Trading212Key = null;
+                Trading212Secret = null;
                 await LoadAsync();
             }
         });

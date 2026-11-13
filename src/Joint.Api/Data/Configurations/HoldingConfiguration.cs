@@ -13,5 +13,7 @@ public class HoldingConfiguration : IEntityTypeConfiguration<Holding>
         builder.Property(h => h.Quantity).HasPrecision(28, 10);
         builder.Property(h => h.AveragePrice).HasPrecision(18, 6);
         builder.Property(h => h.CurrentPrice).HasPrecision(18, 6);
+        builder.Property(h => h.Value).HasPrecision(18, 4);
+        builder.Property(h => h.UnrealizedProfitLoss).HasPrecision(18, 4);
     }
 }
