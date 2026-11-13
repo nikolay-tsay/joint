@@ -12,6 +12,8 @@
             <Setter Property="HeightRequest" Value="10" />
             <Setter Property="CornerRadius" Value="5" />
             <Setter Property="VerticalOptions" Value="Center" />
+            <!-- The app-wide BoxView style paints a square behind the round fill; clear it. -->
+            <Setter Property="BackgroundColor" Value="Transparent" />
         </Style>
 
         <!-- A tab's caption; the selected one is recolored by a trigger. -->
@@ -25,6 +27,7 @@
         <!-- The line under the selected tab. -->
         <Style x:Key="TabLine" TargetType="BoxView">
             <Setter Property="CornerRadius" Value="2" />
+            <Setter Property="BackgroundColor" Value="Transparent" />
             <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
         </Style>
 
@@ -94,7 +97,8 @@
                                         <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
                                         <Label Text="Spending" Style="{StaticResource Caption}" />
                                     </HorizontalStackLayout>
-                                    <GraphicsView Drawable="{Binding Model.FlowChart}" HeightRequest="190" InputTransparent="True" />
+                                    <GraphicsView Drawable="{Binding Model.FlowChart}" HeightRequest="190" StartInteraction="OnChartTouched" DragInteraction="OnChartTouched" />
+                                    <Label Text="{Binding Model.FlowDetail}" Style="{StaticResource Caption}" />
                                 </VerticalStackLayout>
                             </Border>
 
@@ -103,7 +107,8 @@
                                 <VerticalStackLayout Spacing="10">
                                     <Label Text="Left over each month" Style="{StaticResource RowTitle}" />
                                     <Label Text="Income minus spending. Red months cost more than came in." Style="{StaticResource Caption}" />
-                                    <GraphicsView Drawable="{Binding Model.SavedChart}" HeightRequest="160" InputTransparent="True" />
+                                    <GraphicsView Drawable="{Binding Model.SavedChart}" HeightRequest="160" StartInteraction="OnChartTouched" DragInteraction="OnChartTouched" />
+                                    <Label Text="{Binding Model.SavedDetail}" Style="{StaticResource Caption}" />
                                 </VerticalStackLayout>
                             </Border>
 
@@ -118,7 +123,8 @@
                                         <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
                                         <Label Text="Last month" Style="{StaticResource Caption}" />
                                     </HorizontalStackLayout>
-                                    <GraphicsView Drawable="{Binding Model.PaceChart}" HeightRequest="190" InputTransparent="True" />
+                                    <GraphicsView Drawable="{Binding Model.PaceChart}" HeightRequest="190" StartInteraction="OnChartTouched" DragInteraction="OnChartTouched" />
+                                    <Label Text="{Binding Model.PaceDetail}" Style="{StaticResource Caption}" />
                                 </VerticalStackLayout>
                             </Border>
 
@@ -212,7 +218,8 @@
                                         <BoxView Style="{StaticResource LegendDot}" Color="{StaticResource Accent}" />
                                         <Label Text="Regular payments" Style="{StaticResource Caption}" />
                                     </HorizontalStackLayout>
-                                    <GraphicsView Drawable="{Binding Model.RecurringChart}" HeightRequest="190" InputTransparent="True" />
+                                    <GraphicsView Drawable="{Binding Model.RecurringChart}" HeightRequest="190" StartInteraction="OnChartTouched" DragInteraction="OnChartTouched" />
+                                    <Label Text="{Binding Model.RecurringDetail}" Style="{StaticResource Caption}" />
                                 </VerticalStackLayout>
                             </Border>
 
@@ -280,7 +287,7 @@
                     <BoxView Grid.Row="1" Style="{StaticResource TabLine}" IsVisible="{Binding IsRecurringTab}" />
                 </Grid>
             </Grid>
-            <BoxView Grid.Row="1" Color="{AppThemeBinding Light={StaticResource InsetStroke}, Dark={StaticResource InsetStrokeDark}}" />
+            <BoxView Grid.Row="1" BackgroundColor="Transparent" Color="{AppThemeBinding Light={StaticResource InsetStroke}, Dark={StaticResource InsetStrokeDark}}" />
         </Grid>
 
         <Label
