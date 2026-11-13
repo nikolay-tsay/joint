@@ -13,279 +13,292 @@
             <Setter Property="CornerRadius" Value="5" />
             <Setter Property="VerticalOptions" Value="Center" />
         </Style>
+
+        <!-- A tab's caption; the selected one is recolored by a trigger. -->
+        <Style x:Key="TabLabel" TargetType="Label">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontFamily" Value="OpenSansSemibold" />
+            <Setter Property="HorizontalOptions" Value="Center" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+        </Style>
+
+        <!-- The line under the selected tab. -->
+        <Style x:Key="TabLine" TargetType="BoxView">
+            <Setter Property="CornerRadius" Value="2" />
+            <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+        </Style>
+
+        <!-- One tracked subscription or regular payment. -->
+        <DataTemplate x:Key="RecurringRow" x:DataType="insights:RecurringItem">
+            <Border Style="{StaticResource InsetRow}">
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="2">
+                    <Label Text="{Binding Name}" Style="{StaticResource RowTitle}" />
+                    <Label Grid.Column="1" Text="{Binding Amount}" FontSize="16" FontFamily="OpenSansSemibold" HorizontalTextAlignment="End" />
+                    <Label Grid.Row="1" Text="{Binding Detail}" Style="{StaticResource Caption}" VerticalOptions="Center" />
+                    <Label
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Text="Stop tracking"
+                        FontSize="13"
+                        Padding="8,4,0,4"
+                        HorizontalTextAlignment="End"
+                        TextColor="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Command="{Binding RemoveRecurringCommand, Source={RelativeSource AncestorType={x:Type insights:InsightsViewModel}}, x:DataType=insights:InsightsViewModel}"
+                                CommandParameter="{Binding .}" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- ===== Overview page ===== -->
+        <DataTemplate x:Key="OverviewTemplate" x:DataType="insights:InsightsView">
+            <RefreshView IsRefreshing="{Binding Model.IsRefreshing}" Command="{Binding Model.LoadCommand}">
+                <ScrollView>
+                    <VerticalStackLayout Padding="12,12,12,24" Spacing="12">
+                        <Border Style="{StaticResource Card}" IsVisible="{Binding Model.HasNoData}">
+                            <Label
+                                Text="Nothing to chart yet. Once a connected account has transactions, they show up here."
+                                Style="{StaticResource Caption}" />
+                        </Border>
+
+                        <VerticalStackLayout Spacing="12" IsVisible="{Binding Model.HasData}">
+
+                            <!-- This month at a glance. -->
+                            <Border Style="{StaticResource HeroCard}">
+                                <VerticalStackLayout Spacing="4">
+                                    <Label Text="{Binding Model.SavedTitle}" TextColor="White" Opacity="0.8" FontSize="13" />
+                                    <Label Text="{Binding Model.Saved}" TextColor="White" FontSize="32" FontFamily="OpenSansSemibold" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
+                                        <VerticalStackLayout Spacing="2">
+                                            <Label Text="Income" TextColor="White" Opacity="0.8" FontSize="13" />
+                                            <Label Text="{Binding Model.Income}" TextColor="White" FontSize="16" FontFamily="OpenSansSemibold" />
+                                        </VerticalStackLayout>
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                            <Label Text="Spent" TextColor="White" Opacity="0.8" FontSize="13" />
+                                            <Label Text="{Binding Model.Spending}" TextColor="White" FontSize="16" FontFamily="OpenSansSemibold" />
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <!-- Income against spending, month by month. -->
+                            <Border Style="{StaticResource Card}">
+                                <VerticalStackLayout Spacing="10">
+                                    <Label Text="Income and spending" Style="{StaticResource RowTitle}" />
+                                    <HorizontalStackLayout Spacing="6">
+                                        <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource Positive}, Dark={StaticResource PositiveDark}}" />
+                                        <Label Text="Income" Style="{StaticResource Caption}" Margin="0,0,10,0" />
+                                        <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                        <Label Text="Spending" Style="{StaticResource Caption}" />
+                                    </HorizontalStackLayout>
+                                    <GraphicsView Drawable="{Binding Model.FlowChart}" HeightRequest="190" InputTransparent="True" />
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <!-- What was left over each month. -->
+                            <Border Style="{StaticResource Card}">
+                                <VerticalStackLayout Spacing="10">
+                                    <Label Text="Left over each month" Style="{StaticResource RowTitle}" />
+                                    <Label Text="Income minus spending. Red months cost more than came in." Style="{StaticResource Caption}" />
+                                    <GraphicsView Drawable="{Binding Model.SavedChart}" HeightRequest="160" InputTransparent="True" />
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <!-- This month's running spending against last month's. -->
+                            <Border Style="{StaticResource Card}">
+                                <VerticalStackLayout Spacing="10">
+                                    <Label Text="Spending this month" Style="{StaticResource RowTitle}" />
+                                    <Label Text="{Binding Model.PaceSummary}" Style="{StaticResource Caption}" />
+                                    <HorizontalStackLayout Spacing="6">
+                                        <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                        <Label Text="This month" Style="{StaticResource Caption}" Margin="0,0,10,0" />
+                                        <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                                        <Label Text="Last month" Style="{StaticResource Caption}" />
+                                    </HorizontalStackLayout>
+                                    <GraphicsView Drawable="{Binding Model.PaceChart}" HeightRequest="190" InputTransparent="True" />
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <!-- Who spent this month. -->
+                            <Border Style="{StaticResource Card}" IsVisible="{Binding Model.HasSeveralSpenders}">
+                                <VerticalStackLayout Spacing="12">
+                                    <Label Text="Who spent this month" Style="{StaticResource RowTitle}" />
+                                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Model.Members}" Spacing="12">
+                                        <BindableLayout.ItemTemplate>
+                                            <DataTemplate x:DataType="insights:MemberSpendingItem">
+                                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                                    <Border
+                                                        WidthRequest="36"
+                                                        HeightRequest="36"
+                                                        StrokeThickness="0"
+                                                        StrokeShape="Ellipse"
+                                                        VerticalOptions="Center"
+                                                        BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackground}, Dark={StaticResource AvatarBackgroundDark}}">
+                                                        <Grid>
+                                                            <Label
+                                                                Text="{Binding Initial}"
+                                                                FontFamily="OpenSansSemibold"
+                                                                HorizontalOptions="Center"
+                                                                VerticalOptions="Center"
+                                                                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                                            <!-- Covers the initial once the picture has loaded. -->
+                                                            <Image Source="{Binding AvatarUrl}" Aspect="AspectFill" />
+                                                        </Grid>
+                                                    </Border>
+                                                    <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                                            <Label Text="{Binding Name}" LineBreakMode="TailTruncation" />
+                                                            <Label Grid.Column="1" Text="{Binding Amount}" FontFamily="OpenSansSemibold" />
+                                                        </Grid>
+                                                        <ProgressBar
+                                                            Progress="{Binding Share}"
+                                                            ProgressColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                                    </VerticalStackLayout>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </BindableLayout.ItemTemplate>
+                                    </VerticalStackLayout>
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <Label
+                                Text="Money moved between your own accounts is left out where it can be recognized: the same amount leaving one account and arriving in another within two days."
+                                Style="{StaticResource Caption}"
+                                Margin="4,0" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </ScrollView>
+            </RefreshView>
+        </DataTemplate>
+
+        <!-- ===== Recurring page: subscriptions and regular payments ===== -->
+        <DataTemplate x:Key="RecurringTemplate" x:DataType="insights:InsightsView">
+            <RefreshView IsRefreshing="{Binding Model.IsRefreshing}" Command="{Binding Model.LoadCommand}">
+                <ScrollView>
+                    <VerticalStackLayout Padding="12,12,12,24" Spacing="12">
+                        <Border Style="{StaticResource Card}" IsVisible="{Binding Model.HasNoRecurring}">
+                            <Label
+                                Text="Nothing tracked yet. In Transactions, tap a payment and mark it as a subscription or a regular payment such as rent or internet. Every payment to the same payee is then counted here."
+                                Style="{StaticResource Caption}" />
+                        </Border>
+
+                        <VerticalStackLayout Spacing="12" IsVisible="{Binding Model.HasRecurring}">
+                            <Border Style="{StaticResource HeroCard}">
+                                <VerticalStackLayout Spacing="4">
+                                    <Label Text="{Binding Model.RecurringTitle}" TextColor="White" Opacity="0.8" FontSize="13" />
+                                    <Label Text="{Binding Model.RecurringTotal}" TextColor="White" FontSize="32" FontFamily="OpenSansSemibold" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
+                                        <VerticalStackLayout Spacing="2">
+                                            <Label Text="Subscriptions" TextColor="White" Opacity="0.8" FontSize="13" />
+                                            <Label Text="{Binding Model.SubscriptionsTotal}" TextColor="White" FontSize="16" FontFamily="OpenSansSemibold" />
+                                        </VerticalStackLayout>
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                            <Label Text="Regular payments" TextColor="White" Opacity="0.8" FontSize="13" />
+                                            <Label Text="{Binding Model.BillsTotal}" TextColor="White" FontSize="16" FontFamily="OpenSansSemibold" />
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <Border Style="{StaticResource Card}">
+                                <VerticalStackLayout Spacing="10">
+                                    <Label Text="Paid each month" Style="{StaticResource RowTitle}" />
+                                    <HorizontalStackLayout Spacing="6">
+                                        <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                        <Label Text="Subscriptions" Style="{StaticResource Caption}" Margin="0,0,10,0" />
+                                        <BoxView Style="{StaticResource LegendDot}" Color="{StaticResource Accent}" />
+                                        <Label Text="Regular payments" Style="{StaticResource Caption}" />
+                                    </HorizontalStackLayout>
+                                    <GraphicsView Drawable="{Binding Model.RecurringChart}" HeightRequest="190" InputTransparent="True" />
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <Border Style="{StaticResource Card}" IsVisible="{Binding Model.HasSubscriptions}">
+                                <VerticalStackLayout Spacing="10">
+                                    <Label Text="Subscriptions" Style="{StaticResource RowTitle}" />
+                                    <VerticalStackLayout
+                                        BindableLayout.ItemsSource="{Binding Model.Subscriptions}"
+                                        BindableLayout.ItemTemplate="{StaticResource RecurringRow}"
+                                        Spacing="8" />
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <Border Style="{StaticResource Card}" IsVisible="{Binding Model.HasBills}">
+                                <VerticalStackLayout Spacing="10">
+                                    <Label Text="Regular payments" Style="{StaticResource RowTitle}" />
+                                    <VerticalStackLayout
+                                        BindableLayout.ItemsSource="{Binding Model.Bills}"
+                                        BindableLayout.ItemTemplate="{StaticResource RecurringRow}"
+                                        Spacing="8" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </ScrollView>
+            </RefreshView>
+        </DataTemplate>
+
+        <insights:InsightsViewTemplateSelector
+            x:Key="ViewTemplate"
+            Overview="{StaticResource OverviewTemplate}"
+            Recurring="{StaticResource RecurringTemplate}" />
     </ContentPage.Resources>
 
-    <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
-        <ScrollView>
-            <VerticalStackLayout Padding="12,24,12,24" Spacing="12">
-                <Label Text="Insights" FontSize="24" FontFamily="OpenSansSemibold" Margin="4,0" />
+    <Grid RowDefinitions="Auto,Auto,Auto,*">
+        <Label Text="Insights" FontSize="24" FontFamily="OpenSansSemibold" Margin="16,24,16,0" />
 
-                <!-- The page's two views. -->
-                <HorizontalStackLayout Spacing="6" Margin="4,0">
-                    <Border Style="{StaticResource Chip}" BackgroundColor="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}">
-                        <Border.Triggers>
-                            <DataTrigger TargetType="Border" Binding="{Binding IsOverviewTab}" Value="True">
-                                <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+        <!-- The two pages as tabs. Tapping one slides to it; so does dragging the page sideways. -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,1" Margin="12,12,12,0">
+            <Grid ColumnDefinitions="*,*">
+                <Grid RowDefinitions="Auto,3" RowSpacing="8" Padding="0,6,0,0">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ShowOverviewCommand}" />
+                    </Grid.GestureRecognizers>
+                    <Label Text="Overview" Style="{StaticResource TabLabel}">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsOverviewTab}" Value="True">
+                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
                             </DataTrigger>
-                        </Border.Triggers>
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding ShowOverviewCommand}" />
-                        </Border.GestureRecognizers>
-                        <Label Text="Overview" FontSize="13" FontFamily="OpenSansSemibold">
-                            <Label.Triggers>
-                                <DataTrigger TargetType="Label" Binding="{Binding IsOverviewTab}" Value="True">
-                                    <Setter Property="TextColor" Value="White" />
-                                </DataTrigger>
-                            </Label.Triggers>
-                        </Label>
-                    </Border>
-                    <Border Style="{StaticResource Chip}" BackgroundColor="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}">
-                        <Border.Triggers>
-                            <DataTrigger TargetType="Border" Binding="{Binding IsRecurringTab}" Value="True">
-                                <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                        </Label.Triggers>
+                    </Label>
+                    <BoxView Grid.Row="1" Style="{StaticResource TabLine}" IsVisible="{Binding IsOverviewTab}" />
+                </Grid>
+                <Grid Grid.Column="1" RowDefinitions="Auto,3" RowSpacing="8" Padding="0,6,0,0">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ShowRecurringCommand}" />
+                    </Grid.GestureRecognizers>
+                    <Label Text="Recurring" Style="{StaticResource TabLabel}">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsRecurringTab}" Value="True">
+                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
                             </DataTrigger>
-                        </Border.Triggers>
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding ShowRecurringCommand}" />
-                        </Border.GestureRecognizers>
-                        <Label Text="Recurring" FontSize="13" FontFamily="OpenSansSemibold">
-                            <Label.Triggers>
-                                <DataTrigger TargetType="Label" Binding="{Binding IsRecurringTab}" Value="True">
-                                    <Setter Property="TextColor" Value="White" />
-                                </DataTrigger>
-                            </Label.Triggers>
-                        </Label>
-                    </Border>
-                </HorizontalStackLayout>
+                        </Label.Triggers>
+                    </Label>
+                    <BoxView Grid.Row="1" Style="{StaticResource TabLine}" IsVisible="{Binding IsRecurringTab}" />
+                </Grid>
+            </Grid>
+            <BoxView Grid.Row="1" Color="{AppThemeBinding Light={StaticResource InsetStroke}, Dark={StaticResource InsetStrokeDark}}" />
+        </Grid>
 
-                <Label
-                    Text="{Binding Error}"
-                    Style="{StaticResource ErrorText}"
-                    IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
+        <Label
+            Grid.Row="2"
+            Text="{Binding Error}"
+            Style="{StaticResource ErrorText}"
+            Margin="16,8,16,0"
+            IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
 
-                <!-- ===== Overview ===== -->
-                <VerticalStackLayout Spacing="12" IsVisible="{Binding IsOverviewTab}">
-                <Border Style="{StaticResource Card}" IsVisible="{Binding HasNoData}">
-                    <Label
-                        Text="Nothing to chart yet. Once a connected account has transactions, they show up here."
-                        Style="{StaticResource Caption}" />
-                </Border>
-
-                <VerticalStackLayout Spacing="12" IsVisible="{Binding HasData}">
-
-                    <!-- This month at a glance. -->
-                    <Border Style="{StaticResource HeroCard}">
-                        <VerticalStackLayout Spacing="4">
-                            <Label Text="{Binding SavedTitle}" TextColor="White" Opacity="0.8" FontSize="13" />
-                            <Label Text="{Binding Saved}" TextColor="White" FontSize="32" FontFamily="OpenSansSemibold" />
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
-                                <VerticalStackLayout Spacing="2">
-                                    <Label Text="Income" TextColor="White" Opacity="0.8" FontSize="13" />
-                                    <Label Text="{Binding Income}" TextColor="White" FontSize="16" FontFamily="OpenSansSemibold" />
-                                </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Column="1" Spacing="2">
-                                    <Label Text="Spent" TextColor="White" Opacity="0.8" FontSize="13" />
-                                    <Label Text="{Binding Spending}" TextColor="White" FontSize="16" FontFamily="OpenSansSemibold" />
-                                </VerticalStackLayout>
-                            </Grid>
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Income against spending, month by month. -->
-                    <Border Style="{StaticResource Card}">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="Income and spending" Style="{StaticResource RowTitle}" />
-                            <HorizontalStackLayout Spacing="6">
-                                <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource Positive}, Dark={StaticResource PositiveDark}}" />
-                                <Label Text="Income" Style="{StaticResource Caption}" Margin="0,0,10,0" />
-                                <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                                <Label Text="Spending" Style="{StaticResource Caption}" />
-                            </HorizontalStackLayout>
-                            <GraphicsView Drawable="{Binding FlowChart}" HeightRequest="190" InputTransparent="True" />
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- What was left over each month. -->
-                    <Border Style="{StaticResource Card}">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="Left over each month" Style="{StaticResource RowTitle}" />
-                            <Label Text="Income minus spending. Red months cost more than came in." Style="{StaticResource Caption}" />
-                            <GraphicsView Drawable="{Binding SavedChart}" HeightRequest="160" InputTransparent="True" />
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- This month's running spending against last month's. -->
-                    <Border Style="{StaticResource Card}">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="Spending this month" Style="{StaticResource RowTitle}" />
-                            <Label Text="{Binding PaceSummary}" Style="{StaticResource Caption}" />
-                            <HorizontalStackLayout Spacing="6">
-                                <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                                <Label Text="This month" Style="{StaticResource Caption}" Margin="0,0,10,0" />
-                                <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
-                                <Label Text="Last month" Style="{StaticResource Caption}" />
-                            </HorizontalStackLayout>
-                            <GraphicsView Drawable="{Binding PaceChart}" HeightRequest="190" InputTransparent="True" />
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Who spent this month. -->
-                    <Border Style="{StaticResource Card}" IsVisible="{Binding HasSeveralSpenders}">
-                        <VerticalStackLayout Spacing="12">
-                            <Label Text="Who spent this month" Style="{StaticResource RowTitle}" />
-                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Members}" Spacing="12">
-                                <BindableLayout.ItemTemplate>
-                                    <DataTemplate x:DataType="insights:MemberSpendingItem">
-                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                            <Border
-                                                WidthRequest="36"
-                                                HeightRequest="36"
-                                                StrokeThickness="0"
-                                                StrokeShape="Ellipse"
-                                                VerticalOptions="Center"
-                                                BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackground}, Dark={StaticResource AvatarBackgroundDark}}">
-                                                <Grid>
-                                                    <Label
-                                                        Text="{Binding Initial}"
-                                                        FontFamily="OpenSansSemibold"
-                                                        HorizontalOptions="Center"
-                                                        VerticalOptions="Center"
-                                                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                                                    <!-- Covers the initial once the picture has loaded. -->
-                                                    <Image Source="{Binding AvatarUrl}" Aspect="AspectFill" />
-                                                </Grid>
-                                            </Border>
-                                            <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
-                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                                    <Label Text="{Binding Name}" LineBreakMode="TailTruncation" />
-                                                    <Label Grid.Column="1" Text="{Binding Amount}" FontFamily="OpenSansSemibold" />
-                                                </Grid>
-                                                <ProgressBar
-                                                    Progress="{Binding Share}"
-                                                    ProgressColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                                            </VerticalStackLayout>
-                                        </Grid>
-                                    </DataTemplate>
-                                </BindableLayout.ItemTemplate>
-                            </VerticalStackLayout>
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <Label
-                        Text="Money moved between your own accounts is left out where it can be recognized: the same amount leaving one account and arriving in another within two days."
-                        Style="{StaticResource Caption}"
-                        Margin="4,0" />
-                </VerticalStackLayout>
-                </VerticalStackLayout>
-
-                <!-- ===== Recurring: subscriptions and regular payments ===== -->
-                <VerticalStackLayout Spacing="12" IsVisible="{Binding IsRecurringTab}">
-                    <Border Style="{StaticResource Card}" IsVisible="{Binding HasNoRecurring}">
-                        <Label
-                            Text="Nothing tracked yet. In Transactions, tap a payment and mark it as a subscription or a regular payment such as rent or internet. Every payment to the same payee is then counted here."
-                            Style="{StaticResource Caption}" />
-                    </Border>
-
-                    <VerticalStackLayout Spacing="12" IsVisible="{Binding HasRecurring}">
-                        <Border Style="{StaticResource HeroCard}">
-                            <VerticalStackLayout Spacing="4">
-                                <Label Text="{Binding RecurringTitle}" TextColor="White" Opacity="0.8" FontSize="13" />
-                                <Label Text="{Binding RecurringTotal}" TextColor="White" FontSize="32" FontFamily="OpenSansSemibold" />
-                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
-                                    <VerticalStackLayout Spacing="2">
-                                        <Label Text="Subscriptions" TextColor="White" Opacity="0.8" FontSize="13" />
-                                        <Label Text="{Binding SubscriptionsTotal}" TextColor="White" FontSize="16" FontFamily="OpenSansSemibold" />
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="1" Spacing="2">
-                                        <Label Text="Regular payments" TextColor="White" Opacity="0.8" FontSize="13" />
-                                        <Label Text="{Binding BillsTotal}" TextColor="White" FontSize="16" FontFamily="OpenSansSemibold" />
-                                    </VerticalStackLayout>
-                                </Grid>
-                            </VerticalStackLayout>
-                        </Border>
-
-                        <Border Style="{StaticResource Card}">
-                            <VerticalStackLayout Spacing="10">
-                                <Label Text="Paid each month" Style="{StaticResource RowTitle}" />
-                                <HorizontalStackLayout Spacing="6">
-                                    <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                                    <Label Text="Subscriptions" Style="{StaticResource Caption}" Margin="0,0,10,0" />
-                                    <BoxView Style="{StaticResource LegendDot}" Color="{StaticResource Accent}" />
-                                    <Label Text="Regular payments" Style="{StaticResource Caption}" />
-                                </HorizontalStackLayout>
-                                <GraphicsView Drawable="{Binding RecurringChart}" HeightRequest="190" InputTransparent="True" />
-                            </VerticalStackLayout>
-                        </Border>
-
-                    <Border Style="{StaticResource Card}" IsVisible="{Binding HasSubscriptions}">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="Subscriptions" Style="{StaticResource RowTitle}" />
-                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Subscriptions}" Spacing="8">
-                                <BindableLayout.ItemTemplate>
-                                    <DataTemplate x:DataType="insights:RecurringItem">
-                                        <Border Style="{StaticResource InsetRow}">
-                                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="2">
-                                                <Label Text="{Binding Name}" Style="{StaticResource RowTitle}" />
-                                                <Label Grid.Column="1" Text="{Binding Amount}" FontSize="16" FontFamily="OpenSansSemibold" HorizontalTextAlignment="End" />
-                                                <Label Grid.Row="1" Text="{Binding Detail}" Style="{StaticResource Caption}" VerticalOptions="Center" />
-                                                <Label
-                                                    Grid.Row="1"
-                                                    Grid.Column="1"
-                                                    Text="Stop tracking"
-                                                    FontSize="13"
-                                                    Padding="8,4,0,4"
-                                                    HorizontalTextAlignment="End"
-                                                    TextColor="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}">
-                                                    <Label.GestureRecognizers>
-                                                        <TapGestureRecognizer
-                                                            Command="{Binding RemoveRecurringCommand, Source={RelativeSource AncestorType={x:Type insights:InsightsViewModel}}, x:DataType=insights:InsightsViewModel}"
-                                                            CommandParameter="{Binding .}" />
-                                                    </Label.GestureRecognizers>
-                                                </Label>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </BindableLayout.ItemTemplate>
-                            </VerticalStackLayout>
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <Border Style="{StaticResource Card}" IsVisible="{Binding HasBills}">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="Regular payments" Style="{StaticResource RowTitle}" />
-                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Bills}" Spacing="8">
-                                <BindableLayout.ItemTemplate>
-                                    <DataTemplate x:DataType="insights:RecurringItem">
-                                        <Border Style="{StaticResource InsetRow}">
-                                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="2">
-                                                <Label Text="{Binding Name}" Style="{StaticResource RowTitle}" />
-                                                <Label Grid.Column="1" Text="{Binding Amount}" FontSize="16" FontFamily="OpenSansSemibold" HorizontalTextAlignment="End" />
-                                                <Label Grid.Row="1" Text="{Binding Detail}" Style="{StaticResource Caption}" VerticalOptions="Center" />
-                                                <Label
-                                                    Grid.Row="1"
-                                                    Grid.Column="1"
-                                                    Text="Stop tracking"
-                                                    FontSize="13"
-                                                    Padding="8,4,0,4"
-                                                    HorizontalTextAlignment="End"
-                                                    TextColor="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}">
-                                                    <Label.GestureRecognizers>
-                                                        <TapGestureRecognizer
-                                                            Command="{Binding RemoveRecurringCommand, Source={RelativeSource AncestorType={x:Type insights:InsightsViewModel}}, x:DataType=insights:InsightsViewModel}"
-                                                            CommandParameter="{Binding .}" />
-                                                    </Label.GestureRecognizers>
-                                                </Label>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </BindableLayout.ItemTemplate>
-                            </VerticalStackLayout>
-                        </VerticalStackLayout>
-                    </Border>
-                    </VerticalStackLayout>
-                </VerticalStackLayout>
-            </VerticalStackLayout>
-        </ScrollView>
-    </RefreshView>
+        <!-- A native pager: the page follows the finger and snaps to the nearer side. -->
+        <CarouselView
+            Grid.Row="3"
+            ItemsSource="{Binding Views}"
+            ItemTemplate="{StaticResource ViewTemplate}"
+            Position="{Binding TabIndex, Mode=TwoWay}"
+            Loop="False"
+            IsBounceEnabled="False"
+            HorizontalScrollBarVisibility="Never" />
+    </Grid>
 
 </ContentPage>

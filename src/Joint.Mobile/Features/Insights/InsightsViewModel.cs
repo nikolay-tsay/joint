@@ -57,12 +57,23 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth) : PageVi
 
     // ----- Recurring view -----
 
-    /// <summary>Which of the page's two views is showing.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsOverviewTab))]
-    public partial bool IsRecurringTab { get; set; }
+    private IReadOnlyList<InsightsView>? _views;
 
-    public bool IsOverviewTab => !IsRecurringTab;
+    /// <summary>The pages the carousel slides between, in tab order.</summary>
+    public IReadOnlyList<InsightsView> Views =>
+        _views ??= [new InsightsView(InsightsView.Overview, this), new InsightsView(InsightsView.Recurring, this)];
+
+    /// <summary>
+    /// Which page is showing. The carousel sets it when the user drags, and slides to it
+    /// when a tab sets it.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOverviewTab), nameof(IsRecurringTab))]
+    public partial int TabIndex { get; set; }
+
+    public bool IsOverviewTab => TabIndex == 0;
+
+    public bool IsRecurringTab => TabIndex == 1;
 
     [ObservableProperty]
     public partial string? RecurringTitle { get; set; }
@@ -96,10 +107,10 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth) : PageVi
     public ObservableCollection<RecurringItem> Bills { get; } = [];
 
     [RelayCommand]
-    private void ShowOverview() => IsRecurringTab = false;
+    private void ShowOverview() => TabIndex = 0;
 
     [RelayCommand]
-    private void ShowRecurring() => IsRecurringTab = true;
+    private void ShowRecurring() => TabIndex = 1;
 
     /// <summary>Stops tracking a payee; its transactions stay as they are.</summary>
     [RelayCommand]
