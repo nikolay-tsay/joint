@@ -1,0 +1,58 @@
+<ContentPage
+    x:Class="Joint.Mobile.Features.Lock.LockSetupPage"
+    xmlns:lock="clr-namespace:Joint.Mobile.Features.Lock"
+    x:DataType="lock:LockSetupViewModel"
+    BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24,48,24,24" Spacing="16">
+            <Image Source="logo.png" WidthRequest="88" HeightRequest="88" HorizontalOptions="Center" />
+            <Label
+                Text="Protect Joint with a lock?"
+                FontSize="24"
+                FontFamily="OpenSansSemibold"
+                HorizontalTextAlignment="Center" />
+            <Label Text="{Binding Explanation}" Style="{StaticResource Caption}" FontSize="15" HorizontalTextAlignment="Center" />
+
+            <Border Style="{StaticResource Card}" Margin="0,8,0,0">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Choose a PIN" Style="{StaticResource RowTitle}" />
+                    <Label
+                        Text="Four digits. If you forget it, signing out and back in with Google removes the lock."
+                        Style="{StaticResource Caption}" />
+                    <Border Style="{StaticResource Field}">
+                        <Entry
+                            Text="{Binding NewPin}"
+                            Placeholder="New PIN"
+                            Keyboard="Numeric"
+                            MaxLength="4"
+                            IsPassword="True"
+                            ReturnType="Next" />
+                    </Border>
+                    <Border Style="{StaticResource Field}">
+                        <Entry
+                            Text="{Binding RepeatPin}"
+                            Placeholder="Repeat PIN"
+                            Keyboard="Numeric"
+                            MaxLength="4"
+                            IsPassword="True"
+                            ReturnType="Done"
+                            ReturnCommand="{Binding TurnOnCommand}" />
+                    </Border>
+                    <Label
+                        Text="{Binding Error}"
+                        Style="{StaticResource ErrorText}"
+                        IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
+                    <Button Text="Turn on app lock" Style="{StaticResource PrimaryButton}" Command="{Binding TurnOnCommand}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="Not now" Style="{StaticResource QuietButton}" Command="{Binding SkipCommand}" />
+            <Label
+                Text="You can turn it on later under Profile, in Security."
+                Style="{StaticResource Caption}"
+                HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -8,4 +8,7 @@ public static class Routes
 
     /// <summary>One account's transactions; takes <c>accountId</c> and <c>title</c>.</summary>
     public const string AccountTransactions = "account-transactions";
+
+    /// <summary>The guide to how the app's figures are worked out.</summary>
+    public const string Guide = "guide";
 }

@@ -1,9 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Joint.Mobile.Features.Lock;
 
 namespace Joint.Mobile.Features.Auth;
 
-public partial class LoginViewModel(AuthService auth) : ObservableObject
+public partial class LoginViewModel(AuthService auth, LockScreen lockScreen) : ObservableObject
 {
     [ObservableProperty]
     public partial bool IsBusy { get; set; }
@@ -25,6 +26,9 @@ public partial class LoginViewModel(AuthService auth) : ObservableObject
         {
             await auth.SignInWithGoogleAsync();
             await Shell.Current.GoToAsync(Routes.Home);
+
+            // A fresh sign-in has no app lock; offer one before the user gets on with the app.
+            await lockScreen.OfferSetupAsync();
         }
         catch (TaskCanceledException)
         {

@@ -26,12 +26,18 @@ public class BudgetExclusionTests
         await db.SaveChangesAsync();
         var users = new CurrentUserService(db);
         Assert.Equal(5300m, await SpentAsync(db, ana));
+        var projectedBefore = (await BudgetAsync(db, ana)).Projected;
 
         var excluded = await UpdateTransaction.HandleAsync(
             transfer.Id, new UpdateTransactionRequest(true), ana, users, db, CancellationToken.None);
 
         Assert.IsType<NoContent>(excluded.Result);
         Assert.Equal(300m, await SpentAsync(db, ana));
+
+        // The month-end projection is built on the same figure, so it has to move with it.
+        var projectedAfter = (await BudgetAsync(db, ana)).Projected;
+        Assert.True(projectedAfter < projectedBefore);
+        Assert.Equal(decimal.Round(300m / Today.Day * DateTime.DaysInMonth(Today.Year, Today.Month), 2), projectedAfter);
         Assert.True((await ListAsync(db, ana)).Single(t => t.Id == transfer.Id).ExcludedFromBudget);
 
         await UpdateTransaction.HandleAsync(
@@ -60,10 +66,13 @@ public class BudgetExclusionTests
         Assert.All(db.Transactions, t => Assert.False(t.ExcludedFromBudget));
     }
 
-    private static async Task<decimal> SpentAsync(JointDbContext db, ClaimsPrincipal principal)
+    private static async Task<decimal> SpentAsync(JointDbContext db, ClaimsPrincipal principal) =>
+        (await BudgetAsync(db, principal)).Spent;
+
+    private static async Task<BudgetResponse> BudgetAsync(JointDbContext db, ClaimsPrincipal principal)
     {
         var result = await GetBudget.HandleAsync(principal, new CurrentUserService(db), db, CancellationToken.None);
-        return Assert.IsType<Ok<BudgetResponse>>(result.Result).Value!.Spent;
+        return Assert.IsType<Ok<BudgetResponse>>(result.Result).Value!;
     }
 
     private static async Task<List<TransactionResponse>> ListAsync(JointDbContext db, ClaimsPrincipal principal)
