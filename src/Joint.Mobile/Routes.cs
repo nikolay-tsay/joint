@@ -11,4 +11,7 @@ public static class Routes
 
     /// <summary>The guide to how the app's figures are worked out.</summary>
     public const string Guide = "guide";
+
+    /// <summary>The app lock's settings.</summary>
+    public const string Security = "security";
 }

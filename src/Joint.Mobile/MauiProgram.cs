@@ -37,6 +37,8 @@ public static class MauiProgram
 
 		builder.Services.AddTransient<StartPage>();
 		builder.Services.AddTransient<GuidePage>();
+		builder.Services.AddTransient<LockSettingsPage>();
+		builder.Services.AddTransient<LockSettingsViewModel>();
 		builder.Services.AddTransient<LockSetupPage>();
 		builder.Services.AddTransient<LockSetupViewModel>();
 		builder.Services.AddTransient<LockPage>();

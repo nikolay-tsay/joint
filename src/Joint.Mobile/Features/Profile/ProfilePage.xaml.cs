@@ -29,15 +29,6 @@ public partial class ProfilePage : ContentPage
         {
             SyncKeyboard(JoinCodeEntry, _viewModel.IsJoinOpen);
         }
-        else if (e.PropertyName == nameof(ProfileViewModel.IsPinSetupOpen))
-        {
-            // Changing a PIN starts at the current one; choosing the first PIN has no such field.
-            SyncKeyboard(_viewModel.IsLockOn ? CurrentPinEntry : NewPinEntry, _viewModel.IsPinSetupOpen);
-        }
-        else if (e.PropertyName == nameof(ProfileViewModel.IsTurnOffOpen))
-        {
-            SyncKeyboard(TurnOffPinEntry, _viewModel.IsTurnOffOpen);
-        }
         else if (e.PropertyName == nameof(ProfileViewModel.ConnectStep))
         {
             SyncKeyboard(LunchFlowKeyEntry, _viewModel.IsLunchFlowOpen);

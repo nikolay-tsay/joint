@@ -16,6 +16,14 @@ public partial class ConnectionItem(Guid id, string title, string status, bool i
     /// <summary>The last sync failed; the status line says why.</summary>
     public bool HasProblem { get; } = hasProblem;
 
+    /// <summary>
+    /// True once the row has been tapped open. Removing is only offered then, so it cannot
+    /// be hit by accident while scrolling past.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanStartRemove))]
+    public partial bool IsOpen { get; set; }
+
     /// <summary>True while the row is asking "really remove?" in place.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanStartRemove))]
@@ -28,8 +36,8 @@ public partial class ConnectionItem(Guid id, string title, string status, bool i
     public bool CanSyncNow => false;
 #endif
 
-    /// <summary>Only the owner can remove a connection, and not while already being asked.</summary>
-    public bool CanStartRemove => isMine && !IsConfirmingRemove;
+    /// <summary>Only the owner can remove a connection, with its row open, and not while already being asked.</summary>
+    public bool CanStartRemove => isMine && IsOpen && !IsConfirmingRemove;
 
     public static ConnectionItem From(ConnectionResponse connection)
     {
