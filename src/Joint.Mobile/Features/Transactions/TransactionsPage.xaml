@@ -6,7 +6,35 @@
     Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
 
-    <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- The page's own heading. Shell's navigation bar is off: it tints the strip behind the
+             clock purple, which no other page has. Opened from an account, the heading carries the
+             way back that the bar used to. It sits above the list, not in the list's header, where
+             its top spacing was lost and it ran into the status bar. -->
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="4" Margin="16,24,16,0">
+            <Label
+                Text="‹"
+                FontSize="30"
+                Padding="0,0,12,4"
+                VerticalOptions="Center"
+                IsVisible="{Binding IsAccountView}"
+                SemanticProperties.Description="Back"
+                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding GoBackCommand}" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Label
+                Grid.Column="1"
+                Text="{Binding Title}"
+                FontSize="24"
+                FontFamily="OpenSansSemibold"
+                LineBreakMode="TailTruncation"
+                VerticalOptions="Center" />
+        </Grid>
+
+    <RefreshView Grid.Row="1" IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
         <CollectionView
             ItemsSource="{Binding Groups}"
             IsGrouped="True"
@@ -15,32 +43,8 @@
             RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}">
 
             <CollectionView.Header>
-                <VerticalStackLayout Padding="16,24,16,0" Spacing="12">
+                <VerticalStackLayout Padding="16,12,16,0" Spacing="12">
 
-                    <!-- The page's own heading. Shell's navigation bar is off: it tints the strip behind
-                         the clock purple, which no other page has. Opened from an account, the heading
-                         carries the way back that the bar used to. -->
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="4">
-                        <Label
-                            Text="‹"
-                            FontSize="30"
-                            Padding="0,0,12,4"
-                            VerticalOptions="Center"
-                            IsVisible="{Binding IsAccountView}"
-                            SemanticProperties.Description="Back"
-                            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
-                            <Label.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding GoBackCommand}" />
-                            </Label.GestureRecognizers>
-                        </Label>
-                        <Label
-                            Grid.Column="1"
-                            Text="{Binding Title}"
-                            FontSize="24"
-                            FontFamily="OpenSansSemibold"
-                            LineBreakMode="TailTruncation"
-                            VerticalOptions="Center" />
-                    </Grid>
 
                     <!-- Household tab: which kind of accounts to list. -->
                     <!-- One line; scrolls sideways if the chips ever outgrow the screen. -->
@@ -355,5 +359,6 @@
             </CollectionView.ItemTemplate>
         </CollectionView>
     </RefreshView>
+    </Grid>
 
 </ContentPage>
