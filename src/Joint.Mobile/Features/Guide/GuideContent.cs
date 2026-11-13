@@ -80,7 +80,7 @@ public static class GuideContent
             [
                 "Nothing is detected automatically. You mark a payment in Transactions as a subscription or a regular "
                     + "payment, and Joint then counts every payment like it, past and future.",
-                "\"Like it\" means: the payment's counterparty or description contains the match text shown when you "
+                "\"Like it\" means: the payment's name, the bold line of its row, contains the match text shown when you "
                     + "mark it. Joint suggests that text, leaving out parts that look like a reference number, and you can edit it.",
                 "If a payment fits more than one of your match texts, the longest one wins.",
                 "The monthly chart adds up the matching payments in each month. \"Last paid\" looks back up to a year.",
@@ -92,7 +92,7 @@ public static class GuideContent
             [
                 "Nothing is categorized automatically. You open a payment in Transactions, tap Category and pick one, "
                     + "and Joint gives that category to every payment like it, past and future.",
-                "\"Like it\" works the same way as for subscriptions: the payment's counterparty or description "
+                "\"Like it\" works the same way as for subscriptions: the payment's name "
                     + "contains the match text shown on the category page, which you can edit. The longest matching text wins.",
                 "A category is separate from the subscription and regular payment marks: one payment can have both.",
                 "There is a starter list of categories. Typing a new name on the category page adds your own, and it "
