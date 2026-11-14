@@ -54,7 +54,7 @@
 
                         <VerticalStackLayout Spacing="12" IsVisible="{Binding Model.HasData}">
 
-                            <!-- This month at a glance. -->
+                            <!-- The period at a glance. -->
                             <Border Style="{StaticResource HeroCard}">
                                 <VerticalStackLayout Spacing="4">
                                     <Label Text="{Binding Model.SavedTitle}" TextColor="White" Opacity="0.8" FontSize="13" />
@@ -72,7 +72,7 @@
                                 </VerticalStackLayout>
                             </Border>
 
-                            <!-- Income against spending, month by month. -->
+                            <!-- Income against spending, period by period. -->
                             <Border Style="{StaticResource Card}">
                                 <VerticalStackLayout Spacing="10">
                                     <Label Text="Income and spending" Style="{StaticResource RowTitle}" />
@@ -87,36 +87,36 @@
                                 </VerticalStackLayout>
                             </Border>
 
-                            <!-- What was left over each month. -->
+                            <!-- What was left over each period. -->
                             <Border Style="{StaticResource Card}">
                                 <VerticalStackLayout Spacing="10">
-                                    <Label Text="Left over each month" Style="{StaticResource RowTitle}" />
-                                    <Label Text="Income minus spending. Red months cost more than came in." Style="{StaticResource Caption}" />
+                                    <Label Text="{Binding Model.LeftOverTitle}" Style="{StaticResource RowTitle}" />
+                                    <Label Text="Income minus spending. Red bars cost more than came in." Style="{StaticResource Caption}" />
                                     <GraphicsView Drawable="{Binding Model.SavedChart}" HeightRequest="160" StartInteraction="OnChartTouched" DragInteraction="OnChartTouched" />
                                     <Label Text="{Binding Model.SavedDetail}" Style="{StaticResource Caption}" />
                                 </VerticalStackLayout>
                             </Border>
 
-                            <!-- This month's running spending against last month's. -->
+                            <!-- The period's running spending against the one before. -->
                             <Border Style="{StaticResource Card}">
                                 <VerticalStackLayout Spacing="10">
-                                    <Label Text="Spending this month" Style="{StaticResource RowTitle}" />
+                                    <Label Text="{Binding Model.PaceTitle}" Style="{StaticResource RowTitle}" />
                                     <Label Text="{Binding Model.PaceSummary}" Style="{StaticResource Caption}" />
                                     <HorizontalStackLayout Spacing="6">
                                         <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                                        <Label Text="This month" Style="{StaticResource Caption}" Margin="0,0,10,0" />
+                                        <Label Text="{Binding Model.PaceThisLabel}" Style="{StaticResource Caption}" Margin="0,0,10,0" />
                                         <BoxView Style="{StaticResource LegendDot}" Color="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
-                                        <Label Text="Last month" Style="{StaticResource Caption}" />
+                                        <Label Text="{Binding Model.PaceLastLabel}" Style="{StaticResource Caption}" />
                                     </HorizontalStackLayout>
                                     <GraphicsView Drawable="{Binding Model.PaceChart}" HeightRequest="190" StartInteraction="OnChartTouched" DragInteraction="OnChartTouched" />
                                     <Label Text="{Binding Model.PaceDetail}" Style="{StaticResource Caption}" />
                                 </VerticalStackLayout>
                             </Border>
 
-                            <!-- Who spent this month. -->
+                            <!-- Who spent in the period. -->
                             <Border Style="{StaticResource Card}" IsVisible="{Binding Model.HasSeveralSpenders}">
                                 <VerticalStackLayout Spacing="12">
-                                    <Label Text="Who spent this month" Style="{StaticResource RowTitle}" />
+                                    <Label Text="{Binding Model.MembersTitle}" Style="{StaticResource RowTitle}" />
                                     <VerticalStackLayout BindableLayout.ItemsSource="{Binding Model.Members}" Spacing="12">
                                         <BindableLayout.ItemTemplate>
                                             <DataTemplate x:DataType="insights:MemberSpendingItem">
@@ -232,7 +232,7 @@
             </RefreshView>
         </DataTemplate>
 
-        <!-- ===== Categories page: one month's spending by category ===== -->
+        <!-- ===== Categories page: the period's spending by category ===== -->
         <DataTemplate x:Key="CategoriesTemplate" x:DataType="insights:InsightsView">
             <RefreshView IsRefreshing="{Binding Model.Categories.IsRefreshing}" Command="{Binding Model.Categories.LoadCommand}">
                 <ScrollView>
@@ -241,45 +241,8 @@
                             Text="{Binding Model.Categories.Error}"
                             Style="{StaticResource ErrorText}"
                             IsVisible="{Binding Model.Categories.Error, Converter={StaticResource HasText}}" />
-
-                        <!-- Which month: back, and forward up to the current one. -->
-                        <Border Style="{StaticResource Card}" Padding="8,4">
-                            <Grid ColumnDefinitions="48,*,48">
-                                <Label
-                                    Text="‹"
-                                    FontSize="30"
-                                    Padding="0,0,0,4"
-                                    HorizontalTextAlignment="Center"
-                                    SemanticProperties.Description="Previous month"
-                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
-                                    <Label.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding Model.Categories.PreviousMonthCommand}" />
-                                    </Label.GestureRecognizers>
-                                </Label>
-                                <Label
-                                    Grid.Column="1"
-                                    Text="{Binding Model.Categories.MonthTitle}"
-                                    Style="{StaticResource RowTitle}"
-                                    HorizontalOptions="Center"
-                                    VerticalOptions="Center" />
-                                <Label
-                                    Grid.Column="2"
-                                    Text="›"
-                                    FontSize="30"
-                                    Padding="0,0,0,4"
-                                    HorizontalTextAlignment="Center"
-                                    IsVisible="{Binding Model.Categories.CanGoForward}"
-                                    SemanticProperties.Description="Next month"
-                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
-                                    <Label.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding Model.Categories.NextMonthCommand}" />
-                                    </Label.GestureRecognizers>
-                                </Label>
-                            </Grid>
-                        </Border>
-
                         <Border Style="{StaticResource Card}" IsVisible="{Binding Model.Categories.HasNoSpending}">
-                            <Label Text="No spending in this month." Style="{StaticResource Caption}" />
+                            <Label Text="No spending in this period." Style="{StaticResource Caption}" />
                         </Border>
 
                         <Border Style="{StaticResource Card}" IsVisible="{Binding Model.Categories.HasSpending}">
@@ -335,7 +298,7 @@
             Categories="{StaticResource CategoriesTemplate}" />
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
         <Label Text="Insights" FontSize="24" FontFamily="OpenSansSemibold" Margin="16,24,16,0" />
 
         <!-- The two pages as tabs. Tapping one slides to it; so does dragging the page sideways. -->
@@ -384,8 +347,180 @@
             <BoxView Grid.Row="1" BackgroundColor="Transparent" Color="{AppThemeBinding Light={StaticResource InsetStroke}, Dark={StaticResource InsetStrokeDark}}" />
         </Grid>
 
+        <!--
+            The period Overview and Categories report on: step back and forward, or tap the
+            dates to pick the first and last day on a month grid that opens in place.
+        -->
+        <ContentView Grid.Row="2" IsVisible="{Binding ShowsPeriod}">
+        <VerticalStackLayout
+            Spacing="8"
+            Margin="12,12,12,0"
+            BindingContext="{Binding Period, x:DataType=insights:InsightsViewModel}"
+            x:DataType="insights:PeriodFilter">
+            <Border Style="{StaticResource Card}" Padding="8,4">
+                <Grid ColumnDefinitions="48,*,48">
+                    <Label
+                        Text="‹"
+                        FontSize="30"
+                        Padding="0,0,0,4"
+                        HorizontalTextAlignment="Center"
+                        SemanticProperties.Description="Previous period"
+                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding PreviousCommand}" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <HorizontalStackLayout
+                        Grid.Column="1"
+                        Spacing="6"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
+                        SemanticProperties.Description="Choose the dates">
+                        <HorizontalStackLayout.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ToggleCommand}" />
+                        </HorizontalStackLayout.GestureRecognizers>
+                        <Label Text="{Binding Title}" Style="{StaticResource RowTitle}" VerticalOptions="Center" />
+                        <Label
+                            Text="▾"
+                            FontSize="16"
+                            VerticalOptions="Center"
+                            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                    </HorizontalStackLayout>
+                    <Label
+                        Grid.Column="2"
+                        Text="›"
+                        FontSize="30"
+                        Padding="0,0,0,4"
+                        HorizontalTextAlignment="Center"
+                        IsVisible="{Binding CanGoForward}"
+                        SemanticProperties.Description="Next period"
+                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding NextCommand}" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </Grid>
+            </Border>
+
+            <Border Style="{StaticResource Card}" IsVisible="{Binding IsOpen}">
+                <VerticalStackLayout Spacing="10">
+                    <HorizontalStackLayout Spacing="6">
+                        <Border Style="{StaticResource Chip}">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding ThisMonthCommand}" />
+                            </Border.GestureRecognizers>
+                            <Label Text="This month" FontSize="13" FontFamily="OpenSansSemibold" />
+                        </Border>
+                        <Border Style="{StaticResource Chip}">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding LastMonthCommand}" />
+                            </Border.GestureRecognizers>
+                            <Label Text="Last month" FontSize="13" FontFamily="OpenSansSemibold" />
+                        </Border>
+                    </HorizontalStackLayout>
+
+                    <Grid ColumnDefinitions="40,*,40">
+                        <Label
+                            Text="‹"
+                            FontSize="24"
+                            HorizontalTextAlignment="Center"
+                            SemanticProperties.Description="Earlier month"
+                            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding EarlierMonthCommand}" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                        <Label
+                            Grid.Column="1"
+                            Text="{Binding CalendarTitle}"
+                            FontFamily="OpenSansSemibold"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center" />
+                        <Label
+                            Grid.Column="2"
+                            Text="›"
+                            FontSize="24"
+                            HorizontalTextAlignment="Center"
+                            IsVisible="{Binding CanShowLaterMonth}"
+                            SemanticProperties.Description="Later month"
+                            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding LaterMonthCommand}" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
+
+                    <!-- Weeks start on Monday. -->
+                    <Grid ColumnDefinitions="*,*,*,*,*,*,*">
+                        <Label Grid.Column="0" Text="Mo" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="1" Text="Tu" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="2" Text="We" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="3" Text="Th" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="4" Text="Fr" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="5" Text="Sa" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="6" Text="Su" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+                    </Grid>
+
+                    <!-- Six weeks of cells; each places itself by its row and column. -->
+                    <Grid
+                        ColumnDefinitions="*,*,*,*,*,*,*"
+                        RowDefinitions="36,36,36,36,36,36"
+                        RowSpacing="2"
+                        BindableLayout.ItemsSource="{Binding Days}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="insights:CalendarDay">
+                                <Border
+                                    Grid.Row="{Binding Row}"
+                                    Grid.Column="{Binding Column}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 18"
+                                    BackgroundColor="Transparent">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding IsBetween}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource InsetStroke}, Dark={StaticResource InsetStrokeDark}}" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border" Binding="{Binding IsEdge}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding PickCommand, Source={RelativeSource AncestorType={x:Type insights:PeriodFilter}}, x:DataType=insights:PeriodFilter}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Label Text="{Binding Text}" HorizontalOptions="Center" VerticalOptions="Center">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding IsToday}" Value="True">
+                                                <Setter Property="FontFamily" Value="OpenSansSemibold" />
+                                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Label" Binding="{Binding IsEdge}" Value="True">
+                                                <Setter Property="TextColor" Value="White" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </Grid>
+
+                    <Label Text="{Binding Selection}" Style="{StaticResource Caption}" />
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button
+                            Text="Show"
+                            Style="{StaticResource PrimaryButton}"
+                            Command="{Binding ApplyCommand}"
+                            IsEnabled="{Binding CanApply}" />
+                        <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding ToggleCommand}" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+        </ContentView>
+
         <Label
-            Grid.Row="2"
+            Grid.Row="3"
             Text="{Binding Error}"
             Style="{StaticResource ErrorText}"
             Margin="16,8,16,0"
@@ -393,7 +528,7 @@
 
         <!-- A native pager: the page follows the finger and snaps to the nearer side. -->
         <CarouselView
-            Grid.Row="3"
+            Grid.Row="4"
             ItemsSource="{Binding Views}"
             ItemTemplate="{StaticResource ViewTemplate}"
             Position="{Binding TabIndex, Mode=TwoWay}"

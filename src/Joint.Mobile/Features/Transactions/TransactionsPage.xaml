@@ -148,6 +148,18 @@
                         Text="A category filter lists payments only: money coming in has no category."
                         Style="{StaticResource Caption}" />
 
+                    <!-- Leaves out both halves of what the app recognises as moved between your own accounts. -->
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,4,0,0">
+                        <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                            <Label Text="Hide transfers between your accounts" FontSize="15" />
+                            <Label Text="The rows labelled &quot;Between your accounts&quot;." Style="{StaticResource Caption}" />
+                        </VerticalStackLayout>
+                        <Switch
+                            Grid.Column="1"
+                            IsToggled="{Binding StagedHideTransfers}"
+                            VerticalOptions="Center" />
+                    </Grid>
+
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                         <Button Text="Show" Style="{StaticResource PrimaryButton}" Command="{Binding ApplyFilterCommand}" />
                         <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding ToggleFilterCommand}" />

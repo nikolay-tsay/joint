@@ -73,13 +73,21 @@ public static class GuideContent
             "Income and spending",
             "Insights, Overview",
             [
-                "Income is every amount arriving in any account in a calendar month; spending is every amount leaving. "
+                "Overview and Categories show one period, the current calendar month unless you choose another. "
+                    + "Use the arrows on the bar above them to step back and forward, or tap its dates to pick the first "
+                    + "and the last day, for example from one payday to the day before the next.",
+                "A period that runs from a day to the day before the same date a month later (15 October to "
+                    + "14 November) steps by whole months, and Joint remembers it: next time it opens on the period that "
+                    + "holds today. Any other period steps by its own length in days and is forgotten when the app closes.",
+                "Income is every amount arriving in any account in the period; spending is every amount leaving. "
                     + "Transfers between your own accounts are taken out first.",
-                "\"Left over\" is income minus spending for the month. A red bar means more went out than came in.",
-                "\"Spending this month\" is a running total by day, drawn against last month's. The sentence above it "
-                    + "compares today's total with the total on the same day last month.",
-                "\"Who spent\" adds up what left each person's accounts this month. It appears when more than one of you has spending.",
-                "Months run on UTC time, so a month turns over at 1 or 2 a.m. in Prague.",
+                "The bars show the chosen period and the five before it. \"Left over\" is income minus spending for each. "
+                    + "A red bar means more went out than came in.",
+                "\"Spending this period\" (or \"this month\") is a running total by day, drawn against the period "
+                    + "before. The sentence above it compares today's total with the total on the same day of that period.",
+                "\"Who spent\" adds up what left each person's accounts in the period. It appears when more than one of you has spending.",
+                "Days run on UTC time, so a day turns over at 1 or 2 a.m. in Prague.",
+                "Recurring always shows calendar months, whatever period is chosen.",
             ]),
         new(
             "Subscriptions and regular payments",
@@ -107,13 +115,17 @@ public static class GuideContent
                 "To delete a category, tap Edit above the list on the category page, then Delete next to it. "
                     + "Every payee in it goes back to having no category and the category leaves the list, a starter one "
                     + "included. Giving a payee that name again brings it back.",
-                "The ring on Insights shows one calendar month: each slice is what was spent in a category, and "
-                    + "\"Uncategorized\" is spending that no category matches yet. The percentages are shares of that month's spending.",
+                "The ring on Insights shows the period chosen above it, the same as Overview: each slice is what was "
+                    + "spent in a category, and \"Uncategorized\" is spending that no category matches yet. The "
+                    + "percentages are shares of that period's spending.",
                 "Tapping a category under the ring opens Transactions with only its payments from everyday accounts. "
-                    + "The ring counts every account and one month; the list covers all time, and the Filter row can widen "
+                    + "The ring counts every account and one period; the list covers all time, and the Filter row can widen "
                     + "it to all accounts.",
                 "In Transactions, the Filter row at the top narrows the list to a kind of account and to any number "
-                    + "of categories, including payments with no category. A category filter lists payments only.",
+                    + "of categories, including payments with no category. A category filter lists payments only. "
+                    + "\"Hide transfers between your accounts\" leaves out the rows labelled \"Between your accounts\", both "
+                    + "halves, even when the other half is in an account the list is not showing. Payments you marked as an "
+                    + "own transfer stay listed.",
                 "Only money going out is categorized, and transfers between your own accounts are left out first, "
                     + "as everywhere else.",
             ]),

@@ -9,8 +9,9 @@ using Joint.Mobile.Features.Auth;
 namespace Joint.Mobile.Features.Insights;
 
 /// <summary>
-/// Two views behind one tab. Overview: this month at a glance, income against spending by
-/// month, what was left over, this month's pace against last month's, and who spent.
+/// Three views behind one tab. Overview: the chosen period at a glance, income against spending
+/// for it and the periods before, what was left over, its pace against the previous period's,
+/// and who spent. Overview and Categories follow the period chosen in <see cref="Period"/>.
 /// Recurring: what subscriptions and regular payments cost per month, and the list of them.
 /// </summary>
 public partial class InsightsViewModel(ApiClient api, AuthService auth, CategoriesViewModel categories)
@@ -22,6 +23,27 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
     private const string MonthHint = "Touch a month to see its exact amounts.";
 
     private const string DayHint = "Touch a day to see the totals up to it.";
+
+    private PeriodFilter? _period;
+
+    /// <summary>The dates Overview and Categories report on; changing them reloads both.</summary>
+    public PeriodFilter Period => _period ??= new PeriodFilter(PeriodChangedAsync);
+
+    /// <summary>"Spending this month", or "Spending this period" for any other kind of period.</summary>
+    [ObservableProperty]
+    public partial string PaceTitle { get; set; } = "Spending this month";
+
+    [ObservableProperty]
+    public partial string PaceThisLabel { get; set; } = "This month";
+
+    [ObservableProperty]
+    public partial string PaceLastLabel { get; set; } = "Last month";
+
+    [ObservableProperty]
+    public partial string LeftOverTitle { get; set; } = "Left over each month";
+
+    [ObservableProperty]
+    public partial string MembersTitle { get; set; } = "Who spent this month";
 
     /// <summary>"Saved in November", or "Overspent in November" when more went out than came in.</summary>
     [ObservableProperty]
@@ -36,7 +58,7 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
     [ObservableProperty]
     public partial string? Spending { get; set; }
 
-    /// <summary>This month's spending against the same day last month, in words.</summary>
+    /// <summary>The period's spending against the same day of the period before, in words.</summary>
     [ObservableProperty]
     public partial string? PaceSummary { get; set; }
 
@@ -96,7 +118,7 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
     /// when a tab sets it.
     /// </summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsOverviewTab), nameof(IsRecurringTab), nameof(IsCategoriesTab))]
+    [NotifyPropertyChangedFor(nameof(IsOverviewTab), nameof(IsRecurringTab), nameof(IsCategoriesTab), nameof(ShowsPeriod))]
     public partial int TabIndex { get; set; }
 
     public bool IsOverviewTab => TabIndex == 0;
@@ -104,6 +126,9 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
     public bool IsRecurringTab => TabIndex == 1;
 
     public bool IsCategoriesTab => TabIndex == 2;
+
+    /// <summary>The period bar sits over Overview and Categories; Recurring stays by calendar month.</summary>
+    public bool ShowsPeriod => !IsRecurringTab;
 
     [ObservableProperty]
     public partial string? RecurringTitle { get; set; }
@@ -155,7 +180,8 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
     [RelayCommand]
     private Task LoadAsync() => ReloadAsync(async () =>
     {
-        var insights = await api.GetInsightsAsync(Months);
+        Categories.Period = Period.Current;
+        var insights = await api.GetInsightsAsync(Months, Period.Current);
         FillRecurring(await api.GetRecurringAsync(Months), insights.Currency);
 
         HasData = insights.Currency is not null;
@@ -165,15 +191,27 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
             return;
         }
 
+        // Each bar's own dates; an older backend sends calendar months without an end.
+        var periods = insights.Months
+            .Select(m => new DatePeriod(m.Month, m.End ?? m.Month.AddMonths(1).AddDays(-1)))
+            .ToList();
+        var period = periods[^1];
+        var noun = PeriodText.Noun(period);
+        PaceTitle = $"Spending this {noun}";
+        PaceThisLabel = $"This {noun}";
+        PaceLastLabel = period.IsCalendarMonth ? "Last month" : "Period before";
+        LeftOverTitle = $"Left over each {noun}";
+        MembersTitle = $"Who spent this {noun}";
+
         var current = insights.Months[^1];
         var net = current.Income - current.Spending;
-        SavedTitle = $"{(net < 0 ? "Overspent" : "Saved")} in {current.Month:MMMM}";
+        SavedTitle = $"{(net < 0 ? "Overspent" : "Saved")} {PeriodText.After(period)}";
         Saved = Money.Format(Math.Abs(net), currency);
         Income = Money.Format(current.Income, currency);
         Spending = Money.Format(current.Spending, currency);
-        PaceSummary = DescribePace(insights);
+        PaceSummary = DescribePace(insights, noun);
 
-        var labels = insights.Months.Select(m => m.Month.ToString("MMM")).ToList();
+        var labels = periods.Select(PeriodText.Short).ToList();
         // New charts start with nothing picked, so the lines under them go back to the hint.
         FlowDetail = MonthHint;
         SavedDetail = MonthHint;
@@ -189,7 +227,7 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
             Selected = index =>
             {
                 var month = insights.Months[index];
-                FlowDetail = $"{month.Month:MMMM yyyy}: income {Money.Format(month.Income, currency)}, "
+                FlowDetail = $"{PeriodText.Describe(periods[index])}: income {Money.Format(month.Income, currency)}, "
                     + $"spending {Money.Format(month.Spending, currency)}";
             },
         };
@@ -202,9 +240,10 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
             {
                 var month = insights.Months[index];
                 var left = month.Income - month.Spending;
+                var when = PeriodText.Describe(periods[index]);
                 SavedDetail = left < 0
-                    ? $"{month.Month:MMMM yyyy}: {Money.Format(-left, currency)} more spent than came in"
-                    : $"{month.Month:MMMM yyyy}: {Money.Format(left, currency)} left over";
+                    ? $"{when}: {Money.Format(-left, currency)} more spent than came in"
+                    : $"{when}: {Money.Format(left, currency)} left over";
             },
         };
         PaceChart = new LineChart(
@@ -215,12 +254,12 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
         {
             Selected = index =>
             {
-                // A day this month has not reached yet, or last month never had, has no figure.
+                // A day this period has not reached yet, or the one before never had, has no figure.
                 string At(List<decimal> running) =>
                     index < running.Count ? Money.Format(running[index], currency) : "no figure yet";
 
-                PaceDetail = $"By day {index + 1}: {At(insights.SpendingThisMonth)} this month, "
-                    + $"{At(insights.SpendingLastMonth)} last month";
+                PaceDetail = $"By day {index + 1}: {At(insights.SpendingThisMonth)} this {noun}, "
+                    + $"{At(insights.SpendingLastMonth)} {(period.IsCalendarMonth ? "last month" : "the period before")}";
             },
         };
 
@@ -273,25 +312,34 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
         HasBills = Bills.Count > 0;
     }
 
-    private static string DescribePace(InsightsResponse insights)
+    /// <param name="noun">"month" or "period".</param>
+    private static string DescribePace(InsightsResponse insights, string noun)
     {
         if (insights.SpendingThisMonth.Count == 0 || insights.SpendingLastMonth.Count == 0)
         {
             return "";
         }
 
-        // The same day last month, or its last day when this month is already longer.
+        // The same day of the period before, or its last day when this one is already longer.
         var day = Math.Min(insights.SpendingThisMonth.Count, insights.SpendingLastMonth.Count) - 1;
         var now = insights.SpendingThisMonth[^1];
         var then = insights.SpendingLastMonth[day];
+        var before = noun == "month" ? "by this day last month" : "by this day of the period before";
         if (then == 0)
         {
-            return now == 0 ? "Nothing spent yet this month." : "By this day last month nothing had been spent.";
+            return now == 0 ? $"Nothing spent yet this {noun}." : $"Nothing had been spent {before}.";
         }
 
         var change = (now - then) / then;
         return Math.Abs(change) < 0.01m
-            ? "About the same as by this day last month."
-            : $"{Math.Abs(change):P0} {(change < 0 ? "less" : "more")} than by this day last month.";
+            ? $"About the same as {before}."
+            : $"{Math.Abs(change):P0} {(change < 0 ? "less" : "more")} than {before}.";
+    }
+
+    /// <summary>A new period: both views that follow it load again.</summary>
+    private Task PeriodChangedAsync()
+    {
+        Categories.Period = Period.Current;
+        return Task.WhenAll(LoadCommand.ExecuteAsync(null), Categories.LoadCommand.ExecuteAsync(null));
     }
 }

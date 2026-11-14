@@ -16,8 +16,9 @@ namespace Joint.Api.Features.Transactions;
 /// Lists the household's transactions, newest first. Narrow them to one account with
 /// <c>accountId</c> or to one kind of account with <c>kind</c> (Current, Savings,
 /// Investment), and to payments in some categories by repeating <c>category</c> (any of
-/// them matches) and adding <c>uncategorized=true</c> for payments with none. Page with
-/// <c>skip</c> and <c>limit</c>.
+/// them matches) and adding <c>uncategorized=true</c> for payments with none. With
+/// <c>hideTransfers=true</c>, money the app recognises as moved between the household's own
+/// accounts (the "Between your accounts" rows) is left out. Page with <c>skip</c> and <c>limit</c>.
 /// </summary>
 public class ListTransactions : IEndpoint
 {
@@ -39,7 +40,8 @@ public class ListTransactions : IEndpoint
         JointDbContext db,
         CancellationToken cancellationToken,
         string[]? category = null,
-        bool? uncategorized = null)
+        bool? uncategorized = null,
+        bool? hideTransfers = null)
     {
         var user = await currentUser.GetOrCreateAsync(principal, cancellationToken);
         if (user is null)
@@ -92,9 +94,10 @@ public class ListTransactions : IEndpoint
 
         var offset = Math.Max(skip ?? 0, 0);
         var count = Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit);
-        var transactions = wanted is null
+        var withoutTransfers = hideTransfers == true;
+        var transactions = wanted is null && !withoutTransfers
             ? await query.Skip(offset).Take(count).ToListAsync(cancellationToken)
-            : await InCategoriesAsync(query, wanted, user.HouseholdId, db, offset, count, cancellationToken);
+            : await FilteredAsync(query, wanted, withoutTransfers, user.HouseholdId, db, offset, count, cancellationToken);
 
         // Pending transactions lead the first page and are not counted in its size, so the
         // pages of booked ones stay as they were.
@@ -119,30 +122,43 @@ public class ListTransactions : IEndpoint
     }
 
     /// <summary>
-    /// One page of the payments in the wanted categories. A category is decided in code
-    /// (a payee's name contains a rule's text), so the filtered list cannot be paged in the
-    /// database: the payments of the household, a few thousand small rows, are matched in
-    /// memory and the page is cut from what is left. Only payments have a category, so
-    /// money coming in never passes this filter.
+    /// One page of a list narrowed by something decided in code: a category (a payee's name
+    /// contains a rule's text), or being a transfer between the household's own accounts
+    /// (pairing looks at other accounts too). Such a list cannot be paged in the database, so
+    /// the household's rows, a few thousand small ones, are narrowed in memory and the page
+    /// is cut from what is left. Only payments have a category, so money coming in never
+    /// passes a category filter.
     /// </summary>
-    private static async Task<List<TransactionResponse>> InCategoriesAsync(
-        IQueryable<TransactionResponse> payments,
-        CategoryFilter wanted,
+    private static async Task<List<TransactionResponse>> FilteredAsync(
+        IQueryable<TransactionResponse> query,
+        CategoryFilter? wanted,
+        bool withoutTransfers,
         Guid householdId,
         JointDbContext db,
         int offset,
         int count,
         CancellationToken cancellationToken)
     {
-        var matcher = new CategoryMatcher(await db.CategoryRulesOf(householdId).ToListAsync(cancellationToken));
-        var listed = await payments.ToListAsync(cancellationToken);
-        return listed
-            .Where(t => matcher.Find(t.Counterparty, t.Description) is { } rule
+        IEnumerable<TransactionResponse> listed = await query.ToListAsync(cancellationToken);
+        if (wanted is not null)
+        {
+            var matcher = new CategoryMatcher(await db.CategoryRulesOf(householdId).ToListAsync(cancellationToken));
+            listed = listed.Where(t => matcher.Find(t.Counterparty, t.Description) is { } rule
                 ? wanted.Names.Contains(rule.Category)
-                : wanted.Uncategorized)
-            .Skip(offset)
-            .Take(count)
-            .ToList();
+                : wanted.Uncategorized);
+        }
+
+        var rows = listed.ToList();
+        if (withoutTransfers && rows.Count > 0)
+        {
+            // The pairing behind the "Between your accounts" label, over every account of the
+            // household: the other half is usually in an account this list does not show.
+            var paired = await PairedAsync(
+                rows.Min(t => t.BookedOn), rows.Max(t => t.BookedOn), amounts: null, householdId, db, cancellationToken);
+            rows = rows.Where(t => !paired.Contains(t.Id)).ToList();
+        }
+
+        return rows.Skip(offset).Take(count).ToList();
     }
 
     private sealed record CategoryFilter(HashSet<string> Names, bool Uncategorized);
@@ -212,28 +228,48 @@ public class ListTransactions : IEndpoint
             return transactions;
         }
 
-        // Twice the window: a neighbour just off the page may itself pair with something further out.
-        var margin = 2 * InternalTransfers.WindowDays;
-        var from = transactions.Min(t => t.BookedOn).AddDays(-margin);
-        var to = transactions.Max(t => t.BookedOn).AddDays(margin);
         var amounts = transactions.SelectMany(t => new[] { t.Amount, -t.Amount }).Distinct().ToList();
+        var paired = await PairedAsync(
+            transactions.Min(t => t.BookedOn), transactions.Max(t => t.BookedOn), amounts, householdId, db, cancellationToken);
+
+        return transactions.Select(t => paired.Contains(t.Id) ? t with { IsInternalTransfer = true } : t).ToList();
+    }
+
+    /// <summary>
+    /// The ids of both halves of every transfer the app recognises among the household's
+    /// transactions around <paramref name="first"/> to <paramref name="last"/>.
+    /// </summary>
+    /// <param name="amounts">Only rows of these amounts can pair with the ones asked about; null reads them all.</param>
+    private static async Task<HashSet<Guid>> PairedAsync(
+        DateOnly first,
+        DateOnly last,
+        List<decimal>? amounts,
+        Guid householdId,
+        JointDbContext db,
+        CancellationToken cancellationToken)
+    {
+        // Twice the window: a neighbour just outside may itself pair with something further out.
+        var margin = 2 * InternalTransfers.WindowDays;
+        var from = first.AddDays(-margin);
+        var to = last.AddDays(margin);
+        var anyAmount = amounts is null;
+        var wantedAmounts = amounts ?? [];
 
         var candidates = await (
             from transaction in db.Transactions
             join account in db.AccountsOf(householdId) on transaction.AccountId equals account.Id
-            where transaction.BookedOn >= @from && transaction.BookedOn <= to && amounts.Contains(transaction.Amount)
+            where transaction.BookedOn >= @from && transaction.BookedOn <= to
+            where anyAmount || wantedAmounts.Contains(transaction.Amount)
             select new TransferCandidate(
                 transaction.Id, account.Id, transaction.BookedOn, transaction.Amount, transaction.Currency))
             .ToListAsync(cancellationToken);
 
         // Per currency, as the calculators do: amounts are never compared across currencies.
-        var paired = candidates
+        return candidates
             .GroupBy(c => c.Currency)
             .SelectMany(g => InternalTransfers.Find(g.ToList(), c => c.AccountId, c => c.BookedOn, c => c.Amount))
             .Select(c => c.Id)
             .ToHashSet();
-
-        return transactions.Select(t => paired.Contains(t.Id) ? t with { IsInternalTransfer = true } : t).ToList();
     }
 
     private sealed record TransferCandidate(Guid Id, Guid AccountId, DateOnly BookedOn, decimal Amount, string Currency);

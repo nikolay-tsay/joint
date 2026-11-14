@@ -10,8 +10,10 @@ using Microsoft.EntityFrameworkCore;
 namespace Joint.Api.Features.Insights;
 
 /// <summary>
-/// The household's income and spending by month, this month's spending against last
-/// month's, and who spent what. <c>months</c> sets how far back the monthly series goes.
+/// The household's income and spending over a period and the ones before it, the period's
+/// spending against the previous one's, and who spent what. The period is <c>from</c> to
+/// <c>to</c> (both included), the current calendar month when left out; <c>months</c> sets
+/// how many periods the series covers.
 /// </summary>
 public class GetInsights : IEndpoint
 {
@@ -23,12 +25,14 @@ public class GetInsights : IEndpoint
             .WithName("GetInsights")
             .RequireAuthorization();
 
-    public static async Task<Results<Ok<InsightsResponse>, UnauthorizedHttpResult>> HandleAsync(
+    public static async Task<Results<Ok<InsightsResponse>, UnauthorizedHttpResult, ProblemHttpResult>> HandleAsync(
         int? months,
         ClaimsPrincipal principal,
         CurrentUserService currentUser,
         JointDbContext db,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        DateOnly? from = null,
+        DateOnly? to = null)
     {
         var user = await currentUser.GetOrCreateAsync(principal, cancellationToken);
         if (user is null)
@@ -36,10 +40,16 @@ public class GetInsights : IEndpoint
             return TypedResults.Unauthorized();
         }
 
-        // Always at least two months: the current one is compared with the one before.
-        var span = Math.Clamp(months ?? DefaultMonths, 2, MaxMonths);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var start = new DateOnly(today.Year, today.Month, 1).AddMonths(1 - span);
+        var period = PeriodQuery.Read(from, to, today, out var error) ?? DatePeriod.MonthOf(today);
+        if (error is not null)
+        {
+            return TypedResults.Problem(error, statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        // Always at least two periods: the chosen one is compared with the one before.
+        var span = Math.Clamp(months ?? DefaultMonths, 2, MaxMonths);
+        var start = period.Shift(1 - span).From;
 
         // A year of one household's transactions is a few thousand small rows, so the
         // arithmetic is done in memory where it is easy to test.
@@ -69,6 +79,6 @@ public class GetInsights : IEndpoint
             })
             .ToList();
 
-        return TypedResults.Ok(InsightsCalculator.Build(flows, today, span));
+        return TypedResults.Ok(InsightsCalculator.Build(flows, today, span, period));
     }
 }

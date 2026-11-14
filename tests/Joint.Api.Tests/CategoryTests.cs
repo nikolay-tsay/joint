@@ -29,7 +29,7 @@ public class CategoryTests
                 Row(Everyday, "2026-10-28", -999, "ALBERT 0123"),
             ],
             [Rule("Groceries", "ALBERT"), Rule("Entertainment", "NETFLIX")],
-            November);
+            DatePeriod.MonthOf(November));
 
         Assert.Equal("CZK", breakdown.Currency);
         Assert.Equal(November, breakdown.Month);
@@ -49,7 +49,7 @@ public class CategoryTests
                 Row(Everyday, "2026-11-03", -300, "Somewhere"),
             ],
             [Rule("Other", "TRANSFER")],
-            November);
+            DatePeriod.MonthOf(November));
 
         Assert.Empty(breakdown.Spending);
         Assert.Equal(300m, breakdown.Uncategorized);
@@ -58,7 +58,7 @@ public class CategoryTests
     [Fact]
     public void The_names_on_offer_are_the_starter_list_then_the_households_own()
     {
-        var breakdown = CategoryCalculator.Build([], [Rule("Pets", "VET"), Rule("Groceries", "ALBERT"), Rule("Garden", "HORNBACH")], November);
+        var breakdown = CategoryCalculator.Build([], [Rule("Pets", "VET"), Rule("Groceries", "ALBERT"), Rule("Garden", "HORNBACH")], DatePeriod.MonthOf(November));
 
         Assert.Equal(CategoryNames.Starter, breakdown.Names.Take(CategoryNames.Starter.Count));
         Assert.Equal(["Garden", "Pets"], breakdown.Names.Skip(CategoryNames.Starter.Count));

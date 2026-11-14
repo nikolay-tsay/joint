@@ -12,8 +12,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Joint.Api.Features.Categories;
 
 /// <summary>
-/// What the household spent per category in one calendar month, and the category names it
-/// can choose from. <c>month</c> is <c>yyyy-MM</c>; the current month when left out.
+/// What the household spent per category over a period, and the category names it can
+/// choose from. The period is <c>from</c> to <c>to</c> (both included), or the calendar
+/// month <c>month</c> (<c>yyyy-MM</c>); the current month when neither is given.
 /// </summary>
 public class GetCategories : IEndpoint
 {
@@ -27,7 +28,9 @@ public class GetCategories : IEndpoint
         ClaimsPrincipal principal,
         CurrentUserService currentUser,
         JointDbContext db,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        DateOnly? from = null,
+        DateOnly? to = null)
     {
         var user = await currentUser.GetOrCreateAsync(principal, cancellationToken);
         if (user is null)
@@ -36,20 +39,26 @@ public class GetCategories : IEndpoint
         }
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var first = new DateOnly(today.Year, today.Month, 1);
+        var first = today;
         if (!string.IsNullOrEmpty(month)
             && !DateOnly.TryParseExact(month + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out first))
         {
             return TypedResults.Problem("Month must look like 2026-11.", statusCode: StatusCodes.Status400BadRequest);
         }
 
-        // A few days either side, so a transfer straddling the month's edge is still paired up.
-        var from = first.AddDays(-InternalTransfers.WindowDays);
-        var to = first.AddMonths(1).AddDays(InternalTransfers.WindowDays);
+        var period = PeriodQuery.Read(from, to, today, out var error) ?? DatePeriod.MonthOf(first);
+        if (error is not null)
+        {
+            return TypedResults.Problem(error, statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        // A few days either side, so a transfer straddling the period's edge is still paired up.
+        var loadFrom = period.From.AddDays(-InternalTransfers.WindowDays);
+        var loadTo = period.To.AddDays(InternalTransfers.WindowDays);
         var loaded = await (
             from transaction in db.Transactions
             join account in db.AccountsOf(user.HouseholdId) on transaction.AccountId equals account.Id
-            where transaction.BookedOn >= @from && transaction.BookedOn < to
+            where transaction.BookedOn >= loadFrom && transaction.BookedOn <= loadTo
             select new CategoryRow(
                 account.Id, transaction.BookedOn, transaction.Amount, transaction.Currency,
                 transaction.Counterparty, transaction.Description))
@@ -67,6 +76,6 @@ public class GetCategories : IEndpoint
             .Where(h => h.Id == user.HouseholdId)
             .Select(h => h.HiddenCategories)
             .FirstOrDefaultAsync(cancellationToken);
-        return TypedResults.Ok(CategoryCalculator.Build(rows, rules, first, hidden));
+        return TypedResults.Ok(CategoryCalculator.Build(rows, rules, period, hidden));
     }
 }

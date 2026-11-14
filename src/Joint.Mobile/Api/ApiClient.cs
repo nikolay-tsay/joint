@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -70,9 +71,10 @@ public class ApiClient(AuthService auth)
     /// </summary>
     /// <param name="categories">Only payments in any of these categories; empty or null for no such filter.</param>
     /// <param name="uncategorized">Also payments with no category, alongside <paramref name="categories"/>.</param>
+    /// <param name="hideTransfers">Leaves out money recognised as moved between the household's own accounts.</param>
     public async Task<List<TransactionResponse>> GetTransactionsAsync(
         Guid? accountId, string? kind, int skip, int limit,
-        IReadOnlyCollection<string>? categories = null, bool uncategorized = false,
+        IReadOnlyCollection<string>? categories = null, bool uncategorized = false, bool hideTransfers = false,
         CancellationToken cancellationToken = default)
     {
         var path = $"api/transactions?skip={skip}&limit={limit}";
@@ -96,6 +98,11 @@ public class ApiClient(AuthService auth)
             path += "&uncategorized=true";
         }
 
+        if (hideTransfers)
+        {
+            path += "&hideTransfers=true";
+        }
+
         using var response = await SendAsync(HttpMethod.Get, path, null, cancellationToken);
         return await ReadAsync<List<TransactionResponse>>(response, cancellationToken);
     }
@@ -117,12 +124,12 @@ public class ApiClient(AuthService auth)
     }
 
     /// <summary>
-    /// One month's spending by category and the category names on offer. Null asks for
-    /// the current month.
+    /// A period's spending by category and the category names on offer. Null asks for
+    /// the current calendar month.
     /// </summary>
-    public async Task<CategoriesResponse> GetCategoriesAsync(DateOnly? month, CancellationToken cancellationToken = default)
+    public async Task<CategoriesResponse> GetCategoriesAsync(DatePeriod? period, CancellationToken cancellationToken = default)
     {
-        var path = month is { } first ? $"api/categories?month={first:yyyy-MM}" : "api/categories";
+        var path = period is null ? "api/categories" : $"api/categories?{PeriodQuery(period)}";
         using var response = await SendAsync(HttpMethod.Get, path, null, cancellationToken);
         return await ReadAsync<CategoriesResponse>(response, cancellationToken);
     }
@@ -184,11 +191,16 @@ public class ApiClient(AuthService auth)
     }
 
     /// <summary>Income, spending and who spent, for the charts on the Insights tab.</summary>
-    public async Task<InsightsResponse> GetInsightsAsync(int months, CancellationToken cancellationToken = default)
+    public async Task<InsightsResponse> GetInsightsAsync(
+        int months, DatePeriod period, CancellationToken cancellationToken = default)
     {
-        using var response = await SendAsync(HttpMethod.Get, $"api/insights?months={months}", null, cancellationToken);
+        using var response = await SendAsync(
+            HttpMethod.Get, $"api/insights?months={months}&{PeriodQuery(period)}", null, cancellationToken);
         return await ReadAsync<InsightsResponse>(response, cancellationToken);
     }
+
+    private static string PeriodQuery(DatePeriod period) =>
+        string.Create(CultureInfo.InvariantCulture, $"from={period.From:yyyy-MM-dd}&to={period.To:yyyy-MM-dd}");
 
     /// <summary>The household's subscriptions and regular payments, with what they cost per month.</summary>
     public async Task<RecurringOverviewResponse> GetRecurringAsync(int months, CancellationToken cancellationToken = default)

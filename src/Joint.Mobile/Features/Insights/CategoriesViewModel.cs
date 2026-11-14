@@ -9,23 +9,16 @@ using Joint.Mobile.Features.Auth;
 namespace Joint.Mobile.Features.Insights;
 
 /// <summary>
-/// One month's spending by category: a ring with a slice per category, and the same as a
-/// list. The month can be stepped back and forward, never past the current one.
+/// A period's spending by category: a ring with a slice per category, and the same as a
+/// list. The period is the one chosen above Overview and Categories (<see cref="PeriodFilter"/>).
 /// </summary>
 public partial class CategoriesViewModel(ApiClient api, AuthService auth) : PageViewModel(auth)
 {
     private const string Hint = "Touch a slice to see its amount, or a row below to see its payments.";
     private const string UncategorizedName = "Uncategorized";
 
-    private DateOnly _month = ThisMonth();
-
-    /// <summary>"November 2026".</summary>
-    [ObservableProperty]
-    public partial string? MonthTitle { get; set; }
-
-    /// <summary>False on the current month: there is nothing later to show.</summary>
-    [ObservableProperty]
-    public partial bool CanGoForward { get; set; }
+    /// <summary>The days shown; Insights sets it from its period filter before loading.</summary>
+    public DatePeriod Period { get; set; } = DatePeriod.MonthOf(DateOnly.FromDateTime(DateTime.UtcNow));
 
     [ObservableProperty]
     public partial string? Total { get; set; }
@@ -43,18 +36,18 @@ public partial class CategoriesViewModel(ApiClient api, AuthService auth) : Page
     [ObservableProperty]
     public partial string Detail { get; set; } = Hint;
 
-    /// <summary>Says how much of the month is still without a category, when any is.</summary>
+    /// <summary>Says how much of the period is still without a category, when any is.</summary>
     [ObservableProperty]
     public partial string? UncategorizedNote { get; set; }
 
     public ObservableCollection<CategoryItem> Items { get; } = [];
 
     [RelayCommand]
-    private Task LoadAsync() => ReloadAsync(async () => Show(await api.GetCategoriesAsync(_month)));
+    private Task LoadAsync() => ReloadAsync(async () => Show(await api.GetCategoriesAsync(Period)));
 
     /// <summary>
     /// Opens Transactions on that category's payments from everyday accounts, the tab's usual
-    /// view. The ring counts every kind of account and one month; the list is neither.
+    /// view. The ring counts every kind of account and one period; the list is neither.
     /// </summary>
     [RelayCommand]
     private static Task OpenCategoryAsync(CategoryItem item) =>
@@ -62,24 +55,9 @@ public partial class CategoriesViewModel(ApiClient api, AuthService auth) : Page
             ? $"{Routes.Transactions}?uncategorized=true"
             : $"{Routes.Transactions}?category={Uri.EscapeDataString(item.Name)}");
 
-    [RelayCommand]
-    private Task PreviousMonthAsync() => GoToAsync(_month.AddMonths(-1));
-
-    [RelayCommand]
-    private Task NextMonthAsync() => _month < ThisMonth() ? GoToAsync(_month.AddMonths(1)) : Task.CompletedTask;
-
-    private Task GoToAsync(DateOnly month) => RunAsync(async () =>
-    {
-        var categories = await api.GetCategoriesAsync(month);
-        _month = month;
-        Show(categories);
-    });
-
     private void Show(CategoriesResponse categories)
     {
         var currency = categories.Currency ?? "";
-        MonthTitle = categories.Month.ToString("MMMM yyyy");
-        CanGoForward = _month < ThisMonth();
 
         // The legend and the ring share one list: the categories, then what has none.
         var slices = categories.Spending
@@ -111,15 +89,9 @@ public partial class CategoriesViewModel(ApiClient api, AuthService auth) : Page
         {
             Selected = index =>
                 Detail = $"{slices[index].Name}: {Money.Format(slices[index].Amount, currency)}, "
-                    + $"{Share(slices[index].Amount, total)} of the month's spending",
+                    + $"{Share(slices[index].Amount, total)} of the {PeriodText.Noun(Period)}'s spending",
         };
     }
 
     private static string Share(decimal amount, decimal total) => total > 0 ? $"{amount / total:P0}" : "";
-
-    private static DateOnly ThisMonth()
-    {
-        var today = DateTime.UtcNow;
-        return new DateOnly(today.Year, today.Month, 1);
-    }
 }

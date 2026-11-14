@@ -33,6 +33,9 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
     /// <summary>Also, or only, payments with no category.</summary>
     private bool _uncategorized;
 
+    /// <summary>Leaves out the rows labelled "Between your accounts".</summary>
+    private bool _hideTransfers;
+
     private int _loaded;
     private bool _hasMore = true;
     private bool _isLoadingMore;
@@ -105,6 +108,10 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
 
     /// <summary>The categories offered in the filter panel, "No category" first.</summary>
     public ObservableCollection<CategoryFilterOption> CategoryOptions { get; } = [];
+
+    /// <summary>The transfers switch in the open filter panel, applied with the rest on "Show".</summary>
+    [ObservableProperty]
+    public partial bool StagedHideTransfers { get; set; }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
@@ -212,6 +219,7 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
         }
 
         _stagedKind = _kindFilter;
+        StagedHideTransfers = _hideTransfers;
         RebuildChoices();
         IsFilterOpen = true;
         await RunAsync(async () =>
@@ -251,6 +259,7 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
             .Select(o => o.Name!)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         _uncategorized = CategoryOptions.Any(o => o is { IsSelected: true, IsNoCategory: true });
+        _hideTransfers = StagedHideTransfers;
         IsFilterOpen = false;
         RebuildChoices();
         await LoadAsync();
@@ -309,7 +318,7 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
     }
 
     private Task<List<TransactionResponse>> GetPageAsync(int skip, int limit) =>
-        _api.GetTransactionsAsync(_accountId, _kindFilter, skip, limit, _categories, _uncategorized);
+        _api.GetTransactionsAsync(_accountId, _kindFilter, skip, limit, _categories, _uncategorized, _hideTransfers);
 
     /// <summary>Back to Home from one account's transactions.</summary>
     [RelayCommand]
@@ -456,6 +465,7 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
         [
             IsAccountView ? null : _kindFilter is null ? "All accounts" : AccountKinds.Label(_kindFilter),
             DescribeCategories(),
+            _hideTransfers ? "No transfers" : null,
         ];
         FilterSummary = string.Join(" · ", parts.Where(p => p is not null)) is { Length: > 0 } summary
             ? summary

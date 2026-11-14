@@ -29,6 +29,8 @@ public partial class InsightsPage : ContentPage, ITabRoot
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        // Categories may load first; it must already know the period.
+        _viewModel.Categories.Period = _viewModel.Period.Current;
         _viewModel.LoadCommand.Execute(null);
         _viewModel.Categories.LoadCommand.Execute(null);
     }
