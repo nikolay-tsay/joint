@@ -21,7 +21,8 @@ public static class GuideContent
                 "Accounts are read right after you connect them and then every six hours. Lunch Flow itself "
                     + "refreshes from the bank about once a day, so a payment can show in your bank's app a day or more before it shows here.",
                 "Only booked transactions are shown. A pending card payment appears once the bank has booked it.",
-                "Fio hands out the last 90 days of history, so that is where a Fio account starts.",
+                "Fio hands out the last 90 days of history, so that is where a Fio account starts. A Fio token "
+                    + "is for one account, so each Fio account is connected separately with its own token.",
                 "Trading 212 gives balances and holdings but no transactions. It appears as up to three accounts: "
                     + "Investments, Main pot and Spending pot. The spending pot is not reported by Trading 212; it is the "
                     + "account total minus the other two, and shows only when something is left over.",

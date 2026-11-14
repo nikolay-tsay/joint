@@ -15,6 +15,13 @@ public class BankConnection
     /// <summary>Provider credential (API token or session), encrypted before it is stored.</summary>
     public required string EncryptedCredential { get; set; }
 
+    /// <summary>
+    /// For a provider whose credential covers one account (Fio): that account's id at the
+    /// provider, so a person can have a connection per account and a new token finds the
+    /// connection it belongs to. Null for providers whose credential covers everything.
+    /// </summary>
+    public string? AccountKey { get; set; }
+
     public DateTimeOffset? ConsentExpiresAt { get; set; }
     public DateTimeOffset? LastSyncedAt { get; set; }
     public string? LastError { get; set; }

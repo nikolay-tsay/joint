@@ -55,7 +55,8 @@ Each person connects their own accounts from the Profile tab.
   destination of type "REST API", switch on the accounts to share, and paste its API key
   into Joint.
 - **Fio.** In Fio internet banking, open Settings, then API, and add a token with the
-  "watch the account" right only. Paste it into Joint. A token covers one account, and Fio
+  "watch the account" right only. Paste it into Joint. A token covers one account, so repeat
+  this with a token of its own for each further account. Fio
   hands out the last 90 days of history.
 - **Trading 212.** In its app, open Settings, then API, and generate a key with only the
   "Account data" and "Portfolio" permissions. Paste the key and its secret into Joint.

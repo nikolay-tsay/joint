@@ -4,12 +4,17 @@ using Joint.Contracts;
 namespace Joint.Mobile.Features.Profile;
 
 /// <summary>One provider connection on the profile page, already formatted for display.</summary>
-public partial class ConnectionItem(Guid id, string title, string status, bool isMine, bool hasProblem)
+public partial class ConnectionItem(Guid id, string title, string accounts, string status, bool isMine, bool hasProblem)
     : ObservableObject
 {
     public Guid Id { get; } = id;
 
     public string Title { get; } = title;
+
+    /// <summary>The names of the accounts it brought; empty until the first sync.</summary>
+    public string Accounts { get; } = accounts;
+
+    public bool HasAccounts => Accounts.Length > 0;
 
     public string Status { get; } = status;
 
@@ -54,6 +59,7 @@ public partial class ConnectionItem(Guid id, string title, string status, bool i
         return new ConnectionItem(
             connection.Id,
             $"{provider} · {connection.OwnerDisplayName}",
+            string.Join(", ", connection.AccountNames ?? []),
             status,
             connection.IsMine,
             connection.Status is "Failing" or "ConsentExpired");

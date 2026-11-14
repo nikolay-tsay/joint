@@ -73,6 +73,9 @@ namespace Joint.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AccountKey")
+                        .HasColumnType("text");
+
                     b.Property<DateTimeOffset?>("ConsentExpiresAt")
                         .HasColumnType("timestamp with time zone");
 

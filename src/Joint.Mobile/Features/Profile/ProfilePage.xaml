@@ -162,14 +162,16 @@
                                 <DataTemplate x:DataType="profile:ConnectionItem">
                                     <VerticalStackLayout Spacing="8">
                                         <!-- Tapping the row opens it; "Remove" shows only then. -->
-                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="2">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="2">
                                             <Grid.GestureRecognizers>
                                                 <TapGestureRecognizer
                                                     Command="{Binding ToggleConnectionCommand, Source={RelativeSource AncestorType={x:Type profile:ProfileViewModel}}, x:DataType=profile:ProfileViewModel}"
                                                     CommandParameter="{Binding .}" />
                                             </Grid.GestureRecognizers>
                                             <Label Text="{Binding Title}" Style="{StaticResource RowTitle}" />
-                                            <Label Grid.Row="1" Text="{Binding Status}" Style="{StaticResource Caption}">
+                                            <!-- Which accounts it brought: what tells two connections to one bank apart. -->
+                                            <Label Grid.Row="1" Text="{Binding Accounts}" Style="{StaticResource Caption}" IsVisible="{Binding HasAccounts}" />
+                                            <Label Grid.Row="2" Text="{Binding Status}" Style="{StaticResource Caption}">
                                                 <Label.Triggers>
                                                     <DataTrigger TargetType="Label" Binding="{Binding HasProblem}" Value="True">
                                                         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}" />
@@ -178,7 +180,7 @@
                                             </Label>
                                             <Button
                                                 Grid.Column="1"
-                                                Grid.RowSpan="2"
+                                                Grid.RowSpan="3"
                                                 Text="Remove"
                                                 Style="{StaticResource DangerButton}"
                                                 Padding="8,0"
@@ -277,9 +279,14 @@
                                 Text="{Binding ConnectError}"
                                 Style="{StaticResource ErrorText}"
                                 IsVisible="{Binding ConnectError, Converter={StaticResource HasText}}" />
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding IsNotConnecting}">
                                 <Button Text="Connect" Style="{StaticResource PrimaryButton}" Command="{Binding ConfirmConnectCommand}" />
                                 <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding CancelConnectCommand}" />
+                            </Grid>
+                            <!-- While the provider checks the credential: the buttons give way to a spinner and what is being waited for. -->
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" IsVisible="{Binding IsConnecting}">
+                                <ActivityIndicator IsRunning="{Binding IsConnecting}" HeightRequest="22" WidthRequest="22" VerticalOptions="Center" />
+                                <Label Grid.Column="1" Text="{Binding ConnectProgress}" Style="{StaticResource Caption}" VerticalOptions="Center" />
                             </Grid>
                         </VerticalStackLayout>
 
@@ -287,7 +294,7 @@
                         <VerticalStackLayout Spacing="12" IsVisible="{Binding IsFioOpen}">
                             <Label Text="Fio banka" Style="{StaticResource RowTitle}" />
                             <Label
-                                Text="In Fio internet banking open Settings, then API, and create a token that can only watch the account. Paste it here; it is stored encrypted. The first sync takes about half a minute."
+                                Text="In Fio internet banking open Settings, then API, and create a token that can only watch the account. Paste it here; it is stored encrypted. The first sync takes about half a minute. A token is for one account: to add another Fio account, connect again with that account's token. A new token for an account already here replaces its old one."
                                 Style="{StaticResource Caption}" />
                             <Border Style="{StaticResource Field}">
                                 <Entry
@@ -304,9 +311,14 @@
                                 Text="{Binding ConnectError}"
                                 Style="{StaticResource ErrorText}"
                                 IsVisible="{Binding ConnectError, Converter={StaticResource HasText}}" />
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding IsNotConnecting}">
                                 <Button Text="Connect" Style="{StaticResource PrimaryButton}" Command="{Binding ConfirmFioCommand}" />
                                 <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding CancelConnectCommand}" />
+                            </Grid>
+                            <!-- While the provider checks the credential: the buttons give way to a spinner and what is being waited for. -->
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" IsVisible="{Binding IsConnecting}">
+                                <ActivityIndicator IsRunning="{Binding IsConnecting}" HeightRequest="22" WidthRequest="22" VerticalOptions="Center" />
+                                <Label Grid.Column="1" Text="{Binding ConnectProgress}" Style="{StaticResource Caption}" VerticalOptions="Center" />
                             </Grid>
                         </VerticalStackLayout>
 
@@ -339,9 +351,14 @@
                                 Text="{Binding ConnectError}"
                                 Style="{StaticResource ErrorText}"
                                 IsVisible="{Binding ConnectError, Converter={StaticResource HasText}}" />
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding IsNotConnecting}">
                                 <Button Text="Connect" Style="{StaticResource PrimaryButton}" Command="{Binding ConfirmTrading212Command}" />
                                 <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding CancelConnectCommand}" />
+                            </Grid>
+                            <!-- While the provider checks the credential: the buttons give way to a spinner and what is being waited for. -->
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" IsVisible="{Binding IsConnecting}">
+                                <ActivityIndicator IsRunning="{Binding IsConnecting}" HeightRequest="22" WidthRequest="22" VerticalOptions="Center" />
+                                <Label Grid.Column="1" Text="{Binding ConnectProgress}" Style="{StaticResource Caption}" VerticalOptions="Center" />
                             </Grid>
                         </VerticalStackLayout>
                     </VerticalStackLayout>

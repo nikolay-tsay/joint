@@ -110,6 +110,21 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth, AppLock a
     [ObservableProperty]
     public partial string? ConnectError { get; set; }
 
+    /// <summary>
+    /// True from tapping "Connect" until the backend answers. The provider checks the
+    /// credential in that time, which takes seconds and with Fio can take a minute, so
+    /// the panel swaps its buttons for a spinner and <see cref="ConnectProgress"/>.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotConnecting))]
+    public partial bool IsConnecting { get; set; }
+
+    public bool IsNotConnecting => !IsConnecting;
+
+    /// <summary>What is being waited for while connecting.</summary>
+    [ObservableProperty]
+    public partial string? ConnectProgress { get; set; }
+
     /// <summary>Whether the app lock is on, in a word; its settings are on a page of their own.</summary>
     [ObservableProperty]
     public partial string? LockSummary { get; set; }
@@ -251,67 +266,93 @@ public partial class ProfileViewModel(ApiClient api, AuthService auth, AppLock a
     private void CancelConnect() => ConnectStep = ConnectStep.Closed;
 
     [RelayCommand]
-    private async Task ConfirmConnectAsync()
+    private Task ConfirmConnectAsync()
     {
         if (string.IsNullOrWhiteSpace(LunchFlowKey))
         {
             ConnectError = "Paste the API key first.";
-            return;
+            return Task.CompletedTask;
         }
 
-        await RunAsync(async () =>
-        {
-            ConnectError = await api.ConnectLunchFlowAsync(LunchFlowKey);
-            if (ConnectError is null)
-            {
-                ConnectStep = ConnectStep.Closed;
-                LunchFlowKey = null;
-                await LoadAsync();
-            }
-        });
+        return ConnectAsync(
+            "Checking the key with Lunch Flow…",
+            () => api.ConnectLunchFlowAsync(LunchFlowKey),
+            () => LunchFlowKey = null);
     }
 
     [RelayCommand]
-    private async Task ConfirmTrading212Async()
+    private Task ConfirmTrading212Async()
     {
         if (string.IsNullOrWhiteSpace(Trading212Key) || string.IsNullOrWhiteSpace(Trading212Secret))
         {
             ConnectError = "Paste both the API key and the API secret.";
-            return;
+            return Task.CompletedTask;
         }
 
-        await RunAsync(async () =>
-        {
-            ConnectError = await api.ConnectTrading212Async(Trading212Key, Trading212Secret);
-            if (ConnectError is null)
+        return ConnectAsync(
+            "Checking the key with Trading 212. This can take a few seconds…",
+            () => api.ConnectTrading212Async(Trading212Key, Trading212Secret),
+            () =>
             {
-                ConnectStep = ConnectStep.Closed;
                 Trading212Key = null;
                 Trading212Secret = null;
-                await LoadAsync();
-            }
-        });
+            });
     }
 
     [RelayCommand]
-    private async Task ConfirmFioAsync()
+    private Task ConfirmFioAsync()
     {
         if (string.IsNullOrWhiteSpace(FioToken))
         {
             ConnectError = "Paste the token first.";
+            return Task.CompletedTask;
+        }
+
+        // Fio lets a token be used once every 30 seconds, so a second try has to wait that out.
+        return ConnectAsync(
+            "Checking the token with Fio. This can take up to a minute…",
+            () => api.ConnectFioAsync(FioToken),
+            () => FioToken = null);
+    }
+
+    /// <summary>
+    /// Sends a credential to the backend and shows that it is being waited for. A second
+    /// tap while one is on its way is ignored.
+    /// </summary>
+    /// <param name="progress">What the panel says while waiting.</param>
+    /// <param name="connect">Returns null on success, otherwise a message to show.</param>
+    /// <param name="clear">Forgets what was typed, once it is connected.</param>
+    private async Task ConnectAsync(string progress, Func<Task<string?>> connect, Action clear)
+    {
+        if (IsConnecting)
+        {
             return;
         }
 
-        await RunAsync(async () =>
+        ConnectError = null;
+        ConnectProgress = progress;
+        IsConnecting = true;
+        try
         {
-            ConnectError = await api.ConnectFioAsync(FioToken);
-            if (ConnectError is null)
+            await RunAsync(async () =>
             {
-                ConnectStep = ConnectStep.Closed;
-                FioToken = null;
-                await LoadAsync();
-            }
-        });
+                ConnectError = await connect();
+                if (ConnectError is null)
+                {
+                    ConnectStep = ConnectStep.Closed;
+                    clear();
+                    await LoadAsync();
+                }
+            });
+
+            // A network failure is reported on the page's own error line, far above this
+            // panel; say it here too, where the user is looking.
+            ConnectError ??= Error;
+        }
+        finally
+        {
+            IsConnecting = false;
+        }
     }
 
     /// <summary>Opens the app lock's settings, kept off this page so they are not tapped by accident.</summary>

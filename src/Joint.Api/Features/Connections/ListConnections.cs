@@ -34,6 +34,12 @@ public class ListConnections : IEndpoint
             orderby owner.DisplayName
             select new { connection, owner.DisplayName }).ToListAsync(cancellationToken);
 
+        // What tells two connections to the same provider apart is the accounts they brought.
+        var accounts = (await db.AccountsOf(user.HouseholdId)
+                .Select(a => new { a.ConnectionId, a.Name })
+                .ToListAsync(cancellationToken))
+            .ToLookup(a => a.ConnectionId, a => a.Name);
+
         return TypedResults.Ok(rows
             .Select(row => new ConnectionResponse(
                 row.connection.Id,
@@ -42,7 +48,8 @@ public class ListConnections : IEndpoint
                 row.DisplayName,
                 row.connection.OwnerUserId == user.Id,
                 row.connection.LastSyncedAt,
-                row.connection.LastError))
+                row.connection.LastError,
+                accounts[row.connection.Id].Order().ToList()))
             .ToList());
     }
 }

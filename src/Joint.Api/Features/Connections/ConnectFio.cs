@@ -8,8 +8,10 @@ using Microsoft.AspNetCore.Http.HttpResults;
 namespace Joint.Api.Features.Connections;
 
 /// <summary>
-/// Links the caller's Fio account by its read-only API token and starts the first sync.
-/// Calling it again replaces the token, which is how an expired one gets fixed.
+/// Links one of the caller's Fio accounts by its read-only API token and starts the first
+/// sync. A token is for one account, so a token for another account adds a connection,
+/// while a new token for an account already connected replaces the old one, which is how
+/// an expired token gets fixed.
 /// </summary>
 public class ConnectFio : IEndpoint
 {

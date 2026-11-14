@@ -35,6 +35,13 @@ public partial class ProfilePage : ContentPage
             SyncKeyboard(Trading212KeyEntry, _viewModel.IsTrading212Open);
             SyncKeyboard(FioTokenEntry, _viewModel.IsFioOpen);
         }
+        else if (e.PropertyName == nameof(ProfileViewModel.IsConnecting) && _viewModel.IsConnecting)
+        {
+            // Out of the way, so the spinner and what is being waited for can be seen.
+            SyncKeyboard(LunchFlowKeyEntry, false);
+            SyncKeyboard(Trading212KeyEntry, false);
+            SyncKeyboard(FioTokenEntry, false);
+        }
     }
 
     private void SyncKeyboard(Entry entry, bool isOpen) =>

@@ -152,6 +152,19 @@ public class FioConnectorTests
     }
 
     [Fact]
+    public async Task The_check_names_the_account_a_token_is_for_as_the_sync_will()
+    {
+        var connector = Connector(new StubHandler(_ => Json(EmptyStatement)));
+
+        var check = await connector.CheckCredentialAsync("good", CancellationToken.None);
+        var synced = (await connector.FetchAsync("good", null, CancellationToken.None)).Accounts.Single();
+
+        Assert.True(check.Accepted);
+        Assert.Equal("CZ7920100000002400222222", check.AccountKey);
+        Assert.Equal(synced.ExternalId, check.AccountKey);
+    }
+
+    [Fact]
     public async Task An_outage_is_not_mistaken_for_a_bad_token_and_does_not_leak_it()
     {
         var connector = Connector(new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)));

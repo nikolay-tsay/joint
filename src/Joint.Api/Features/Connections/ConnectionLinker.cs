@@ -13,7 +13,8 @@ namespace Joint.Api.Features.Connections;
 /// <summary>
 /// What every "connect a provider" endpoint does once it has a credential: check it with
 /// the provider, store it encrypted, and start the first sync. A user has one connection
-/// per provider, so connecting again replaces the credential.
+/// per provider, so connecting again replaces the credential; the exception is a provider
+/// whose credential is for a single account, where there is one connection per account.
 /// </summary>
 public class ConnectionLinker(JointDbContext db, CredentialProtector protector, IBackgroundJobClient jobs)
 {
@@ -25,12 +26,10 @@ public class ConnectionLinker(JointDbContext db, CredentialProtector protector, 
         string rejectedMessage,
         CancellationToken cancellationToken)
     {
+        CredentialCheck check;
         try
         {
-            if (!await connector.ValidateCredentialAsync(credential, cancellationToken))
-            {
-                return TypedResults.Problem(rejectedMessage, statusCode: StatusCodes.Status400BadRequest);
-            }
+            check = await connector.CheckCredentialAsync(credential, cancellationToken);
         }
         catch (HttpRequestException)
         {
@@ -38,8 +37,16 @@ public class ConnectionLinker(JointDbContext db, CredentialProtector protector, 
                 "The provider could not be reached. Try again shortly.", statusCode: StatusCodes.Status502BadGateway);
         }
 
-        var connection = await db.BankConnections.FirstOrDefaultAsync(
-            c => c.OwnerUserId == user.Id && c.Provider == connector.Provider, cancellationToken);
+        if (!check.Accepted)
+        {
+            return TypedResults.Problem(rejectedMessage, statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        var mine = await db.BankConnections
+            .Include(c => c.Accounts)
+            .Where(c => c.OwnerUserId == user.Id && c.Provider == connector.Provider)
+            .ToListAsync(cancellationToken);
+        var connection = Existing(mine, check.AccountKey);
         if (connection is null)
         {
             connection = new BankConnection
@@ -52,6 +59,7 @@ public class ConnectionLinker(JointDbContext db, CredentialProtector protector, 
             db.BankConnections.Add(connection);
         }
 
+        connection.AccountKey = check.AccountKey;
         connection.EncryptedCredential = protector.Protect(credential);
         connection.Status = ConnectionStatus.Pending;
         connection.LastError = null;
@@ -67,6 +75,27 @@ public class ConnectionLinker(JointDbContext db, CredentialProtector protector, 
             user.DisplayName,
             IsMine: true,
             connection.LastSyncedAt,
-            connection.LastError));
+            connection.LastError,
+            connection.Accounts.Select(a => a.Name).Order().ToList()));
+    }
+
+    /// <summary>
+    /// The connection a credential belongs to, if the person already has it. A credential
+    /// that covers everything at the provider has one connection, and connecting again
+    /// replaces it. A credential for one account (<paramref name="accountKey"/>) replaces
+    /// only the connection for that same account; for any other account it is a new one.
+    /// </summary>
+    private static BankConnection? Existing(List<BankConnection> mine, string? accountKey)
+    {
+        if (accountKey is null)
+        {
+            return mine.FirstOrDefault();
+        }
+
+        return mine.FirstOrDefault(c => c.AccountKey == accountKey)
+            // Connected before the key was recorded: recognised by the account it synced,
+            // or, never having synced at all, taken to be the one being retried.
+            ?? mine.FirstOrDefault(c => c.AccountKey is null && c.Accounts.Any(a => a.ExternalId == accountKey))
+            ?? mine.FirstOrDefault(c => c.AccountKey is null && c.Accounts.Count == 0);
     }
 }

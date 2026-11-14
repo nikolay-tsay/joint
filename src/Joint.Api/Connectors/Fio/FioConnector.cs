@@ -28,20 +28,35 @@ public class FioConnector(HttpClient http) : IProviderConnector
     /// <summary>Waits out the rate limit. Replaceable so tests don't sleep.</summary>
     public Func<TimeSpan, CancellationToken, Task> Delay { get; init; } = Task.Delay;
 
-    public async Task<bool> ValidateCredentialAsync(string credential, CancellationToken cancellationToken)
+    public async Task<bool> ValidateCredentialAsync(string credential, CancellationToken cancellationToken) =>
+        (await CheckCredentialAsync(credential, cancellationToken)).Accepted;
+
+    /// <summary>
+    /// One request both checks the token and says which account it is for, which is what
+    /// lets a person connect a second Fio account instead of replacing the first.
+    /// </summary>
+    public async Task<CredentialCheck> CheckCredentialAsync(string credential, CancellationToken cancellationToken)
     {
         try
         {
             // The smallest request there is: today only.
             var today = Today();
             using var statement = await GetStatementAsync(credential, today, today, cancellationToken);
-            return true;
+            var key = statement.RootElement.TryGetProperty("accountStatement", out var root)
+                && root.TryGetProperty("info", out var info)
+                    ? AccountKey(info)
+                    : null;
+            return new CredentialCheck(true, key);
         }
         catch (ProviderAuthenticationException)
         {
-            return false;
+            return new CredentialCheck(false);
         }
     }
+
+    /// <summary>What identifies the account a token is for: its IBAN, or number and bank code without one.</summary>
+    private static string? AccountKey(JsonElement info) =>
+        Text(info, "iban") ?? (Text(info, "accountId") is { } number ? $"{number}/{Text(info, "bankId")}" : null);
 
     public async Task<ProviderSnapshot> FetchAsync(
         string credential, DateOnly? since, CancellationToken cancellationToken)
@@ -81,7 +96,7 @@ public class FioConnector(HttpClient http) : IProviderConnector
         return new ProviderSnapshot(
         [
             new ProviderAccount(
-                ExternalId: Text(info, "iban") ?? accountNumber,
+                ExternalId: AccountKey(info) ?? accountNumber,
                 Name: accountNumber,
                 Institution: "Fio banka",
                 Kind: AccountKind.Current,
