@@ -61,6 +61,12 @@ public class ListTransactions : IEndpoint
             accountKind = Enum.Parse<AccountKind>(kind, ignoreCase: true);
         }
 
+        // A category is decided in code, after the query, and only payments have one. The
+        // filter on the amount must come before the projection: Postgres cannot translate one
+        // on the projected record (the in-memory test database can, which hid this).
+        var wanted = Wanted(category, uncategorized);
+        var paymentsOnly = wanted is not null;
+
         // Joining through the household's accounts is what keeps other households' data out,
         // including when someone passes an account id that is not theirs.
         var query =
@@ -70,6 +76,7 @@ public class ListTransactions : IEndpoint
             join owner in db.Users on connection.OwnerUserId equals owner.Id
             where accountId == null || account.Id == accountId
             where accountKind == null || account.Kind == accountKind
+            where !paymentsOnly || transaction.Amount < 0
             orderby transaction.BookedOn descending, transaction.Id
             select new TransactionResponse(
                 transaction.Id,
@@ -85,7 +92,6 @@ public class ListTransactions : IEndpoint
 
         var offset = Math.Max(skip ?? 0, 0);
         var count = Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit);
-        var wanted = Wanted(category, uncategorized);
         var transactions = wanted is null
             ? await query.Skip(offset).Take(count).ToListAsync(cancellationToken)
             : await InCategoriesAsync(query, wanted, user.HouseholdId, db, offset, count, cancellationToken);
@@ -120,7 +126,7 @@ public class ListTransactions : IEndpoint
     /// money coming in never passes this filter.
     /// </summary>
     private static async Task<List<TransactionResponse>> InCategoriesAsync(
-        IQueryable<TransactionResponse> query,
+        IQueryable<TransactionResponse> payments,
         CategoryFilter wanted,
         Guid householdId,
         JointDbContext db,
@@ -129,8 +135,8 @@ public class ListTransactions : IEndpoint
         CancellationToken cancellationToken)
     {
         var matcher = new CategoryMatcher(await db.CategoryRulesOf(householdId).ToListAsync(cancellationToken));
-        var payments = await query.Where(t => t.Amount < 0).ToListAsync(cancellationToken);
-        return payments
+        var listed = await payments.ToListAsync(cancellationToken);
+        return listed
             .Where(t => matcher.Find(t.Counterparty, t.Description) is { } rule
                 ? wanted.Names.Contains(rule.Category)
                 : wanted.Uncategorized)

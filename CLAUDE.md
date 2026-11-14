@@ -112,6 +112,7 @@ The database must stay small (Supabase bills by size). Before adding a table or 
 ## Things that bite
 
 - The Postgres EF provider is on 10.x because the 11.x provider was still a release candidate when the project started. Check before upgrading; keep `Microsoft.EntityFrameworkCore.Design` on the matching version.
+- Backend tests run on EF's in-memory provider, which evaluates anything in C#; Postgres cannot. A filter or sort on a record built with a constructor in `select new X(...)` passes every test and fails in production with "could not be translated" (the Transactions category filter shipped broken this way). Filter on the entities before projecting.
 - `Newtonsoft.Json` is pinned in `Joint.Api.csproj` because Hangfire pulls in a vulnerable version. Don't remove the pin.
 - Hangfire needs Supabase's direct connection or session pooler. The transaction pooler breaks it.
 - Railway is configured in its dashboard (see `docs/setup.md`), not in the repo. The README is the public description of the app and stays non-technical; setup and deployment instructions belong in `docs/setup.md`. Don't add `railway.json`/`railway.toml`: Railway stops reading them on 2026-12-01. Its replacement, `.railway/railway.ts`, was skipped as overkill for one service.
