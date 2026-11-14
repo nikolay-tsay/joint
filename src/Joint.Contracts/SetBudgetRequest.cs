@@ -6,4 +6,5 @@ namespace Joint.Contracts;
 /// must fit within <paramref name="Limit"/>. When left out, the parts stay, shrunk in proportion
 /// if the budget no longer holds them.
 /// </param>
-public record SetBudgetRequest(decimal? Limit, List<SetCategoryBudgetRequest>? Categories = null);
+/// <param name="Period">The days the budget covers; left out, they stay as they were.</param>
+public record SetBudgetRequest(decimal? Limit, List<SetCategoryBudgetRequest>? Categories = null, BudgetPeriodRequest? Period = null);

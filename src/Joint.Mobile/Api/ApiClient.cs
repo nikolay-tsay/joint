@@ -123,14 +123,18 @@ public class ApiClient(AuthService auth)
 
     /// <summary>
     /// Sets the household's monthly budget; null removes it. With <paramref name="categories"/>,
-    /// its parts for single categories are set in the same go, replacing any there were.
+    /// its parts for single categories are set in the same go, replacing any there were. With
+    /// <paramref name="period"/>, the days it covers; empty dates mean calendar months.
     /// </summary>
     /// <returns>False when the amount, or a category's, was not accepted.</returns>
     public async Task<bool> SetBudgetAsync(
-        decimal? limit, List<SetCategoryBudgetRequest>? categories = null, CancellationToken cancellationToken = default)
+        decimal? limit,
+        List<SetCategoryBudgetRequest>? categories = null,
+        BudgetPeriodRequest? period = null,
+        CancellationToken cancellationToken = default)
     {
         using var response = await SendAsync(
-            HttpMethod.Put, "api/budget", new SetBudgetRequest(limit, categories), cancellationToken, HttpStatusCode.BadRequest);
+            HttpMethod.Put, "api/budget", new SetBudgetRequest(limit, categories, period), cancellationToken, HttpStatusCode.BadRequest);
         return response.IsSuccessStatusCode;
     }
 

@@ -12,10 +12,20 @@ public class Household
     public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
-    /// What the household allows itself to spend per calendar month, in the currency most
+    /// What the household allows itself to spend per budget period (a calendar month unless
+    /// <see cref="BudgetPeriodFrom"/> says otherwise), in the currency most
     /// of its transactions are in; null when no budget is set.
     /// </summary>
     public decimal? MonthlyBudget { get; set; }
+
+    /// <summary>
+    /// The first and last day of one budget period when the household chose its own, such as
+    /// payday to payday; the budget then covers that period's repeats (<c>DatePeriod.RepeatHolding</c>).
+    /// Both null: calendar months. Cleared with the budget.
+    /// </summary>
+    public DateOnly? BudgetPeriodFrom { get; set; }
+
+    public DateOnly? BudgetPeriodTo { get; set; }
 
     /// <summary>
     /// Starter categories the household deleted, so they are no longer offered. A category

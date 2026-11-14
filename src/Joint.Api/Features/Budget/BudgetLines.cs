@@ -1,10 +1,17 @@
 using Joint.Api.Domain;
+using Joint.Contracts;
 
 namespace Joint.Api.Features.Budget;
 
 /// <summary>The rules that keep a household's category lines within its monthly budget.</summary>
 public static class BudgetLines
 {
+    /// <summary>The budget period holding <paramref name="today"/>: the household's own, repeated, or the calendar month.</summary>
+    public static DatePeriod CurrentPeriod(DateOnly? periodFrom, DateOnly? periodTo, DateOnly today) =>
+        periodFrom is { } first && periodTo is { } last && first <= last
+            ? new DatePeriod(first, last).RepeatHolding(today)
+            : DatePeriod.MonthOf(today);
+
     /// <summary>The household's spelling of a category typed in any capitals; null when it has no such category.</summary>
     public static string? CategoryNamed(IEnumerable<string> available, string? typed) =>
         available.FirstOrDefault(n => string.Equals(n, typed?.Trim(), StringComparison.OrdinalIgnoreCase));

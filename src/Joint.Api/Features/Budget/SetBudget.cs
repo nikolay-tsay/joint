@@ -4,6 +4,7 @@ using Joint.Api.Common.Auth;
 using Joint.Api.Data;
 using Joint.Api.Domain;
 using Joint.Api.Features.Categories;
+using Joint.Api.Features.Insights;
 using Joint.Contracts;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,8 @@ namespace Joint.Api.Features.Budget;
 /// Sets, changes or removes the household's monthly budget. Any member may do it, since
 /// there is one budget and they all share it. Removing it removes its category lines; lowering
 /// it below what they add up to shrinks each in proportion. Sent with categories, it sets the
-/// budget and its parts in one go.
+/// budget and its parts in one go. Sent with a period, it also sets the days the budget
+/// covers; removing the budget goes back to calendar months.
 /// </summary>
 public class SetBudget : IEndpoint
 {
@@ -47,6 +49,25 @@ public class SetBudget : IEndpoint
 
         var household = await db.Households.FirstAsync(h => h.Id == user.HouseholdId, cancellationToken);
         household.MonthlyBudget = request.Limit;
+        if (request.Limit is null)
+        {
+            household.BudgetPeriodFrom = null;
+            household.BudgetPeriodTo = null;
+        }
+        else if (request.Period is { } chosen)
+        {
+            // Both left out means calendar months; otherwise one period, which then repeats.
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var period = PeriodQuery.Read(chosen.From, chosen.To, today, out var error);
+            if (error is not null)
+            {
+                return Problem(error);
+            }
+
+            household.BudgetPeriodFrom = period?.From;
+            household.BudgetPeriodTo = period?.To;
+        }
+
         var lines = await db.CategoryBudgetsOf(user.HouseholdId).ToListAsync(cancellationToken);
         if (request.Limit is not { } limit)
         {

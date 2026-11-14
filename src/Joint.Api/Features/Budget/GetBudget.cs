@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Joint.Api.Features.Budget;
 
 /// <summary>
-/// The household's monthly budget, its category lines, and how this month's spending stands
+/// The household's monthly budget, its category lines, and how the current period's spending stands
 /// against them. The figures are returned whether or not a budget is set, so the app can suggest one.
 /// </summary>
 public class GetBudget : IEndpoint
@@ -35,14 +35,18 @@ public class GetBudget : IEndpoint
             return TypedResults.Unauthorized();
         }
 
-        var limit = await db.Households
+        var budget = await db.Households
             .Where(h => h.Id == user.HouseholdId)
-            .Select(h => h.MonthlyBudget)
-            .FirstOrDefaultAsync(cancellationToken);
+            .Select(h => new { h.MonthlyBudget, h.BudgetPeriodFrom, h.BudgetPeriodTo })
+            .FirstAsync(cancellationToken);
+        var limit = budget.MonthlyBudget;
 
-        // Two months: this one, and the last for comparison and for what is still expected.
+        // The period holding today: the household's own, repeated, or the calendar month.
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var start = new DateOnly(today.Year, today.Month, 1).AddMonths(-1);
+        var period = BudgetLines.CurrentPeriod(budget.BudgetPeriodFrom, budget.BudgetPeriodTo, today);
+
+        // Two periods: this one, and the one before for comparison and for what is still expected.
+        var start = period.Shift(-1).From;
         var loaded = await (
             from transaction in db.Transactions
             join account in db.AccountsOf(user.HouseholdId) on transaction.AccountId equals account.Id
@@ -97,6 +101,6 @@ public class GetBudget : IEndpoint
                 .ToList();
         }
 
-        return TypedResults.Ok(BudgetCalculator.Build(limit, flows, recurring, today, lines, categorized));
+        return TypedResults.Ok(BudgetCalculator.Build(limit, flows, recurring, today, lines, categorized, period));
     }
 }

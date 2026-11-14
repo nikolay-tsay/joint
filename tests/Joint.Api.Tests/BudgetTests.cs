@@ -139,6 +139,76 @@ public class BudgetTests
         Assert.Null(await ReadLimitAsync(db, Principal("ben@example.com")));
     }
 
+    [Fact]
+    public void A_pay_period_budget_counts_and_projects_over_its_own_days()
+    {
+        // Paid on the 25th: the period is 25 October to 24 November, and the 10th is day 17 of 31.
+        var period = BudgetLines.CurrentPeriod(new DateOnly(2026, 1, 25), new DateOnly(2026, 2, 24), Today);
+        var budget = BudgetCalculator.Build(
+            40000,
+            [
+                Flow(Account, "2026-10-20", -9000),
+                Flow(Account, "2026-10-01", -500),
+                Flow(Account, "2026-10-24", -1000),
+                Flow(Account, "2026-10-26", -1700),
+                Flow(Account, "2026-11-10", -1700),
+            ],
+            [
+                Tracked("2026-10-01", -500, "NETFLIX"),
+            ],
+            Today,
+            period: period);
+
+        Assert.Equal((new DateOnly(2026, 10, 25), new DateOnly(2026, 11, 24)), (period.From, period.To));
+        Assert.Equal((period.From, period.To, false), (budget.Month, budget.PeriodEnd!.Value, budget.IsCalendarMonth));
+        Assert.Equal(3400m, budget.Spent);
+        Assert.Equal(decimal.Round(3400m / 17 * 31, 2), budget.Projected);
+        Assert.Equal(10000m, budget.LastMonthSpent);
+        Assert.Equal(500m, budget.FixedExpected);
+    }
+
+    [Fact]
+    public void A_period_repeats_by_months_or_by_its_length()
+    {
+        var payday = new DatePeriod(new DateOnly(2026, 1, 15), new DateOnly(2026, 2, 14));
+        var tenDays = new DatePeriod(new DateOnly(2026, 11, 1), new DateOnly(2026, 11, 10));
+
+        Assert.Equal(new DatePeriod(new DateOnly(2026, 10, 15), new DateOnly(2026, 11, 14)), payday.RepeatHolding(Today));
+        Assert.Equal(new DatePeriod(new DateOnly(2026, 11, 21), new DateOnly(2026, 11, 30)), tenDays.RepeatHolding(new DateOnly(2026, 11, 25)));
+        Assert.Equal(tenDays, tenDays.RepeatHolding(new DateOnly(2026, 10, 1)));
+        Assert.Equal(DatePeriod.MonthOf(Today), BudgetLines.CurrentPeriod(null, null, Today));
+    }
+
+    [Fact]
+    public async Task The_budget_period_is_kept_until_changed_and_goes_with_the_budget()
+    {
+        await using var db = NewDb();
+        var ana = Principal("ana@example.com");
+        var users = new CurrentUserService(db);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var from = today.AddDays(-3);
+        var chosen = new BudgetPeriodRequest(from, from.AddMonths(1).AddDays(-1));
+
+        var set = await SetBudget.HandleAsync(new SetBudgetRequest(20000, Period: chosen), ana, users, db, CancellationToken.None);
+        var limitOnly = await SetBudget.HandleAsync(new SetBudgetRequest(25000), ana, users, db, CancellationToken.None);
+        var future = await SetBudget.HandleAsync(
+            new SetBudgetRequest(25000, Period: new(today.AddDays(1), today.AddDays(5))), ana, users, db, CancellationToken.None);
+
+        Assert.IsType<NoContent>(set.Result);
+        Assert.IsType<NoContent>(limitOnly.Result);
+        Assert.IsType<ProblemHttpResult>(future.Result);
+        var household = db.Households.Single();
+        Assert.Equal((from, chosen.To), (household.BudgetPeriodFrom, household.BudgetPeriodTo));
+        Assert.Equal(25000m, household.MonthlyBudget);
+
+        await SetBudget.HandleAsync(new SetBudgetRequest(25000, Period: new()), ana, users, db, CancellationToken.None);
+        Assert.Null(db.Households.Single().BudgetPeriodFrom);
+
+        await SetBudget.HandleAsync(new SetBudgetRequest(25000, Period: chosen), ana, users, db, CancellationToken.None);
+        await SetBudget.HandleAsync(new SetBudgetRequest(null), ana, users, db, CancellationToken.None);
+        Assert.Null(db.Households.Single().BudgetPeriodFrom);
+    }
+
     private static async Task<decimal?> ReadLimitAsync(JointDbContext db, ClaimsPrincipal principal)
     {
         var result = await GetBudget.HandleAsync(principal, new CurrentUserService(db), db, CancellationToken.None);

@@ -134,16 +134,20 @@ public static class GuideContent
             "Budget",
             "Budget",
             [
-                "The budget is one amount per calendar month for your household's everyday spending.",
-                "Everyday spending is all spending this month, minus what went to your subscriptions and regular "
+                "The budget is one amount for your household's everyday spending in each budget period: a calendar "
+                    + "month, or a period of your own such as payday to payday, picked on a month grid when you set the budget.",
+                "A period of your own repeats when it ends: one that runs from a day to the day before that date a month "
+                    + "later repeats every month on the same day; any other repeats by its length. The figures below then "
+                    + "speak of \"this period\" and \"the period before\" instead of months.",
+                "Everyday spending is all spending in the period, minus what went to your subscriptions and regular "
                     + "payments. Transfers between your own accounts, recognised or marked, are already out.",
                 "\"Left to spend\" is the budget minus everyday spending so far.",
-                "The amount per day is what is left, divided by the days remaining in the month, today included.",
+                "The amount per day is what is left, divided by the days remaining in the period, today included.",
                 "\"Where this month is heading\" takes everyday spending so far, divides it by the days gone, and "
-                    + "multiplies by the days in the month. Early in the month a single large purchase moves it a lot.",
-                "\"Fixed costs still to come\" are subscriptions and regular payments that were paid last month and "
-                    + "have not been paid yet this month. They are shown for information and are not part of the budget.",
-                "The budget is not tied to a month: on the 1st the spending starts again from zero against the same "
+                    + "multiplies by the days in the period. Early in a period a single large purchase moves it a lot.",
+                "\"Fixed costs still to come\" are subscriptions and regular payments that were paid in the period "
+                    + "before and have not been paid yet in this one. They are shown for information and are not part of the budget.",
+                "The budget does not carry over: when a period starts, the spending starts again from zero against the same "
                     + "amount. Nothing unspent carries over and no overspend is deducted.",
                 "A bill counts as everyday spending until you mark it as a regular payment. Money moved to an "
                     + "account of yours that Joint cannot match up counts until you mark it as \"Own transfer\".",

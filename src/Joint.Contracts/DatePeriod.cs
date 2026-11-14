@@ -62,6 +62,30 @@ public record DatePeriod(DateOnly From, DateOnly To)
     }
 
     /// <summary>
+    /// The repeat of this period that holds <paramref name="day"/>, counted from this one so a
+    /// monthly period keeps its day of the month (no drift after a short month). This one when
+    /// it already holds the day, and when the day is before it.
+    /// </summary>
+    public DatePeriod RepeatHolding(DateOnly day)
+    {
+        if (day <= To)
+        {
+            return this;
+        }
+
+        // Jump close for a long way back, then step: a period of a few days repeats often.
+        var steps = Months is { } months
+            ? Math.Max(((day.Year - From.Year) * 12 + day.Month - From.Month) / months - 1, 0)
+            : Math.Max((day.DayNumber - From.DayNumber) / Days - 1, 0);
+        while (Shift(steps).To < day)
+        {
+            steps++;
+        }
+
+        return Shift(steps);
+    }
+
+    /// <summary>
     /// The same kind of period moved forward until it holds <paramref name="today"/>, so a
     /// payday-to-payday choice made last month opens on the current pay period. Only monthly
     /// periods move; a period that already holds today, or lies after it, is kept.

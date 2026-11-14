@@ -248,6 +248,12 @@ namespace Joint.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateOnly?>("BudgetPeriodFrom")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("BudgetPeriodTo")
+                        .HasColumnType("date");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 

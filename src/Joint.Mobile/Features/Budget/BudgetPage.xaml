@@ -63,7 +63,7 @@
                     <VerticalStackLayout Padding="12,12,12,24" Spacing="12">
                         <Border Style="{StaticResource Card}" IsVisible="{Binding Model.HasNoData}">
                             <Label
-                                Text="Nothing to budget yet. Once a connected account has transactions, you can set a monthly budget here."
+                                Text="Nothing to budget yet. Once a connected account has transactions, you can set a budget here."
                                 Style="{StaticResource Caption}" />
                         </Border>
 
@@ -233,10 +233,10 @@
                                 </VerticalStackLayout>
                             </Border>
 
-                            <!-- With a budget: where the month is heading. -->
+                            <!-- With a budget: where the period is heading. -->
                             <Border Style="{StaticResource Card}" IsVisible="{Binding Model.IsSummaryVisible}">
                                 <VerticalStackLayout Spacing="6">
-                                    <Label Text="Where this month is heading" Style="{StaticResource RowTitle}" />
+                                    <Label Text="{Binding Model.HeadingTitle}" Style="{StaticResource RowTitle}" />
                                     <Label Text="{Binding Model.Projection}" Style="{StaticResource Caption}" />
                                     <Label
                                         Text="{Binding Model.Verdict}"
@@ -256,19 +256,19 @@
                                 <VerticalStackLayout Spacing="12">
                                     <Label Text="No budget yet" Style="{StaticResource RowTitle}" />
                                     <Label
-                                        Text="Set what your household wants to spend per month on everyday things, after subscriptions and regular payments. This page then shows what is left and where the month is heading."
+                                        Text="Set what your household wants to spend per month, or per period of your own such as payday to payday, on everyday things after subscriptions and regular payments. This page then shows what is left and where the period is heading."
                                         Style="{StaticResource Caption}" />
                                     <Label Text="{Binding Model.Projection}" Style="{StaticResource Caption}" />
-                                    <Button Text="Set a monthly budget" Style="{StaticResource PrimaryButton}" Command="{Binding Model.StartEditCommand}" />
+                                    <Button Text="Set a budget" Style="{StaticResource PrimaryButton}" Command="{Binding Model.StartEditCommand}" />
                                 </VerticalStackLayout>
                             </Border>
 
                             <!-- Typing the budget, in place. -->
                             <Border Style="{StaticResource Card}" IsVisible="{Binding Model.IsEditing}">
                                 <VerticalStackLayout Spacing="12">
-                                    <Label Text="Monthly budget" Style="{StaticResource RowTitle}" />
+                                    <Label Text="Budget" Style="{StaticResource RowTitle}" />
                                     <Label
-                                        Text="One amount for the whole household's everyday spending in a calendar month. Payments you track as subscriptions or regular payments do not count against it."
+                                        Text="One amount for the whole household's everyday spending in each budget period: a calendar month, or a period of your own such as payday to payday. Payments you track as subscriptions or regular payments do not count against it."
                                         Style="{StaticResource Caption}" />
                                     <Border Style="{StaticResource Field}">
                                         <Entry
@@ -283,6 +283,50 @@
                                             </Entry.Behaviors>
                                         </Entry>
                                     </Border>
+
+                                    <!-- The days the budget covers: calendar months, or one period of your own that repeats. -->
+                                    <HorizontalStackLayout Spacing="6">
+                                        <Border Style="{StaticResource Chip}">
+                                            <Border.Triggers>
+                                                <DataTrigger TargetType="Border" Binding="{Binding Model.IsCalendarChoice}" Value="True">
+                                                    <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                                </DataTrigger>
+                                            </Border.Triggers>
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer Command="{Binding Model.ChooseCalendarMonthsCommand}" />
+                                            </Border.GestureRecognizers>
+                                            <Label Text="Calendar month" Style="{StaticResource ChipLabel}">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding Model.IsCalendarChoice}" Value="True">
+                                                        <Setter Property="TextColor" Value="White" />
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
+                                        </Border>
+                                        <Border Style="{StaticResource Chip}">
+                                            <Border.Triggers>
+                                                <DataTrigger TargetType="Border" Binding="{Binding Model.IsCustomPeriod}" Value="True">
+                                                    <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                                </DataTrigger>
+                                            </Border.Triggers>
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer Command="{Binding Model.ChooseCustomPeriodCommand}" />
+                                            </Border.GestureRecognizers>
+                                            <Label Text="Own period" Style="{StaticResource ChipLabel}">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding Model.IsCustomPeriod}" Value="True">
+                                                        <Setter Property="TextColor" Value="White" />
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
+                                        </Border>
+                                    </HorizontalStackLayout>
+                                    <VerticalStackLayout Spacing="8" IsVisible="{Binding Model.IsCustomPeriod}">
+                                        <Label
+                                            Text="Tap the first and last day of one period, such as one payday to the day before the next. When it ends, the budget starts again on the next period like it: payday to payday repeats every month, any other period by its length."
+                                            Style="{StaticResource Caption}" />
+                                        <common:DateRangeCalendar BindingContext="{Binding Model.PeriodPicker}" />
+                                    </VerticalStackLayout>
                                     <Label
                                         Text="{Binding Model.LinesNote}"
                                         Style="{StaticResource Caption}"
@@ -372,10 +416,10 @@
                                 </VerticalStackLayout>
                             </Border>
 
-                            <!-- The month's figures. -->
+                            <!-- The period's figures. -->
                             <Border Style="{StaticResource Card}">
                                 <VerticalStackLayout Spacing="10">
-                                    <Label Text="This month so far" Style="{StaticResource RowTitle}" />
+                                    <Label Text="{Binding Model.SoFarTitle}" Style="{StaticResource RowTitle}" />
                                     <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
                                         <Label Text="Subscriptions and regular payments" />
                                         <Label Grid.Column="1" Text="{Binding Model.FixedPaid}" Style="{StaticResource FigureAmount}" />
@@ -387,14 +431,14 @@
                                         <Label Grid.Row="3" Grid.Column="1" Text="{Binding Model.FixedExpected}" Style="{StaticResource Caption}" HorizontalTextAlignment="End" />
                                     </Grid>
                                     <Label
-                                        Text="Fixed costs are the payments you track as subscriptions or regular payments. One paid last month and not yet this month counts as still to come."
+                                        Text="{Binding Model.FixedNote}"
                                         Style="{StaticResource Caption}" />
                                 </VerticalStackLayout>
                             </Border>
 
                             <Border Style="{StaticResource Card}">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                    <Label Text="Everyday spending last month" />
+                                    <Label Text="{Binding Model.LastPeriodTitle}" />
                                     <Label Grid.Column="1" Text="{Binding Model.LastMonth}" Style="{StaticResource FigureAmount}" />
                                 </Grid>
                             </Border>

@@ -68,6 +68,42 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth, GoalsViewM
 
     public bool IsPromptVisible => !HasBudget && !IsEditing;
 
+    // ----- The days the budget covers -----
+
+    /// <summary>The current budget period, as the backend reported it.</summary>
+    private DatePeriod _period = DatePeriod.MonthOf(DateOnly.FromDateTime(DateTime.UtcNow));
+
+    private bool _isCalendarMonth = true;
+
+    /// <summary>"Where this month is heading", or "this period" for a period of the household's own.</summary>
+    [ObservableProperty]
+    public partial string HeadingTitle { get; set; } = "Where this month is heading";
+
+    [ObservableProperty]
+    public partial string SoFarTitle { get; set; } = "This month so far";
+
+    [ObservableProperty]
+    public partial string LastPeriodTitle { get; set; } = "Everyday spending last month";
+
+    [ObservableProperty]
+    public partial string? FixedNote { get; set; }
+
+    /// <summary>In the budget card: the budget runs over periods of the household's own, picked on the month grid.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCalendarChoice))]
+    public partial bool IsCustomPeriod { get; set; }
+
+    public bool IsCalendarChoice => !IsCustomPeriod;
+
+    /// <summary>The month grid for a period of the household's own.</summary>
+    public DateRangePicker PeriodPicker { get; } = new(DatePeriod.MaxDays);
+
+    [RelayCommand]
+    private void ChooseCalendarMonths() => IsCustomPeriod = false;
+
+    [RelayCommand]
+    private void ChooseCustomPeriod() => IsCustomPeriod = true;
+
     /// <summary>Making a new budget: its categories' parts can be added in the same card.</summary>
     public bool IsCreating => !HasBudget && IsEditing;
 
@@ -304,6 +340,10 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth, GoalsViewM
         LimitError = null;
         IsAddingLine = false;
         IsEditing = true;
+
+        // The card starts on the period the budget has: the current one of its own, or calendar months.
+        IsCustomPeriod = HasBudget && !_isCalendarMonth;
+        PeriodPicker.Begin(IsCustomPeriod ? _period : null);
         if (HasBudget)
         {
             return Task.CompletedTask;
@@ -380,6 +420,12 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth, GoalsViewM
             return;
         }
 
+        if (IsCustomPeriod && PeriodPicker.Range is null)
+        {
+            LimitError = "Pick the first and last day of one budget period.";
+            return;
+        }
+
         if (HasBudget)
         {
             await StoreAsync(limit);
@@ -427,7 +473,11 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth, GoalsViewM
 
     private Task StoreAsync(decimal? limit, List<SetCategoryBudgetRequest>? categories = null) => RunAsync(async () =>
     {
-        if (await api.SetBudgetAsync(limit, categories))
+        // Removing the budget sends no period; saving one always sends the period chosen in the card.
+        BudgetPeriodRequest? period = limit is null
+            ? null
+            : IsCustomPeriod && PeriodPicker.Range is { } range ? new(range.From, range.To) : new();
+        if (await api.SetBudgetAsync(limit, categories, period))
         {
             IsEditing = false;
             Show(await api.GetBudgetAsync());
@@ -444,14 +494,22 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth, GoalsViewM
         HasNoData = !HasData;
         _currency = budget.Currency ?? "";
 
-        Title = $"{budget.Month:MMMM} budget";
+        _period = new DatePeriod(budget.Month, budget.PeriodEnd ?? budget.Month.AddMonths(1).AddDays(-1));
+        _isCalendarMonth = budget.IsCalendarMonth;
+        var noun = _isCalendarMonth ? "month" : "period";
+        Title = _isCalendarMonth ? $"{budget.Month:MMMM} budget" : $"Budget, {PeriodText.Describe(_period)}";
+        HeadingTitle = $"Where this {noun} is heading";
+        SoFarTitle = $"This {noun} so far";
+        LastPeriodTitle = _isCalendarMonth ? "Everyday spending last month" : "Everyday spending in the period before";
+        FixedNote = "Fixed costs are the payments you track as subscriptions or regular payments. One paid in the "
+            + $"{(_isCalendarMonth ? "last month" : "period before")} and not yet in this one counts as still to come.";
         Spent = Format(budget.Spent);
         FixedPaid = Format(budget.FixedPaid);
         FixedExpected = Format(budget.FixedExpected);
         Total = Format(budget.Spent + budget.FixedPaid);
         LastMonth = Format(budget.LastMonthSpent);
-        Projection = $"At this pace everyday spending reaches about {Format(budget.Projected)} by the end of {budget.Month:MMMM}.";
-        LimitPlaceholder = $"Budget per month, in {_currency}";
+        Projection = $"At this pace everyday spending reaches about {Format(budget.Projected)} by {(_isCalendarMonth ? $"the end of {budget.Month:MMMM}" : $"{_period.To:d MMMM}")}.";
+        LimitPlaceholder = $"Budget per period, in {_currency}";
 
         HasBudget = budget.Limit is not null;
         ShowLines(budget);
@@ -527,10 +585,7 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth, GoalsViewM
     private string DescribeAllowance(BudgetResponse budget, decimal limit)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var daysInMonth = DateTime.DaysInMonth(budget.Month.Year, budget.Month.Month);
-        var daysLeft = today.Year == budget.Month.Year && today.Month == budget.Month.Month
-            ? daysInMonth - today.Day + 1
-            : 0;
+        var daysLeft = _period.Contains(today) ? _period.To.DayNumber - today.DayNumber + 1 : 0;
         var free = limit - budget.Spent;
         if (daysLeft <= 0 || free <= 0)
         {

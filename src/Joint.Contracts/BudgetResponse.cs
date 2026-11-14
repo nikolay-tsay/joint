@@ -1,7 +1,8 @@
 namespace Joint.Contracts;
 
 /// <summary>
-/// How the household's everyday spending this calendar month stands against its budget.
+/// How the household's everyday spending in the current budget period (a calendar month
+/// unless the household chose another, repeating period) stands against its budget.
 /// The budget does not cover tracked subscriptions and regular payments; those are
 /// reported alongside. Amounts are positive numbers in one currency; transfers between
 /// the household's own accounts are left out.
@@ -13,7 +14,9 @@ namespace Joint.Contracts;
 /// <param name="FixedExpected">Subscriptions and regular payments paid last month but not yet this month.</param>
 /// <param name="Projected">Where everyday spending is heading by month end, at the pace so far.</param>
 /// <param name="LastMonthSpent">Last month's everyday spending, for a sense of what is usual.</param>
-/// <param name="Month">The first day of the month all this is about.</param>
+/// <param name="Month">The first day of the period all this is about.</param>
+/// <param name="PeriodEnd">The period's last day.</param>
+/// <param name="IsCalendarMonth">False when the household chose its own period, which repeats.</param>
 /// <param name="Categories">
 /// The categories given part of the budget, by name; empty without any. What the budget leaves
 /// to the rest is <paramref name="Limit"/> less their limits, against <paramref name="Spent"/> less their spending.
@@ -27,4 +30,6 @@ public record BudgetResponse(
     decimal Projected,
     decimal LastMonthSpent,
     DateOnly Month,
-    List<CategoryBudgetResponse>? Categories = null);
+    List<CategoryBudgetResponse>? Categories = null,
+    DateOnly? PeriodEnd = null,
+    bool IsCalendarMonth = true);
