@@ -1,5 +1,6 @@
 using Google.Android.Material.BottomNavigation;
 using Microsoft.Maui.Controls.Handlers.Compatibility;
+using Joint.Mobile.Common;
 using Microsoft.Maui.Controls.Platform.Compatibility;
 
 namespace Joint.Mobile;
@@ -13,6 +14,32 @@ public class IconOnlyShellRenderer : ShellRenderer
 {
     protected override IShellBottomNavViewAppearanceTracker CreateBottomNavViewAppearanceTracker(ShellItem shellItem) =>
         new IconOnlyTracker(this, shellItem);
+
+    /// <summary>
+    /// A second tap on the current tab: a page pushed on top of the tab's own (an account's
+    /// transactions from Home) is closed back to it, which is what Shell does; on the tab's
+    /// own page, the page goes back to how it opens.
+    /// </summary>
+    private sealed class ReselectListener(Shell shell)
+        : Java.Lang.Object, Google.Android.Material.Navigation.NavigationBarView.IOnItemReselectedListener
+    {
+        public void OnNavigationItemReselected(Android.Views.IMenuItem item)
+        {
+            if (shell.CurrentItem?.CurrentItem is not { } section)
+            {
+                return;
+            }
+
+            if (section.Navigation.NavigationStack.Count > 1)
+            {
+                _ = section.Navigation.PopToRootAsync();
+            }
+            else if (shell.CurrentPage is ITabRoot page)
+            {
+                page.ResetView();
+            }
+        }
+    }
 
     private sealed class IconOnlyTracker(IShellContext shellContext, ShellItem shellItem)
         : ShellBottomNavViewAppearanceTracker(shellContext, shellItem)
@@ -36,6 +63,11 @@ public class IconOnlyShellRenderer : ShellRenderer
             }
 
             _bottomView = bottomView;
+
+            // Tapping the tab already shown. Shell's own listener is the one for selecting a
+            // tab; this one only hears a second tap on the current one, and the view calls it
+            // instead of that listener then, so what Shell did on a second tap is repeated.
+            bottomView.SetOnItemReselectedListener(new ReselectListener(_shell));
             MagnifyCurrentTab(animated: false);
         }
 

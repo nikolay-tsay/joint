@@ -49,6 +49,10 @@ public static class CategoryCalculator
                 .ThenBy(c => c.Name)
                 .ToList(),
             Uncategorized: byCategory.Where(g => g.Key is null).SelectMany(g => g).Sum(r => -r.Amount),
-            names);
+            names,
+            // Two members may have a rule for the same text; it is still one payee.
+            rules
+                .GroupBy(r => r.Category, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.Select(r => r.MatchKey).Distinct().Count(), StringComparer.OrdinalIgnoreCase));
     }
 }

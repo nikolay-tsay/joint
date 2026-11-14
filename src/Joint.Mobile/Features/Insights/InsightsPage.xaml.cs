@@ -1,6 +1,8 @@
+using Joint.Mobile.Common;
+
 namespace Joint.Mobile.Features.Insights;
 
-public partial class InsightsPage : ContentPage
+public partial class InsightsPage : ContentPage, ITabRoot
 {
     private readonly InsightsViewModel _viewModel;
 
@@ -30,4 +32,7 @@ public partial class InsightsPage : ContentPage
         _viewModel.LoadCommand.Execute(null);
         _viewModel.Categories.LoadCommand.Execute(null);
     }
+
+    /// <summary>A second tap on the Insights tab: back to its first view, the overview.</summary>
+    public void ResetView() => _viewModel.TabIndex = 0;
 }

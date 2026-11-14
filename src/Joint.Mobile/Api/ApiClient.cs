@@ -64,9 +64,16 @@ public class ApiClient(AuthService auth)
         return await ReadAsync<List<ConnectionResponse>>(response, cancellationToken);
     }
 
-    /// <summary>The household's transactions, newest first; pass an account to narrow them.</summary>
+    /// <summary>
+    /// The household's transactions, newest first; pass an account, a kind of account or
+    /// categories to narrow them.
+    /// </summary>
+    /// <param name="categories">Only payments in any of these categories; empty or null for no such filter.</param>
+    /// <param name="uncategorized">Also payments with no category, alongside <paramref name="categories"/>.</param>
     public async Task<List<TransactionResponse>> GetTransactionsAsync(
-        Guid? accountId, string? kind, int skip, int limit, CancellationToken cancellationToken = default)
+        Guid? accountId, string? kind, int skip, int limit,
+        IReadOnlyCollection<string>? categories = null, bool uncategorized = false,
+        CancellationToken cancellationToken = default)
     {
         var path = $"api/transactions?skip={skip}&limit={limit}";
         if (accountId is { } id)
@@ -77,6 +84,16 @@ public class ApiClient(AuthService auth)
         if (!string.IsNullOrEmpty(kind))
         {
             path += $"&kind={kind}";
+        }
+
+        foreach (var category in categories ?? [])
+        {
+            path += $"&category={Uri.EscapeDataString(category)}";
+        }
+
+        if (uncategorized)
+        {
+            path += "&uncategorized=true";
         }
 
         using var response = await SendAsync(HttpMethod.Get, path, null, cancellationToken);
@@ -129,6 +146,17 @@ public class ApiClient(AuthService auth)
     {
         using var response = await SendAsync(
             HttpMethod.Delete, $"api/categories/{ruleId}", null, cancellationToken, HttpStatusCode.NotFound);
+    }
+
+    /// <summary>
+    /// Removes a whole category: every payee in it goes back to uncategorized. Removing one
+    /// nobody uses any more is not an error.
+    /// </summary>
+    public async Task RemoveCategoryAsync(string name, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Delete, $"api/categories?name={Uri.EscapeDataString(name)}", null, cancellationToken,
+            HttpStatusCode.NotFound);
     }
 
     /// <summary>The household's saving goals, each with how much is saved.</summary>

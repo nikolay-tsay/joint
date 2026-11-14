@@ -6,7 +6,7 @@
     BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
 
     <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
-        <ScrollView>
+        <ScrollView x:Name="Scroller">
             <VerticalStackLayout Padding="16,24,16,24" Spacing="12">
 
                 <!-- Who you are -->

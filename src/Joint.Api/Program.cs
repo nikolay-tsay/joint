@@ -63,6 +63,7 @@ app.MapEndpoint<GetInsights>();
 app.MapEndpoint<GetCategories>();
 app.MapEndpoint<AssignCategory>();
 app.MapEndpoint<RemoveCategoryRule>();
+app.MapEndpoint<RemoveCategory>();
 app.MapEndpoint<GetBudget>();
 app.MapEndpoint<SetBudget>();
 app.MapEndpoint<ListGoals>();

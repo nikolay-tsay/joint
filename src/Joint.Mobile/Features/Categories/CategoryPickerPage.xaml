@@ -50,27 +50,83 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- The categories: tap one to choose it. -->
+                <!-- The categories: tap one to choose it. "Edit" turns the list into one for
+                     removing whole categories, each asking in its row before anything goes. -->
                 <Border Style="{StaticResource Card}" Padding="8">
-                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Choices}">
-                        <BindableLayout.ItemTemplate>
-                            <DataTemplate x:DataType="categories:CategoryChoice">
-                                <Grid ColumnDefinitions="*,Auto" Padding="8,13">
-                                    <Grid.GestureRecognizers>
-                                        <TapGestureRecognizer
-                                            Command="{Binding ChooseCommand, Source={RelativeSource AncestorType={x:Type categories:CategoryPickerViewModel}}, x:DataType=categories:CategoryPickerViewModel}"
-                                            CommandParameter="{Binding .}" />
-                                    </Grid.GestureRecognizers>
-                                    <Label Text="{Binding Name}" FontSize="16" />
-                                    <Label
-                                        Grid.Column="1"
-                                        Text="✓"
-                                        FontSize="16"
-                                        IsVisible="{Binding IsCurrent}"
-                                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                                </Grid>
-                            </DataTemplate>
-                        </BindableLayout.ItemTemplate>
+                    <VerticalStackLayout>
+                        <Grid ColumnDefinitions="*,Auto" Padding="8,6,8,2">
+                            <Label Text="Categories" Style="{StaticResource Caption}" VerticalOptions="Center" />
+                            <Label
+                                Grid.Column="1"
+                                Text="{Binding EditLabel}"
+                                FontSize="14"
+                                FontFamily="OpenSansSemibold"
+                                Padding="8,4,0,4"
+                                VerticalOptions="Center"
+                                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ToggleEditingCommand}" />
+                                </Label.GestureRecognizers>
+                            </Label>
+                        </Grid>
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Choices}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="categories:CategoryChoice">
+                                    <VerticalStackLayout Padding="8,13" Spacing="10">
+                                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                            <Grid.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding ChooseCommand, Source={RelativeSource AncestorType={x:Type categories:CategoryPickerViewModel}}, x:DataType=categories:CategoryPickerViewModel}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Grid.GestureRecognizers>
+                                            <Label Text="{Binding Name}" FontSize="16" />
+                                            <Label
+                                                Grid.Column="1"
+                                                Text="✓"
+                                                FontSize="16"
+                                                IsVisible="{Binding IsCurrent}"
+                                                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                            <!-- While editing: how many payees, and the way to remove them all. -->
+                                            <HorizontalStackLayout
+                                                Grid.Column="2"
+                                                Spacing="12"
+                                                IsVisible="{Binding IsEditing, Source={RelativeSource AncestorType={x:Type categories:CategoryPickerViewModel}}, x:DataType=categories:CategoryPickerViewModel}">
+                                                <Label Text="{Binding Usage}" Style="{StaticResource Caption}" VerticalOptions="Center" />
+                                                <Label
+                                                    Text="Remove"
+                                                    FontSize="14"
+                                                    FontFamily="OpenSansSemibold"
+                                                    VerticalOptions="Center"
+                                                    IsVisible="{Binding CanBeRemoved}"
+                                                    TextColor="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}">
+                                                    <Label.GestureRecognizers>
+                                                        <TapGestureRecognizer
+                                                            Command="{Binding StartRemoveCategoryCommand, Source={RelativeSource AncestorType={x:Type categories:CategoryPickerViewModel}}, x:DataType=categories:CategoryPickerViewModel}"
+                                                            CommandParameter="{Binding .}" />
+                                                    </Label.GestureRecognizers>
+                                                </Label>
+                                            </HorizontalStackLayout>
+                                        </Grid>
+                                        <VerticalStackLayout Spacing="8" IsVisible="{Binding IsConfirmingRemove}">
+                                            <Label Text="{Binding RemoveQuestion}" Style="{StaticResource Caption}" />
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                                <Button
+                                                    Text="Remove"
+                                                    Style="{StaticResource DangerButton}"
+                                                    Command="{Binding ConfirmRemoveCategoryCommand, Source={RelativeSource AncestorType={x:Type categories:CategoryPickerViewModel}}, x:DataType=categories:CategoryPickerViewModel}"
+                                                    CommandParameter="{Binding .}" />
+                                                <Button
+                                                    Grid.Column="1"
+                                                    Text="Keep"
+                                                    Style="{StaticResource SecondaryButton}"
+                                                    Command="{Binding CancelRemoveCategoryCommand, Source={RelativeSource AncestorType={x:Type categories:CategoryPickerViewModel}}, x:DataType=categories:CategoryPickerViewModel}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Grid>
+                                        </VerticalStackLayout>
+                                    </VerticalStackLayout>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>
 

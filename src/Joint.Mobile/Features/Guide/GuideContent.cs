@@ -101,8 +101,15 @@ public static class GuideContent
                 "A category is separate from the subscription and regular payment marks: one payment can have both.",
                 "There is a starter list of categories. Typing a new name on the category page adds your own, and it "
                     + "stays in the list for as long as at least one payee uses it.",
+                "To remove a whole category, tap Edit above the list on the category page, then Remove next to it. "
+                    + "Every payee in it goes back to having no category. One of your own then leaves the list; a starter "
+                    + "category stays, empty.",
                 "The ring on Insights shows one calendar month: each slice is what was spent in a category, and "
                     + "\"Uncategorized\" is spending that no category matches yet. The percentages are shares of that month's spending.",
+                "Tapping a category under the ring opens Transactions with only its payments. That list covers every "
+                    + "account and all time, not just the month the ring shows.",
+                "In Transactions, the Filter row at the top narrows the list to a kind of account and to any number "
+                    + "of categories, including payments with no category. A category filter lists payments only.",
                 "Only money going out is categorized, and transfers between your own accounts are left out first, "
                     + "as everywhere else.",
             ]),

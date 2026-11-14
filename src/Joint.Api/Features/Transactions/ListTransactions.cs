@@ -15,7 +15,9 @@ namespace Joint.Api.Features.Transactions;
 /// <summary>
 /// Lists the household's transactions, newest first. Narrow them to one account with
 /// <c>accountId</c> or to one kind of account with <c>kind</c> (Current, Savings,
-/// Investment). Page with <c>skip</c> and <c>limit</c>.
+/// Investment), and to payments in some categories by repeating <c>category</c> (any of
+/// them matches) and adding <c>uncategorized=true</c> for payments with none. Page with
+/// <c>skip</c> and <c>limit</c>.
 /// </summary>
 public class ListTransactions : IEndpoint
 {
@@ -35,7 +37,9 @@ public class ListTransactions : IEndpoint
         ClaimsPrincipal principal,
         CurrentUserService currentUser,
         JointDbContext db,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string[]? category = null,
+        bool? uncategorized = null)
     {
         var user = await currentUser.GetOrCreateAsync(principal, cancellationToken);
         if (user is null)
@@ -59,7 +63,7 @@ public class ListTransactions : IEndpoint
 
         // Joining through the household's accounts is what keeps other households' data out,
         // including when someone passes an account id that is not theirs.
-        var transactions = await (
+        var query =
             from transaction in db.Transactions
             join account in db.AccountsOf(user.HouseholdId) on transaction.AccountId equals account.Id
             join connection in db.BankConnections on account.ConnectionId equals connection.Id
@@ -77,14 +81,57 @@ public class ListTransactions : IEndpoint
                 transaction.Amount,
                 transaction.Currency,
                 transaction.Counterparty,
-                transaction.Description))
-            .Skip(Math.Max(skip ?? 0, 0))
-            .Take(Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit))
-            .ToListAsync(cancellationToken);
+                transaction.Description);
+
+        var offset = Math.Max(skip ?? 0, 0);
+        var count = Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit);
+        var wanted = Wanted(category, uncategorized);
+        var transactions = wanted is null
+            ? await query.Skip(offset).Take(count).ToListAsync(cancellationToken)
+            : await InCategoriesAsync(query, wanted, user.HouseholdId, db, offset, count, cancellationToken);
 
         transactions = await WithTransfersAsync(transactions, user.HouseholdId, db, cancellationToken);
         return TypedResults.Ok(await WithRecurringAsync(transactions, user.HouseholdId, db, cancellationToken));
     }
+
+    /// <summary>The category filter asked for, or null when the list is not narrowed by category.</summary>
+    private static CategoryFilter? Wanted(string[]? categories, bool? uncategorized)
+    {
+        var names = (categories ?? [])
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name.Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return names.Count == 0 && uncategorized != true ? null : new CategoryFilter(names, uncategorized == true);
+    }
+
+    /// <summary>
+    /// One page of the payments in the wanted categories. A category is decided in code
+    /// (a payee's name contains a rule's text), so the filtered list cannot be paged in the
+    /// database: the payments of the household, a few thousand small rows, are matched in
+    /// memory and the page is cut from what is left. Only payments have a category, so
+    /// money coming in never passes this filter.
+    /// </summary>
+    private static async Task<List<TransactionResponse>> InCategoriesAsync(
+        IQueryable<TransactionResponse> query,
+        CategoryFilter wanted,
+        Guid householdId,
+        JointDbContext db,
+        int offset,
+        int count,
+        CancellationToken cancellationToken)
+    {
+        var matcher = new CategoryMatcher(await db.CategoryRulesOf(householdId).ToListAsync(cancellationToken));
+        var payments = await query.Where(t => t.Amount < 0).ToListAsync(cancellationToken);
+        return payments
+            .Where(t => matcher.Find(t.Counterparty, t.Description) is { } rule
+                ? wanted.Names.Contains(rule.Category)
+                : wanted.Uncategorized)
+            .Skip(offset)
+            .Take(count)
+            .ToList();
+    }
+
+    private sealed record CategoryFilter(HashSet<string> Names, bool Uncategorized);
 
     /// <summary>
     /// Says which of the listed transactions the app recognises as money moved between the

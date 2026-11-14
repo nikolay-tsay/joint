@@ -291,15 +291,26 @@
                                 <GraphicsView Drawable="{Binding Model.Categories.Chart}" HeightRequest="230" StartInteraction="OnChartTouched" DragInteraction="OnChartTouched" />
                                 <Label Text="{Binding Model.Categories.Detail}" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
 
-                                <!-- The same as a list, in the ring's colors. -->
-                                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Model.Categories.Items}" Spacing="10" Margin="0,6,0,0">
+                                <!-- The same as a list, in the ring's colors. A row opens that category's payments in Transactions. -->
+                                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Model.Categories.Items}" Spacing="2" Margin="0,6,0,0">
                                     <BindableLayout.ItemTemplate>
                                         <DataTemplate x:DataType="insights:CategoryItem">
-                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10" Padding="0,6">
+                                                <Grid.GestureRecognizers>
+                                                    <TapGestureRecognizer
+                                                        Command="{Binding Categories.OpenCategoryCommand, Source={RelativeSource AncestorType={x:Type insights:InsightsViewModel}}, x:DataType=insights:InsightsViewModel}"
+                                                        CommandParameter="{Binding .}" />
+                                                </Grid.GestureRecognizers>
                                                 <BoxView Style="{StaticResource LegendDot}" Color="{Binding Color}" />
                                                 <Label Grid.Column="1" Text="{Binding Name}" LineBreakMode="TailTruncation" />
                                                 <Label Grid.Column="2" Text="{Binding Percent}" Style="{StaticResource Caption}" VerticalOptions="Center" />
                                                 <Label Grid.Column="3" Text="{Binding Amount}" FontFamily="OpenSansSemibold" HorizontalTextAlignment="End" />
+                                                <Label
+                                                    Grid.Column="4"
+                                                    Text="›"
+                                                    FontSize="18"
+                                                    VerticalOptions="Center"
+                                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
                                             </Grid>
                                         </DataTemplate>
                                     </BindableLayout.ItemTemplate>

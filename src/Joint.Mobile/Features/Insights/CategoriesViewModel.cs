@@ -14,7 +14,7 @@ namespace Joint.Mobile.Features.Insights;
 /// </summary>
 public partial class CategoriesViewModel(ApiClient api, AuthService auth) : PageViewModel(auth)
 {
-    private const string Hint = "Touch a slice to see its amount.";
+    private const string Hint = "Touch a slice to see its amount, or a row below to see its payments.";
     private const string UncategorizedName = "Uncategorized";
 
     private DateOnly _month = ThisMonth();
@@ -52,6 +52,16 @@ public partial class CategoriesViewModel(ApiClient api, AuthService auth) : Page
     [RelayCommand]
     private Task LoadAsync() => ReloadAsync(async () => Show(await api.GetCategoriesAsync(_month)));
 
+    /// <summary>
+    /// Opens Transactions on that category's payments, from every kind of account, as the
+    /// ring counts them. The list is not limited to the month shown here.
+    /// </summary>
+    [RelayCommand]
+    private static Task OpenCategoryAsync(CategoryItem item) =>
+        Shell.Current.GoToAsync(item.IsUncategorized
+            ? $"{Routes.Transactions}?uncategorized=true"
+            : $"{Routes.Transactions}?category={Uri.EscapeDataString(item.Name)}");
+
     [RelayCommand]
     private Task PreviousMonthAsync() => GoToAsync(_month.AddMonths(-1));
 
@@ -73,11 +83,11 @@ public partial class CategoriesViewModel(ApiClient api, AuthService auth) : Page
 
         // The legend and the ring share one list: the categories, then what has none.
         var slices = categories.Spending
-            .Select((category, index) => (category.Name, category.Amount, Color: ChartStyle.Palette[index % ChartStyle.Palette.Count]))
+            .Select((category, index) => (category.Name, category.Amount, Color: ChartStyle.Palette[index % ChartStyle.Palette.Count], IsUncategorized: false))
             .ToList();
         if (categories.Uncategorized > 0)
         {
-            slices.Add((UncategorizedName, categories.Uncategorized, ChartStyle.Unassigned));
+            slices.Add((UncategorizedName, categories.Uncategorized, ChartStyle.Unassigned, IsUncategorized: true));
         }
 
         var total = slices.Sum(s => s.Amount);
@@ -93,7 +103,8 @@ public partial class CategoriesViewModel(ApiClient api, AuthService auth) : Page
         Items.Clear();
         foreach (var slice in slices)
         {
-            Items.Add(new CategoryItem(slice.Name, Money.Format(slice.Amount, currency), Share(slice.Amount, total), slice.Color));
+            Items.Add(new CategoryItem(
+                slice.Name, Money.Format(slice.Amount, currency), Share(slice.Amount, total), slice.Color, slice.IsUncategorized));
         }
 
         Chart = new PieChart(slices.Select(s => new ChartSeries([s.Amount], s.Color)).ToList())

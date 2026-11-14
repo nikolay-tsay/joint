@@ -6,6 +6,12 @@ public static class Routes
     public const string Login = "//login";
     public const string Home = "//main/home";
 
+    /// <summary>
+    /// The Transactions tab. Takes <c>category</c> (a category's name) or
+    /// <c>uncategorized=true</c> to open it filtered.
+    /// </summary>
+    public const string Transactions = "//main/transactions";
+
     /// <summary>One account's transactions; takes <c>accountId</c> and <c>title</c>.</summary>
     public const string AccountTransactions = "account-transactions";
 

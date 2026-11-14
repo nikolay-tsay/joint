@@ -24,6 +24,15 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
     /// <summary>The household view's filter; null shows every kind of account.</summary>
     private string? _kindFilter = AccountKinds.Current;
 
+    /// <summary>The kind ticked in the open filter panel, applied with the rest on "Show".</summary>
+    private string? _stagedKind = AccountKinds.Current;
+
+    /// <summary>Only payments in these categories; empty for no category filter.</summary>
+    private HashSet<string> _categories = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Also, or only, payments with no category.</summary>
+    private bool _uncategorized;
+
     private int _loaded;
     private bool _hasMore = true;
     private bool _isLoadingMore;
@@ -71,6 +80,32 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
 
     public bool HasLoaded { get; private set; }
 
+    /// <summary>
+    /// Set when another page sent this one a new filter after it had loaded; the page then
+    /// reloads when it comes into view instead of only refreshing its labels.
+    /// </summary>
+    public bool NeedsReload { get; private set; }
+
+    // ----- Filter -----
+
+    /// <summary>
+    /// True while the filter panel is open. It sits above the list, outside it, so it can be
+    /// reached at any point in the scroll.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool IsFilterOpen { get; set; }
+
+    /// <summary>What the list is narrowed to, in words, shown on the filter row.</summary>
+    [ObservableProperty]
+    public partial string? FilterSummary { get; set; }
+
+    /// <summary>True when categories narrow the list, so the row can offer to clear them.</summary>
+    [ObservableProperty]
+    public partial bool HasCategoryFilter { get; set; }
+
+    /// <summary>The categories offered in the filter panel, "No category" first.</summary>
+    public ObservableCollection<CategoryFilterOption> CategoryOptions { get; } = [];
+
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         if (query.TryGetValue("accountId", out var id) && Guid.TryParse(id?.ToString(), out var accountId))
@@ -78,6 +113,29 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
             _accountId = accountId;
             _kindFilter = null;
             IsAccountView = true;
+        }
+
+        // Sent by the category chart: that category's payments, from every kind of account,
+        // since the chart counts them all.
+        var category = query.TryGetValue("category", out var named) ? named?.ToString() : null;
+        var uncategorized = query.TryGetValue("uncategorized", out var none) && none?.ToString() == "true";
+        if (!string.IsNullOrEmpty(category) || uncategorized)
+        {
+            _categories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrEmpty(category))
+            {
+                _categories.Add(Uri.UnescapeDataString(category));
+            }
+
+            _uncategorized = uncategorized;
+            if (!IsAccountView)
+            {
+                _kindFilter = null;
+                _stagedKind = null;
+            }
+
+            IsFilterOpen = false;
+            NeedsReload = HasLoaded;
         }
 
         if (query.TryGetValue("kind", out var kind) && kind?.ToString() is { Length: > 0 } kindText)
@@ -97,7 +155,8 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
     [RelayCommand]
     private Task LoadAsync() => ReloadAsync(async () =>
     {
-        var page = await _api.GetTransactionsAsync(_accountId, _kindFilter, 0, PageSize);
+        NeedsReload = false;
+        var page = await GetPageAsync(0, PageSize);
         var holdings = _accountId is { } accountId ? await _api.GetHoldingsAsync(accountId) : [];
 
         Groups.Clear();
@@ -127,7 +186,7 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
         _isLoadingMore = true;
         try
         {
-            Append(await _api.GetTransactionsAsync(_accountId, _kindFilter, _loaded, PageSize));
+            Append(await GetPageAsync(_loaded, PageSize));
         }
         catch (Exception exception) when (exception is HttpRequestException or SignedOutException)
         {
@@ -139,19 +198,118 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
         }
     }
 
-    /// <summary>Switches the household tab to another kind of account, or to all of them.</summary>
+    /// <summary>
+    /// Opens the filter panel with what is applied now ticked, or closes it without
+    /// changing anything. The categories are read afresh each time, so new ones show.
+    /// </summary>
     [RelayCommand]
-    private async Task SelectFilterAsync(ChoiceItem filter)
+    private async Task ToggleFilterAsync()
     {
-        if (filter.Kind == _kindFilter)
+        if (IsFilterOpen)
         {
+            IsFilterOpen = false;
             return;
         }
 
-        _kindFilter = filter.Kind;
+        _stagedKind = _kindFilter;
+        RebuildChoices();
+        IsFilterOpen = true;
+        await RunAsync(async () =>
+        {
+            var names = (await _api.GetCategoriesAsync(null)).Names;
+
+            // A category asked for that is no longer on offer is still shown, so it can be unticked.
+            var shown = names.Concat(_categories.Where(c => !names.Contains(c, StringComparer.OrdinalIgnoreCase)));
+            CategoryOptions.Clear();
+            CategoryOptions.Add(new CategoryFilterOption(null, _uncategorized));
+            foreach (var name in shown)
+            {
+                CategoryOptions.Add(new CategoryFilterOption(name, _categories.Contains(name)));
+            }
+        });
+    }
+
+    /// <summary>Ticks a kind of account in the open panel; it takes effect on "Show".</summary>
+    [RelayCommand]
+    private void SelectFilter(ChoiceItem filter)
+    {
+        _stagedKind = filter.Kind;
+        RebuildChoices();
+    }
+
+    /// <summary>Ticks or unticks a category in the open panel; any number can be ticked.</summary>
+    [RelayCommand]
+    private static void ToggleCategory(CategoryFilterOption option) => option.IsSelected = !option.IsSelected;
+
+    /// <summary>Applies what is ticked in the panel and lists from the newest again.</summary>
+    [RelayCommand]
+    private async Task ApplyFilterAsync()
+    {
+        _kindFilter = IsAccountView ? null : _stagedKind;
+        _categories = CategoryOptions
+            .Where(o => o is { IsSelected: true, Name: not null })
+            .Select(o => o.Name!)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        _uncategorized = CategoryOptions.Any(o => o is { IsSelected: true, IsNoCategory: true });
+        IsFilterOpen = false;
         RebuildChoices();
         await LoadAsync();
     }
+
+    /// <summary>Unticks every category in the open panel; the kind of account stays.</summary>
+    [RelayCommand]
+    private void ClearCategories()
+    {
+        foreach (var option in CategoryOptions)
+        {
+            option.IsSelected = false;
+        }
+    }
+
+    /// <summary>Drops the category filter straight from the filter row.</summary>
+    [RelayCommand]
+    private async Task RemoveCategoryFilterAsync()
+    {
+        _categories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        _uncategorized = false;
+        IsFilterOpen = false;
+        RebuildChoices();
+        await LoadAsync();
+    }
+
+    /// <summary>
+    /// What tapping the Transactions tab while already on it does, besides scrolling to the
+    /// top: put away whatever is open.
+    /// </summary>
+    public void CloseOpenParts()
+    {
+        IsFilterOpen = false;
+        IsTypeMenuOpen = false;
+        foreach (var item in Groups.SelectMany(group => group))
+        {
+            item.IsMenuOpen = false;
+        }
+    }
+
+    /// <summary>"Groceries, Eating out", or "4 categories" once the names would not fit; null without a category filter.</summary>
+    private string? DescribeCategories()
+    {
+        var names = _categories.Order(StringComparer.CurrentCultureIgnoreCase).ToList();
+        if (_uncategorized)
+        {
+            names.Add(CategoryFilterOption.NoCategoryLabel);
+        }
+
+        return names.Count switch
+        {
+            0 => null,
+            <= 2 => string.Join(", ", names),
+            var count => $"{count} categories",
+        };
+    }
+
+    private Task<List<TransactionResponse>> GetPageAsync(int skip, int limit) =>
+        _api.GetTransactionsAsync(_accountId, _kindFilter, skip, limit, _categories, _uncategorized);
 
     /// <summary>Back to Home from one account's transactions.</summary>
     [RelayCommand]
@@ -243,7 +401,7 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
         var fresh = new Dictionary<Guid, TransactionResponse>();
         for (var skip = 0; skip < _loaded; skip += batch)
         {
-            foreach (var transaction in await _api.GetTransactionsAsync(_accountId, _kindFilter, skip, batch))
+            foreach (var transaction in await GetPageAsync(skip, batch))
             {
                 fresh[transaction.Id] = transaction;
             }
@@ -285,13 +443,24 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
 
     private void RebuildChoices()
     {
+        // The chips in the filter panel show what is ticked there, not yet what is applied.
         Filters.Clear();
         foreach (var kind in AccountKinds.All)
         {
-            Filters.Add(new ChoiceItem(AccountKinds.Label(kind), kind, kind == _kindFilter));
+            Filters.Add(new ChoiceItem(AccountKinds.Label(kind), kind, kind == _stagedKind));
         }
 
-        Filters.Add(new ChoiceItem("All", null, _kindFilter is null));
+        Filters.Add(new ChoiceItem("All", null, _stagedKind is null));
+
+        string?[] parts =
+        [
+            IsAccountView ? null : _kindFilter is null ? "All accounts" : AccountKinds.Label(_kindFilter),
+            DescribeCategories(),
+        ];
+        FilterSummary = string.Join(" · ", parts.Where(p => p is not null)) is { Length: > 0 } summary
+            ? summary
+            : "All payments";
+        HasCategoryFilter = _categories.Count > 0 || _uncategorized;
 
         AccountTypes.Clear();
         foreach (var kind in AccountKinds.All)

@@ -34,6 +34,16 @@ public partial class CategoryPickerViewModel(ApiClient api, AuthService auth) : 
     [ObservableProperty]
     public partial bool CanRemove { get; set; }
 
+    /// <summary>
+    /// True while the list is being edited: tapping a category then no longer chooses it,
+    /// and categories with payees offer to be removed as a whole.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EditLabel))]
+    public partial bool IsEditing { get; set; }
+
+    public string EditLabel => IsEditing ? "Done" : "Edit";
+
     public ObservableCollection<CategoryChoice> Choices { get; } = [];
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
@@ -53,12 +63,61 @@ public partial class CategoryPickerViewModel(ApiClient api, AuthService auth) : 
         Choices.Clear();
         foreach (var name in categories.Names)
         {
-            Choices.Add(new CategoryChoice(name, name == _current));
+            var payees = categories.Payees?.GetValueOrDefault(name) ?? 0;
+            Choices.Add(new CategoryChoice(name, name == _current, payees));
         }
     });
 
     [RelayCommand]
-    private Task ChooseAsync(CategoryChoice choice) => AssignAsync(choice.Name);
+    private Task ChooseAsync(CategoryChoice choice) => IsEditing ? Task.CompletedTask : AssignAsync(choice.Name);
+
+    [RelayCommand]
+    private void ToggleEditing()
+    {
+        IsEditing = !IsEditing;
+        foreach (var choice in Choices)
+        {
+            choice.IsConfirmingRemove = false;
+        }
+    }
+
+    /// <summary>Asks in the row whether to remove the category, closing any other row's question.</summary>
+    [RelayCommand]
+    private void StartRemoveCategory(CategoryChoice choice)
+    {
+        foreach (var other in Choices)
+        {
+            other.IsConfirmingRemove = other == choice;
+        }
+    }
+
+    [RelayCommand]
+    private static void CancelRemoveCategory(CategoryChoice choice) => choice.IsConfirmingRemove = false;
+
+    /// <summary>
+    /// Removes the whole category: every payee in it goes back to having no category. One of
+    /// the household's own then leaves the list; a starter one stays, empty.
+    /// </summary>
+    [RelayCommand]
+    private Task ConfirmRemoveCategoryAsync(CategoryChoice choice) => RunAsync(async () =>
+    {
+        await api.RemoveCategoryAsync(choice.Name);
+        if (string.Equals(choice.Name, _current, StringComparison.OrdinalIgnoreCase))
+        {
+            // The payment this page was opened for has lost its category with the rest.
+            _current = null;
+            _ruleId = null;
+            CanRemove = false;
+        }
+
+        var categories = await api.GetCategoriesAsync(null);
+        Choices.Clear();
+        foreach (var name in categories.Names)
+        {
+            var payees = categories.Payees?.GetValueOrDefault(name) ?? 0;
+            Choices.Add(new CategoryChoice(name, name == _current, payees));
+        }
+    });
 
     /// <summary>Makes a category of the typed name and gives it to the payment.</summary>
     [RelayCommand]

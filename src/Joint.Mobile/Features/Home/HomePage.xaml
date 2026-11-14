@@ -6,7 +6,7 @@
     BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
 
     <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
-        <ScrollView>
+        <ScrollView x:Name="Scroller">
             <VerticalStackLayout Padding="12,24,12,24" Spacing="12">
                 <Label Text="{Binding Greeting}" FontSize="24" FontFamily="OpenSansSemibold" Margin="4,0" />
 

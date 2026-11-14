@@ -1,8 +1,9 @@
 using System.ComponentModel;
+using Joint.Mobile.Common;
 
 namespace Joint.Mobile.Features.Profile;
 
-public partial class ProfilePage : ContentPage
+public partial class ProfilePage : ContentPage, ITabRoot
 {
     private readonly ProfileViewModel _viewModel;
 
@@ -18,6 +19,9 @@ public partial class ProfilePage : ContentPage
         base.OnAppearing();
         _viewModel.LoadCommand.Execute(null);
     }
+
+    /// <summary>A second tap on the Profile tab: back to the top.</summary>
+    public void ResetView() => _ = Scroller.ScrollToAsync(0, 0, animated: true);
 
     /// <summary>
     /// Keeps the keyboard in step with the in-place panels: it comes up with a field
