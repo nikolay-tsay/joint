@@ -212,10 +212,14 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth, GoalsViewM
     [RelayCommand]
     private void PickLineCategory(CategoryChip chip)
     {
+        // Tapping the picked one again unticks it.
+        var pick = !chip.IsSelected;
         foreach (var choice in LineChoices)
         {
-            choice.IsSelected = choice == chip;
+            choice.IsSelected = pick && choice == chip;
         }
+
+        NewLineError = null;
     }
 
     [RelayCommand]
@@ -380,6 +384,32 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth, GoalsViewM
         {
             await StoreAsync(limit);
             return;
+        }
+
+        // A category picked with its amount typed counts even if "Add category" was not tapped:
+        // dropping it without a word left people with a budget missing the part they had just set.
+        var picked = LineChoices.FirstOrDefault(c => c.IsSelected);
+        var typed = !string.IsNullOrWhiteSpace(NewLineAmount);
+        if (picked is not null || typed)
+        {
+            if (picked is null)
+            {
+                NewLineError = "Pick the category for that amount, or clear it.";
+                return;
+            }
+
+            if (!typed)
+            {
+                NewLineError = $"Enter an amount for {picked.Name}, or tap it again to untick it.";
+                return;
+            }
+
+            var before = Drafts.Count;
+            AddDraft();
+            if (Drafts.Count == before)
+            {
+                return;
+            }
         }
 
         var parts = Drafts.Sum(d => d.Amount);
