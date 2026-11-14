@@ -14,6 +14,10 @@ namespace Joint.Contracts;
 /// <param name="Projected">Where everyday spending is heading by month end, at the pace so far.</param>
 /// <param name="LastMonthSpent">Last month's everyday spending, for a sense of what is usual.</param>
 /// <param name="Month">The first day of the month all this is about.</param>
+/// <param name="Categories">
+/// The categories given part of the budget, by name; empty without any. What the budget leaves
+/// to the rest is <paramref name="Limit"/> less their limits, against <paramref name="Spent"/> less their spending.
+/// </param>
 public record BudgetResponse(
     string? Currency,
     decimal? Limit,
@@ -22,4 +26,5 @@ public record BudgetResponse(
     decimal FixedExpected,
     decimal Projected,
     decimal LastMonthSpent,
-    DateOnly Month);
+    DateOnly Month,
+    List<CategoryBudgetResponse>? Categories = null);

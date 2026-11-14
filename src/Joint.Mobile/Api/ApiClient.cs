@@ -123,6 +123,24 @@ public class ApiClient(AuthService auth)
         return response.IsSuccessStatusCode;
     }
 
+    /// <summary>Sets aside part of the monthly budget for a category, or changes what is set aside.</summary>
+    /// <returns>False when it was not accepted, for example because it does not fit within the budget.</returns>
+    public async Task<bool> SetCategoryBudgetAsync(string category, decimal amount, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Put, "api/budget/categories", new SetCategoryBudgetRequest(category, amount), cancellationToken,
+            HttpStatusCode.BadRequest);
+        return response.IsSuccessStatusCode;
+    }
+
+    /// <summary>Takes a category out of the budget; the category itself stays. Already gone is not an error.</summary>
+    public async Task RemoveCategoryBudgetAsync(string category, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Delete, $"api/budget/categories?name={Uri.EscapeDataString(category)}", null, cancellationToken,
+            HttpStatusCode.NotFound);
+    }
+
     /// <summary>
     /// A period's spending by category and the category names on offer. Null asks for
     /// the current calendar month.

@@ -18,6 +18,7 @@ public class JointDbContext(DbContextOptions<JointDbContext> options) : DbContex
     public DbSet<RecurringPayment> RecurringPayments => Set<RecurringPayment>();
     public DbSet<Goal> Goals => Set<Goal>();
     public DbSet<CategoryRule> CategoryRules => Set<CategoryRule>();
+    public DbSet<CategoryBudget> CategoryBudgets => Set<CategoryBudget>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

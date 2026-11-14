@@ -39,4 +39,8 @@ public static class HouseholdQueries
         join maker in db.Users on rule.UserId equals maker.Id
         where maker.HouseholdId == householdId
         select rule;
+
+    /// <summary>The parts of the household's budget set aside for single categories.</summary>
+    public static IQueryable<CategoryBudget> CategoryBudgetsOf(this JointDbContext db, Guid householdId) =>
+        db.CategoryBudgets.Where(b => b.HouseholdId == householdId);
 }

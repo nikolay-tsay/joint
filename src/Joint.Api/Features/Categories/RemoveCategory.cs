@@ -46,12 +46,18 @@ public class RemoveCategory : IEndpoint
         var household = await db.Households.FirstAsync(h => h.Id == user.HouseholdId, cancellationToken);
         var starter = CategoryNames.Starter.FirstOrDefault(Same);
         var hideStarter = starter is not null && !household.HiddenCategories.Any(Same);
-        if (rules.Count == 0 && !hideStarter)
+
+        // Its part of the budget goes too, back to "everything else".
+        var budgetLines = (await db.CategoryBudgetsOf(user.HouseholdId).ToListAsync(cancellationToken))
+            .Where(l => Same(l.Category))
+            .ToList();
+        if (rules.Count == 0 && !hideStarter && budgetLines.Count == 0)
         {
             return TypedResults.NotFound();
         }
 
         db.CategoryRules.RemoveRange(rules);
+        db.CategoryBudgets.RemoveRange(budgetLines);
         if (hideStarter)
         {
             // A new list rather than an edit in place, so the change is noticed and saved.

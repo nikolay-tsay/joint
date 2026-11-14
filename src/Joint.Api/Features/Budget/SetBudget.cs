@@ -10,7 +10,8 @@ namespace Joint.Api.Features.Budget;
 
 /// <summary>
 /// Sets, changes or removes the household's monthly budget. Any member may do it, since
-/// there is one budget and they all share it.
+/// there is one budget and they all share it. Removing it removes its category lines; lowering
+/// it below what they add up to shrinks each in proportion.
 /// </summary>
 public class SetBudget : IEndpoint
 {
@@ -43,6 +44,16 @@ public class SetBudget : IEndpoint
 
         var household = await db.Households.FirstAsync(h => h.Id == user.HouseholdId, cancellationToken);
         household.MonthlyBudget = request.Limit;
+        var lines = await db.CategoryBudgetsOf(user.HouseholdId).ToListAsync(cancellationToken);
+        if (request.Limit is { } limit)
+        {
+            BudgetLines.ShrinkTo(limit, lines);
+        }
+        else
+        {
+            db.CategoryBudgets.RemoveRange(lines);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return TypedResults.NoContent();
     }

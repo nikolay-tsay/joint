@@ -7,7 +7,7 @@ public static class HouseholdCleanup
 {
     /// <summary>
     /// Tidies the household a user just left: an empty household is removed with all its
-    /// invitations; otherwise only the open invitations that user issued are withdrawn.
+    /// invitations and its budget's category lines; otherwise only the open invitations that user issued are withdrawn.
     /// Stages the changes; the caller saves them together with the move.
     /// </summary>
     public static async Task AfterMemberLeftAsync(
@@ -24,6 +24,7 @@ public static class HouseholdCleanup
 
         if (!othersRemain)
         {
+            db.CategoryBudgets.RemoveRange(await db.CategoryBudgetsOf(householdId).ToListAsync(cancellationToken));
             var household = await db.Households.FirstAsync(h => h.Id == householdId, cancellationToken);
             db.Households.Remove(household);
         }

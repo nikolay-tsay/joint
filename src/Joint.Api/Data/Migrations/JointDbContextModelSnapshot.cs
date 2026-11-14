@@ -108,6 +108,32 @@ namespace Joint.Api.Data.Migrations
                     b.ToTable("BankConnections", "joint");
                 });
 
+            modelBuilder.Entity("Joint.Api.Domain.CategoryBudget", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("HouseholdId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HouseholdId", "Category")
+                        .IsUnique();
+
+                    b.ToTable("CategoryBudgets", "joint");
+                });
+
             modelBuilder.Entity("Joint.Api.Domain.CategoryRule", b =>
                 {
                     b.Property<Guid>("Id")
@@ -428,6 +454,15 @@ namespace Joint.Api.Data.Migrations
                     b.HasOne("Joint.Api.Domain.User", null)
                         .WithMany()
                         .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Joint.Api.Domain.CategoryBudget", b =>
+                {
+                    b.HasOne("Joint.Api.Domain.Household", null)
+                        .WithMany()
+                        .HasForeignKey("HouseholdId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

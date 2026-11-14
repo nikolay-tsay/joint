@@ -2,6 +2,8 @@ using System.Security.Claims;
 using Joint.Api.Common;
 using Joint.Api.Common.Auth;
 using Joint.Api.Data;
+using Joint.Api.Domain;
+using Joint.Api.Features.Categories;
 using Joint.Api.Features.Insights;
 using Joint.Api.Features.Recurring;
 using Joint.Contracts;
@@ -11,8 +13,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Joint.Api.Features.Budget;
 
 /// <summary>
-/// The household's monthly budget and how this month's spending stands against it. The
-/// figures are returned whether or not a budget is set, so the app can suggest one.
+/// The household's monthly budget, its category lines, and how this month's spending stands
+/// against them. The figures are returned whether or not a budget is set, so the app can suggest one.
 /// </summary>
 public class GetBudget : IEndpoint
 {
@@ -77,6 +79,24 @@ public class GetBudget : IEndpoint
                 t.BookedOn, t.Amount, t.Currency, matcher.Find(t.Counterparty, t.Description)?.MatchKey))
             .ToList();
 
-        return TypedResults.Ok(BudgetCalculator.Build(limit, flows, recurring, today));
+        // The category lines: each payment's category, and whether it is a tracked fixed cost.
+        var lines = await db.CategoryBudgetsOf(user.HouseholdId).ToListAsync(cancellationToken);
+        var categorized = new List<CategorizedRow>();
+        if (lines.Count > 0)
+        {
+            var categories = new CategoryMatcher(await db.CategoryRulesOf(user.HouseholdId).ToListAsync(cancellationToken));
+            categorized = loaded
+                .Select(t => new CategorizedRow(
+                    t.AccountId,
+                    t.BookedOn,
+                    t.Amount,
+                    t.Currency,
+                    MarkedAsTransfer: matcher.IsOwnTransfer(t.Amount, t.Counterparty, t.Description),
+                    Tracked: t.Amount < 0 && matcher.Find(t.Counterparty, t.Description) is { Kind: not RecurringKind.Transfer },
+                    t.Amount < 0 ? categories.Find(t.Counterparty, t.Description)?.Category : null))
+                .ToList();
+        }
+
+        return TypedResults.Ok(BudgetCalculator.Build(limit, flows, recurring, today, lines, categorized));
     }
 }

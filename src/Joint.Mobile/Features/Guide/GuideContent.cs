@@ -146,6 +146,13 @@ public static class GuideContent
                     + "amount. Nothing unspent carries over and no overspend is deducted.",
                 "A bill counts as everyday spending until you mark it as a regular payment. Money moved to an "
                     + "account of yours that Joint cannot match up counts until you mark it as \"Own transfer\".",
+                "Under \"By category\" you can set aside part of the budget for some of your categories. Together "
+                    + "they can never be more than the budget; whatever is not given to a category is \"Everything else\".",
+                "A category's line counts its everyday spending this month: payments in that category, minus "
+                    + "subscriptions and regular payments, the same as the budget as a whole. \"Everything else\" is "
+                    + "everyday spending in other categories and in none.",
+                "Lowering the budget below what the categories add up to shrinks each category's part in proportion. "
+                    + "Removing the budget removes them, and deleting a category removes its part.",
             ]),
         new(
             "Goals",
