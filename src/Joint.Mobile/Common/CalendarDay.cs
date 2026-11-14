@@ -1,9 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace Joint.Mobile.Features.Insights;
+namespace Joint.Mobile.Common;
 
 /// <summary>
-/// One cell of the period picker's month grid. Cells before the 1st and after the last day
+/// One cell of the date picker's month grid (DateRangeCalendar). Cells before the 1st and after the last day
 /// are blank, so every month fills the same seven columns.
 /// </summary>
 public partial class CalendarDay(DateOnly? date, int row, int column, bool isToday) : ObservableObject

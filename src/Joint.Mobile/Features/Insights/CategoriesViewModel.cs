@@ -46,14 +46,17 @@ public partial class CategoriesViewModel(ApiClient api, AuthService auth) : Page
     private Task LoadAsync() => ReloadAsync(async () => Show(await api.GetCategoriesAsync(Period)));
 
     /// <summary>
-    /// Opens Transactions on that category's payments from everyday accounts, the tab's usual
-    /// view. The ring counts every kind of account and one period; the list is neither.
+    /// Opens Transactions on that category's payments in the ring's period, from everyday
+    /// accounts, the tab's usual view; the ring counts every kind of account.
     /// </summary>
     [RelayCommand]
-    private static Task OpenCategoryAsync(CategoryItem item) =>
-        Shell.Current.GoToAsync(item.IsUncategorized
-            ? $"{Routes.Transactions}?uncategorized=true"
-            : $"{Routes.Transactions}?category={Uri.EscapeDataString(item.Name)}");
+    private Task OpenCategoryAsync(CategoryItem item)
+    {
+        var filter = item.IsUncategorized ? "uncategorized=true" : $"category={Uri.EscapeDataString(item.Name)}";
+        var dates = string.Create(
+            System.Globalization.CultureInfo.InvariantCulture, $"from={Period.From:yyyy-MM-dd}&to={Period.To:yyyy-MM-dd}");
+        return Shell.Current.GoToAsync($"{Routes.Transactions}?{filter}&{dates}");
+    }
 
     private void Show(CategoriesResponse categories)
     {

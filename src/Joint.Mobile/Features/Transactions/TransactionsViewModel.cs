@@ -36,6 +36,17 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
     /// <summary>Leaves out the rows labelled "Between your accounts".</summary>
     private bool _hideTransfers;
 
+    /// <summary>Only these days; null for all of them.</summary>
+    private DatePeriod? _period;
+
+    /// <summary>The dates chip ticked in the open panel: all, this or last month, or picked on the grid.</summary>
+    private string _stagedDates = AllDates;
+
+    private const string AllDates = "all";
+    private const string ThisMonth = "this";
+    private const string LastMonth = "last";
+    private const string PickedDates = "pick";
+
     private int _loaded;
     private bool _hasMore = true;
     private bool _isLoadingMore;
@@ -113,6 +124,21 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
     [ObservableProperty]
     public partial bool StagedHideTransfers { get; set; }
 
+    /// <summary>The date choices in the filter panel, as chips.</summary>
+    public ObservableCollection<ChoiceItem> DateFilters { get; } = [];
+
+    /// <summary>The month grid for picking a first and last day, shown while that chip is ticked.</summary>
+    public DateRangePicker DatePicker { get; } = new();
+
+    [ObservableProperty]
+    public partial bool IsPickingDates { get; set; }
+
+    private static DateOnly? Date(IDictionary<string, object> query, string key) =>
+        query.TryGetValue(key, out var value)
+        && DateOnly.TryParseExact(value?.ToString(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var date)
+            ? date
+            : null;
+
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         if (query.TryGetValue("accountId", out var id) && Guid.TryParse(id?.ToString(), out var accountId))
@@ -135,6 +161,11 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
             }
 
             _uncategorized = uncategorized;
+
+            // The chart's period comes along, so the list shows the payments the slice counted.
+            _period = Date(query, "from") is { } from && Date(query, "to") is { } to && from <= to
+                ? new DatePeriod(from, to)
+                : null;
             if (!IsAccountView)
             {
                 _kindFilter = AccountKinds.Current;
@@ -220,6 +251,9 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
 
         _stagedKind = _kindFilter;
         StagedHideTransfers = _hideTransfers;
+        _stagedDates = DatesChoiceOf(_period);
+        IsPickingDates = _stagedDates == PickedDates;
+        DatePicker.Begin(_period);
         RebuildChoices();
         IsFilterOpen = true;
         await RunAsync(async () =>
@@ -253,6 +287,13 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
     [RelayCommand]
     private async Task ApplyFilterAsync()
     {
+        // Picked dates must be a whole range; the grid says what is missing.
+        if (_stagedDates == PickedDates && DatePicker.Range is null)
+        {
+            return;
+        }
+
+        _period = StagedPeriod();
         _kindFilter = IsAccountView ? null : _stagedKind;
         _categories = CategoryOptions
             .Where(o => o is { IsSelected: true, Name: not null })
@@ -263,6 +304,40 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
         IsFilterOpen = false;
         RebuildChoices();
         await LoadAsync();
+    }
+
+    /// <summary>Ticks a date choice in the open panel; "Pick dates" opens the month grid.</summary>
+    [RelayCommand]
+    private void SelectDates(ChoiceItem choice)
+    {
+        _stagedDates = choice.Kind ?? AllDates;
+        IsPickingDates = _stagedDates == PickedDates;
+        RebuildChoices();
+    }
+
+    /// <summary>Which chip stands for a range: a calendar month this month or last, otherwise picked days.</summary>
+    private static string DatesChoiceOf(DatePeriod? period)
+    {
+        var thisMonth = DatePeriod.MonthOf(DateOnly.FromDateTime(DateTime.UtcNow));
+        return period switch
+        {
+            null => AllDates,
+            _ when period == thisMonth => ThisMonth,
+            _ when period == thisMonth.Shift(-1) => LastMonth,
+            _ => PickedDates,
+        };
+    }
+
+    private DatePeriod? StagedPeriod()
+    {
+        var thisMonth = DatePeriod.MonthOf(DateOnly.FromDateTime(DateTime.UtcNow));
+        return _stagedDates switch
+        {
+            ThisMonth => thisMonth,
+            LastMonth => thisMonth.Shift(-1),
+            PickedDates => DatePicker.Range,
+            _ => null,
+        };
     }
 
     /// <summary>Unticks every category in the open panel; the kind of account stays.</summary>
@@ -318,7 +393,7 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
     }
 
     private Task<List<TransactionResponse>> GetPageAsync(int skip, int limit) =>
-        _api.GetTransactionsAsync(_accountId, _kindFilter, skip, limit, _categories, _uncategorized, _hideTransfers);
+        _api.GetTransactionsAsync(_accountId, _kindFilter, skip, limit, _categories, _uncategorized, _hideTransfers, _period);
 
     /// <summary>Back to Home from one account's transactions.</summary>
     [RelayCommand]
@@ -461,10 +536,17 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
 
         Filters.Add(new ChoiceItem("All", null, _stagedKind is null));
 
+        DateFilters.Clear();
+        DateFilters.Add(new ChoiceItem("All dates", AllDates, _stagedDates == AllDates));
+        DateFilters.Add(new ChoiceItem("This month", ThisMonth, _stagedDates == ThisMonth));
+        DateFilters.Add(new ChoiceItem("Last month", LastMonth, _stagedDates == LastMonth));
+        DateFilters.Add(new ChoiceItem("Pick dates", PickedDates, _stagedDates == PickedDates));
+
         string?[] parts =
         [
             IsAccountView ? null : _kindFilter is null ? "All accounts" : AccountKinds.Label(_kindFilter),
             DescribeCategories(),
+            _period is null ? null : PeriodText.Describe(_period),
             _hideTransfers ? "No transfers" : null,
         ];
         FilterSummary = string.Join(" · ", parts.Where(p => p is not null)) is { Length: > 0 } summary

@@ -48,8 +48,7 @@ public class SetCategoryBudget : IEndpoint
 
         // Only a category the household has: the budget does not create new ones.
         var used = await db.CategoryRulesOf(user.HouseholdId).Select(r => r.Category).ToListAsync(cancellationToken);
-        var name = CategoryNames.Available(used, household.HiddenCategories)
-            .FirstOrDefault(n => string.Equals(n, request.Category?.Trim(), StringComparison.OrdinalIgnoreCase));
+        var name = BudgetLines.CategoryNamed(CategoryNames.Available(used, household.HiddenCategories), request.Category);
         if (name is null)
         {
             return Problem("That is not one of your categories.");

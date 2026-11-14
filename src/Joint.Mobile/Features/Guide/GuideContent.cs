@@ -118,9 +118,10 @@ public static class GuideContent
                 "The ring on Insights shows the period chosen above it, the same as Overview: each slice is what was "
                     + "spent in a category, and \"Uncategorized\" is spending that no category matches yet. The "
                     + "percentages are shares of that period's spending.",
-                "Tapping a category under the ring opens Transactions with only its payments from everyday accounts. "
-                    + "The ring counts every account and one period; the list covers all time, and the Filter row can widen "
-                    + "it to all accounts.",
+                "Tapping a category under the ring opens Transactions with only its payments in the ring's period, from "
+                    + "everyday accounts. The ring counts every account; the Filter row can widen the list to all accounts.",
+                "In Transactions, the Filter row can also keep the list to some days: this month, last month, or a "
+                    + "first and last day picked on a month grid.",
                 "In Transactions, the Filter row at the top narrows the list to a kind of account and to any number "
                     + "of categories, including payments with no category. A category filter lists payments only. "
                     + "\"Hide transfers between your accounts\" leaves out the rows labelled \"Between your accounts\", both "
@@ -146,7 +147,8 @@ public static class GuideContent
                     + "amount. Nothing unspent carries over and no overspend is deducted.",
                 "A bill counts as everyday spending until you mark it as a regular payment. Money moved to an "
                     + "account of yours that Joint cannot match up counts until you mark it as \"Own transfer\".",
-                "Under \"By category\" you can set aside part of the budget for some of your categories. Together "
+                "Under \"By category\" you can set aside part of the budget for some of your categories, when you make "
+                    + "the budget or later. Together "
                     + "they can never be more than the budget; whatever is not given to a category is \"Everything else\".",
                 "A category's line counts its everyday spending this month: payments in that category, minus "
                     + "subscriptions and regular payments, the same as the budget as a whole. \"Everything else\" is "

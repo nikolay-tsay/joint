@@ -18,7 +18,8 @@ namespace Joint.Api.Features.Transactions;
 /// Investment), and to payments in some categories by repeating <c>category</c> (any of
 /// them matches) and adding <c>uncategorized=true</c> for payments with none. With
 /// <c>hideTransfers=true</c>, money the app recognises as moved between the household's own
-/// accounts (the "Between your accounts" rows) is left out. Page with <c>skip</c> and <c>limit</c>.
+/// accounts (the "Between your accounts" rows) is left out. <c>from</c> and <c>to</c>
+/// (both included) keep it to those days. Page with <c>skip</c> and <c>limit</c>.
 /// </summary>
 public class ListTransactions : IEndpoint
 {
@@ -41,13 +42,26 @@ public class ListTransactions : IEndpoint
         CancellationToken cancellationToken,
         string[]? category = null,
         bool? uncategorized = null,
-        bool? hideTransfers = null)
+        bool? hideTransfers = null,
+        DateOnly? from = null,
+        DateOnly? to = null)
     {
         var user = await currentUser.GetOrCreateAsync(principal, cancellationToken);
         if (user is null)
         {
             return TypedResults.Unauthorized();
         }
+
+        if (from is null != to is null || from > to)
+        {
+            return TypedResults.Problem(
+                "Give both from and to, the first no later than the second, or neither.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        // Named apart from the query keyword "from".
+        var first = from;
+        var last = to;
 
         AccountKind? accountKind = null;
         if (!string.IsNullOrEmpty(kind))
@@ -79,6 +93,8 @@ public class ListTransactions : IEndpoint
             where accountId == null || account.Id == accountId
             where accountKind == null || account.Kind == accountKind
             where !paymentsOnly || transaction.Amount < 0
+            where first == null || transaction.BookedOn >= first
+            where last == null || transaction.BookedOn <= last
             orderby transaction.BookedOn descending, transaction.Id
             select new TransactionResponse(
                 transaction.Id,
@@ -103,7 +119,7 @@ public class ListTransactions : IEndpoint
         // pages of booked ones stay as they were.
         if (offset == 0)
         {
-            var pending = await PendingAsync(user.HouseholdId, accountId, accountKind, wanted, db, cancellationToken);
+            var pending = await PendingAsync(user.HouseholdId, accountId, accountKind, first, last, wanted, db, cancellationToken);
             transactions = [.. pending, .. transactions];
         }
 
@@ -172,6 +188,8 @@ public class ListTransactions : IEndpoint
         Guid householdId,
         Guid? accountId,
         AccountKind? accountKind,
+        DateOnly? first,
+        DateOnly? last,
         CategoryFilter? wanted,
         JointDbContext db,
         CancellationToken cancellationToken)
@@ -183,6 +201,8 @@ public class ListTransactions : IEndpoint
             join owner in db.Users on connection.OwnerUserId equals owner.Id
             where accountId == null || account.Id == accountId
             where accountKind == null || account.Kind == accountKind
+            where first == null || pending.Date >= first
+            where last == null || pending.Date <= last
             orderby pending.Date descending, pending.Id
             select new { pending, AccountName = account.Name, owner.DisplayName, owner.AvatarUrl })
             .ToListAsync(cancellationToken);

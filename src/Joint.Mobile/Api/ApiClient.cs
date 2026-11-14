@@ -72,9 +72,11 @@ public class ApiClient(AuthService auth)
     /// <param name="categories">Only payments in any of these categories; empty or null for no such filter.</param>
     /// <param name="uncategorized">Also payments with no category, alongside <paramref name="categories"/>.</param>
     /// <param name="hideTransfers">Leaves out money recognised as moved between the household's own accounts.</param>
+    /// <param name="period">Only these days; null for all.</param>
     public async Task<List<TransactionResponse>> GetTransactionsAsync(
         Guid? accountId, string? kind, int skip, int limit,
         IReadOnlyCollection<string>? categories = null, bool uncategorized = false, bool hideTransfers = false,
+        DatePeriod? period = null,
         CancellationToken cancellationToken = default)
     {
         var path = $"api/transactions?skip={skip}&limit={limit}";
@@ -103,6 +105,11 @@ public class ApiClient(AuthService auth)
             path += "&hideTransfers=true";
         }
 
+        if (period is not null)
+        {
+            path += $"&{PeriodQuery(period)}";
+        }
+
         using var response = await SendAsync(HttpMethod.Get, path, null, cancellationToken);
         return await ReadAsync<List<TransactionResponse>>(response, cancellationToken);
     }
@@ -114,12 +121,16 @@ public class ApiClient(AuthService auth)
         return await ReadAsync<BudgetResponse>(response, cancellationToken);
     }
 
-    /// <summary>Sets the household's monthly budget; null removes it.</summary>
-    /// <returns>False when the amount was not accepted.</returns>
-    public async Task<bool> SetBudgetAsync(decimal? limit, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Sets the household's monthly budget; null removes it. With <paramref name="categories"/>,
+    /// its parts for single categories are set in the same go, replacing any there were.
+    /// </summary>
+    /// <returns>False when the amount, or a category's, was not accepted.</returns>
+    public async Task<bool> SetBudgetAsync(
+        decimal? limit, List<SetCategoryBudgetRequest>? categories = null, CancellationToken cancellationToken = default)
     {
         using var response = await SendAsync(
-            HttpMethod.Put, "api/budget", new SetBudgetRequest(limit), cancellationToken, HttpStatusCode.BadRequest);
+            HttpMethod.Put, "api/budget", new SetBudgetRequest(limit, categories), cancellationToken, HttpStatusCode.BadRequest);
         return response.IsSuccessStatusCode;
     }
 

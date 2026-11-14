@@ -1,6 +1,7 @@
 <ContentPage
     x:Class="Joint.Mobile.Features.Insights.InsightsPage"
     xmlns:insights="clr-namespace:Joint.Mobile.Features.Insights"
+    xmlns:common="clr-namespace:Joint.Mobile.Common"
     x:DataType="insights:InsightsViewModel"
     Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource PageBackgroundDark}}">
@@ -419,99 +420,14 @@
                         </Border>
                     </HorizontalStackLayout>
 
-                    <Grid ColumnDefinitions="40,*,40">
-                        <Label
-                            Text="‹"
-                            FontSize="24"
-                            HorizontalTextAlignment="Center"
-                            SemanticProperties.Description="Earlier month"
-                            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
-                            <Label.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding EarlierMonthCommand}" />
-                            </Label.GestureRecognizers>
-                        </Label>
-                        <Label
-                            Grid.Column="1"
-                            Text="{Binding CalendarTitle}"
-                            FontFamily="OpenSansSemibold"
-                            HorizontalOptions="Center"
-                            VerticalOptions="Center" />
-                        <Label
-                            Grid.Column="2"
-                            Text="›"
-                            FontSize="24"
-                            HorizontalTextAlignment="Center"
-                            IsVisible="{Binding CanShowLaterMonth}"
-                            SemanticProperties.Description="Later month"
-                            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
-                            <Label.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding LaterMonthCommand}" />
-                            </Label.GestureRecognizers>
-                        </Label>
-                    </Grid>
-
-                    <!-- Weeks start on Monday. -->
-                    <Grid ColumnDefinitions="*,*,*,*,*,*,*">
-                        <Label Grid.Column="0" Text="Mo" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="1" Text="Tu" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="2" Text="We" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="3" Text="Th" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="4" Text="Fr" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="5" Text="Sa" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="6" Text="Su" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
-                    </Grid>
-
-                    <!-- Six weeks of cells; each places itself by its row and column. -->
-                    <Grid
-                        ColumnDefinitions="*,*,*,*,*,*,*"
-                        RowDefinitions="36,36,36,36,36,36"
-                        RowSpacing="2"
-                        BindableLayout.ItemsSource="{Binding Days}">
-                        <BindableLayout.ItemTemplate>
-                            <DataTemplate x:DataType="insights:CalendarDay">
-                                <Border
-                                    Grid.Row="{Binding Row}"
-                                    Grid.Column="{Binding Column}"
-                                    StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 18"
-                                    BackgroundColor="Transparent">
-                                    <Border.Triggers>
-                                        <DataTrigger TargetType="Border" Binding="{Binding IsBetween}" Value="True">
-                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource InsetStroke}, Dark={StaticResource InsetStrokeDark}}" />
-                                        </DataTrigger>
-                                        <DataTrigger TargetType="Border" Binding="{Binding IsEdge}" Value="True">
-                                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-                                        </DataTrigger>
-                                    </Border.Triggers>
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer
-                                            Command="{Binding PickCommand, Source={RelativeSource AncestorType={x:Type insights:PeriodFilter}}, x:DataType=insights:PeriodFilter}"
-                                            CommandParameter="{Binding .}" />
-                                    </Border.GestureRecognizers>
-                                    <Label Text="{Binding Text}" HorizontalOptions="Center" VerticalOptions="Center">
-                                        <Label.Triggers>
-                                            <DataTrigger TargetType="Label" Binding="{Binding IsToday}" Value="True">
-                                                <Setter Property="FontFamily" Value="OpenSansSemibold" />
-                                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                                            </DataTrigger>
-                                            <DataTrigger TargetType="Label" Binding="{Binding IsEdge}" Value="True">
-                                                <Setter Property="TextColor" Value="White" />
-                                            </DataTrigger>
-                                        </Label.Triggers>
-                                    </Label>
-                                </Border>
-                            </DataTemplate>
-                        </BindableLayout.ItemTemplate>
-                    </Grid>
-
-                    <Label Text="{Binding Selection}" Style="{StaticResource Caption}" />
+                    <common:DateRangeCalendar BindingContext="{Binding Picker}" />
 
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                         <Button
                             Text="Show"
                             Style="{StaticResource PrimaryButton}"
                             Command="{Binding ApplyCommand}"
-                            IsEnabled="{Binding CanApply}" />
+                            IsEnabled="{Binding Picker.HasRange}" />
                         <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding ToggleCommand}" />
                     </Grid>
                 </VerticalStackLayout>

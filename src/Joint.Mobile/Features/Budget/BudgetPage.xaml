@@ -86,24 +86,6 @@
                                 </VerticalStackLayout>
                             </Border>
 
-                            <!-- With a budget: where the month is heading. -->
-                            <Border Style="{StaticResource Card}" IsVisible="{Binding Model.IsSummaryVisible}">
-                                <VerticalStackLayout Spacing="6">
-                                    <Label Text="Where this month is heading" Style="{StaticResource RowTitle}" />
-                                    <Label Text="{Binding Model.Projection}" Style="{StaticResource Caption}" />
-                                    <Label
-                                        Text="{Binding Model.Verdict}"
-                                        FontFamily="OpenSansSemibold"
-                                        TextColor="{AppThemeBinding Light={StaticResource Positive}, Dark={StaticResource PositiveDark}}">
-                                        <Label.Triggers>
-                                            <DataTrigger TargetType="Label" Binding="{Binding Model.IsProjectedOver}" Value="True">
-                                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}" />
-                                            </DataTrigger>
-                                        </Label.Triggers>
-                                    </Label>
-                                </VerticalStackLayout>
-                            </Border>
-
                             <!-- With a budget: the parts set aside for single categories, then everything else. -->
                             <Border Style="{StaticResource Card}" IsVisible="{Binding Model.IsSummaryVisible}">
                                 <VerticalStackLayout Spacing="12">
@@ -251,6 +233,24 @@
                                 </VerticalStackLayout>
                             </Border>
 
+                            <!-- With a budget: where the month is heading. -->
+                            <Border Style="{StaticResource Card}" IsVisible="{Binding Model.IsSummaryVisible}">
+                                <VerticalStackLayout Spacing="6">
+                                    <Label Text="Where this month is heading" Style="{StaticResource RowTitle}" />
+                                    <Label Text="{Binding Model.Projection}" Style="{StaticResource Caption}" />
+                                    <Label
+                                        Text="{Binding Model.Verdict}"
+                                        FontFamily="OpenSansSemibold"
+                                        TextColor="{AppThemeBinding Light={StaticResource Positive}, Dark={StaticResource PositiveDark}}">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding Model.IsProjectedOver}" Value="True">
+                                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </VerticalStackLayout>
+                            </Border>
+
                             <!-- Without a budget: an invitation to set one. -->
                             <Border Style="{StaticResource Card}" IsVisible="{Binding Model.IsPromptVisible}">
                                 <VerticalStackLayout Spacing="12">
@@ -291,6 +291,75 @@
                                         Text="{Binding Model.LimitError}"
                                         Style="{StaticResource ErrorText}"
                                         IsVisible="{Binding Model.LimitError, Converter={StaticResource HasText}}" />
+
+                                    <!-- A new budget: its categories' parts can be lined up here and saved with it. -->
+                                    <VerticalStackLayout Spacing="10" IsVisible="{Binding Model.IsCreating}" Margin="0,4,0,0">
+                                        <Label Text="By category (optional)" FontFamily="OpenSansSemibold" />
+                                        <Label
+                                            Text="Set aside part of the budget for some categories. Whatever is left stays as &quot;Everything else&quot;. You can also do this later."
+                                            Style="{StaticResource Caption}" />
+                                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Model.Drafts}" Spacing="8" IsVisible="{Binding Model.HasDrafts}">
+                                            <BindableLayout.ItemTemplate>
+                                                <DataTemplate x:DataType="budget:CategoryDraft">
+                                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                                        <Label Text="{Binding Name}" LineBreakMode="TailTruncation" VerticalOptions="Center" />
+                                                        <Label Grid.Column="1" Text="{Binding AmountText}" Style="{StaticResource FigureAmount}" VerticalOptions="Center" />
+                                                        <Label
+                                                            Grid.Column="2"
+                                                            Text="Remove"
+                                                            FontSize="13"
+                                                            Padding="4,4,0,4"
+                                                            VerticalOptions="Center"
+                                                            TextColor="{AppThemeBinding Light={StaticResource Negative}, Dark={StaticResource NegativeDark}}">
+                                                            <Label.GestureRecognizers>
+                                                                <TapGestureRecognizer
+                                                                    Command="{Binding RemoveDraftCommand, Source={RelativeSource AncestorType={x:Type budget:BudgetViewModel}}, x:DataType=budget:BudgetViewModel}"
+                                                                    CommandParameter="{Binding .}" />
+                                                            </Label.GestureRecognizers>
+                                                        </Label>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </BindableLayout.ItemTemplate>
+                                        </VerticalStackLayout>
+                                        <FlexLayout Wrap="Wrap" BindableLayout.ItemsSource="{Binding Model.LineChoices}">
+                                            <BindableLayout.ItemTemplate>
+                                                <DataTemplate x:DataType="budget:CategoryChip">
+                                                    <Border Style="{StaticResource Chip}" Margin="0,0,6,6">
+                                                        <Border.Triggers>
+                                                            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                                                <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                                            </DataTrigger>
+                                                        </Border.Triggers>
+                                                        <Border.GestureRecognizers>
+                                                            <TapGestureRecognizer
+                                                                Command="{Binding PickLineCategoryCommand, Source={RelativeSource AncestorType={x:Type budget:BudgetViewModel}}, x:DataType=budget:BudgetViewModel}"
+                                                                CommandParameter="{Binding .}" />
+                                                        </Border.GestureRecognizers>
+                                                        <Label Text="{Binding Name}" Style="{StaticResource ChipLabel}">
+                                                            <Label.Triggers>
+                                                                <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                                                    <Setter Property="TextColor" Value="White" />
+                                                                </DataTrigger>
+                                                            </Label.Triggers>
+                                                        </Label>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </BindableLayout.ItemTemplate>
+                                        </FlexLayout>
+                                        <Border Style="{StaticResource Field}">
+                                            <Entry
+                                                Text="{Binding Model.NewLineAmount}"
+                                                Placeholder="{Binding Model.NewLineHint}"
+                                                Keyboard="Numeric"
+                                                ReturnType="Done"
+                                                ReturnCommand="{Binding Model.AddDraftCommand}" />
+                                        </Border>
+                                        <Label
+                                            Text="{Binding Model.NewLineError}"
+                                            Style="{StaticResource ErrorText}"
+                                            IsVisible="{Binding Model.NewLineError, Converter={StaticResource HasText}}" />
+                                        <Button Text="Add category" Style="{StaticResource SecondaryButton}" Command="{Binding Model.AddDraftCommand}" />
+                                    </VerticalStackLayout>
                                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                                         <Button Text="Save" Style="{StaticResource PrimaryButton}" Command="{Binding Model.SaveCommand}" />
                                         <Button Grid.Column="1" Text="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding Model.CancelEditCommand}" />

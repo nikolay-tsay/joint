@@ -54,6 +54,30 @@ public class TransferFilterTests
         Assert.Equal([albert.Id], listed.Select(t => t.Id));
     }
 
+    [Fact]
+    public async Task The_list_can_be_kept_to_a_range_of_days()
+    {
+        await using var db = NewDb();
+        var ana = Principal("ana@example.com");
+        var (everyday, _) = await AccountsAsync(db, ana);
+        Add(db, everyday, "2026-11-15", -100, "Lidl");
+        var inside = Add(db, everyday, "2026-11-14", -450, "Albert");
+        var first = Add(db, everyday, "2026-10-15", -300, "Albert");
+        Add(db, everyday, "2026-10-14", -200, "Albert");
+        await db.SaveChangesAsync();
+        await AssignAsync(db, ana, inside, "Groceries");
+        var period = (From: DateOnly.Parse("2026-10-15"), To: DateOnly.Parse("2026-11-14"));
+
+        var listed = await ListAsync(db, ana, from: period.From, to: period.To);
+        var groceries = await ListAsync(db, ana, categories: ["Groceries"], from: period.From, to: period.To);
+        var halfGiven = await ListTransactions.HandleAsync(
+            null, null, null, null, ana, new CurrentUserService(db), db, CancellationToken.None, from: period.From);
+
+        Assert.Equal([inside.Id, first.Id], listed.Select(t => t.Id));
+        Assert.Equal([inside.Id, first.Id], groceries.Select(t => t.Id));
+        Assert.IsType<ProblemHttpResult>(halfGiven.Result);
+    }
+
     private static async Task AssignAsync(JointDbContext db, ClaimsPrincipal principal, Transaction payment, string category)
     {
         var result = await AssignCategory.HandleAsync(
@@ -63,11 +87,11 @@ public class TransferFilterTests
 
     private static async Task<List<TransactionResponse>> ListAsync(
         JointDbContext db, ClaimsPrincipal principal, string? kind = null, string[]? categories = null,
-        bool hideTransfers = false, int? skip = null, int? limit = null)
+        bool hideTransfers = false, int? skip = null, int? limit = null, DateOnly? from = null, DateOnly? to = null)
     {
         var listed = await ListTransactions.HandleAsync(
             null, kind, skip, limit, principal, new CurrentUserService(db), db, CancellationToken.None,
-            categories, null, hideTransfers);
+            categories, null, hideTransfers, from, to);
         return Assert.IsType<Ok<List<TransactionResponse>>>(listed.Result).Value!;
     }
 

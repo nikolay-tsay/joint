@@ -133,6 +133,35 @@ public class CategoryBudgetTests
     }
 
     [Fact]
+    public async Task A_budget_can_be_made_with_its_categories_in_one_go()
+    {
+        await using var db = NewDb();
+        var ana = Principal("ana@example.com");
+        await AccountsAsync(db, ana);
+        var users = new CurrentUserService(db);
+
+        var tooMuch = await SetBudget.HandleAsync(
+            new SetBudgetRequest(5000, [new("Groceries", 4000), new("Transport", 2000)]), ana, users, db, CancellationToken.None);
+        var unknown = await SetBudget.HandleAsync(
+            new SetBudgetRequest(5000, [new("Yachts", 100)]), ana, users, db, CancellationToken.None);
+        var twice = await SetBudget.HandleAsync(
+            new SetBudgetRequest(5000, [new("Groceries", 100), new("groceries", 100)]), ana, users, db, CancellationToken.None);
+
+        Assert.Equal("The categories add up to more than the budget.", Assert.IsType<ProblemHttpResult>(tooMuch.Result).ProblemDetails.Detail);
+        Assert.IsType<ProblemHttpResult>(unknown.Result);
+        Assert.IsType<ProblemHttpResult>(twice.Result);
+        Assert.Null((await BudgetAsync(db, ana)).Limit);
+
+        var made = await SetBudget.HandleAsync(
+            new SetBudgetRequest(5000, [new("groceries", 3000), new("Transport", 2000)]), ana, users, db, CancellationToken.None);
+
+        Assert.IsType<NoContent>(made.Result);
+        var budget = await BudgetAsync(db, ana);
+        Assert.Equal(5000m, budget.Limit);
+        Assert.Equal([("Groceries", 3000m), ("Transport", 2000m)], budget.Categories!.Select(c => (c.Name, c.Limit)));
+    }
+
+    [Fact]
     public void Shrinking_rounds_down_so_the_lines_never_pass_the_budget()
     {
         List<CategoryBudget> lines =

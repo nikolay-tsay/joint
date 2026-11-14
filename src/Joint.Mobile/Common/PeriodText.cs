@@ -1,6 +1,6 @@
 using Joint.Contracts;
 
-namespace Joint.Mobile.Features.Insights;
+namespace Joint.Mobile.Common;
 
 /// <summary>How a period reads on screen: a calendar month by name, anything else by its dates.</summary>
 public static class PeriodText

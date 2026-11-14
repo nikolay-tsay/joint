@@ -56,17 +56,28 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth, GoalsViewM
     public partial bool HasNoData { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsSummaryVisible), nameof(IsPromptVisible))]
+    [NotifyPropertyChangedFor(nameof(IsSummaryVisible), nameof(IsPromptVisible), nameof(IsCreating))]
     public partial bool HasBudget { get; set; }
 
     /// <summary>True while the page shows the field for typing the budget.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsSummaryVisible), nameof(IsPromptVisible))]
+    [NotifyPropertyChangedFor(nameof(IsSummaryVisible), nameof(IsPromptVisible), nameof(IsCreating))]
     public partial bool IsEditing { get; set; }
 
     public bool IsSummaryVisible => HasBudget && !IsEditing;
 
     public bool IsPromptVisible => !HasBudget && !IsEditing;
+
+    /// <summary>Making a new budget: its categories' parts can be added in the same card.</summary>
+    public bool IsCreating => !HasBudget && IsEditing;
+
+    /// <summary>The categories' parts lined up for a budget not yet saved.</summary>
+    public ObservableCollection<CategoryDraft> Drafts { get; } = [];
+
+    [ObservableProperty]
+    public partial bool HasDrafts { get; set; }
+
+    private IReadOnlyList<string> _categoryNames = [];
 
     // ----- With a budget -----
 
@@ -284,14 +295,77 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth, GoalsViewM
     }
 
     [RelayCommand]
-    private void StartEdit()
+    private Task StartEditAsync()
     {
         LimitError = null;
+        IsAddingLine = false;
         IsEditing = true;
+        if (HasBudget)
+        {
+            return Task.CompletedTask;
+        }
+
+        // A new budget can be given its categories' parts before it is saved.
+        Drafts.Clear();
+        NewLineAmount = null;
+        NewLineError = null;
+        NewLineHint = "Amount for the category";
+        return RunAsync(async () =>
+        {
+            _categoryNames = (await api.GetCategoriesAsync(null)).Names;
+            RefreshDraftChoices();
+        });
     }
 
     [RelayCommand]
     private void CancelEdit() => IsEditing = false;
+
+    /// <summary>Puts a category's part on the new budget's list; nothing is saved until the budget is.</summary>
+    [RelayCommand]
+    private void AddDraft()
+    {
+        if (LineChoices.FirstOrDefault(c => c.IsSelected) is not { } chip)
+        {
+            NewLineError = "Pick a category.";
+            return;
+        }
+
+        if (!Money.TryRead(NewLineAmount, out var amount) || amount <= 0)
+        {
+            NewLineError = "Enter an amount above zero.";
+            return;
+        }
+
+        if (Money.TryRead(LimitInput, out var limit) && Drafts.Sum(d => d.Amount) + amount > limit)
+        {
+            NewLineError = $"Only {Format(Math.Max(limit - Drafts.Sum(d => d.Amount), 0))} of the budget is left for categories.";
+            return;
+        }
+
+        Drafts.Add(new CategoryDraft(chip.Name, amount, Format(amount)));
+        NewLineAmount = null;
+        NewLineError = null;
+        RefreshDraftChoices();
+    }
+
+    [RelayCommand]
+    private void RemoveDraft(CategoryDraft draft)
+    {
+        Drafts.Remove(draft);
+        RefreshDraftChoices();
+    }
+
+    /// <summary>The categories still without a part on the new budget's list.</summary>
+    private void RefreshDraftChoices()
+    {
+        LineChoices.Clear();
+        foreach (var name in _categoryNames.Where(n => Drafts.All(d => !string.Equals(d.Name, n, StringComparison.OrdinalIgnoreCase))))
+        {
+            LineChoices.Add(new CategoryChip(name));
+        }
+
+        HasDrafts = Drafts.Count > 0;
+    }
 
     [RelayCommand]
     private async Task SaveAsync()
@@ -302,15 +376,28 @@ public partial class BudgetViewModel(ApiClient api, AuthService auth, GoalsViewM
             return;
         }
 
-        await StoreAsync(limit);
+        if (HasBudget)
+        {
+            await StoreAsync(limit);
+            return;
+        }
+
+        var parts = Drafts.Sum(d => d.Amount);
+        if (parts > limit)
+        {
+            LimitError = $"The categories add up to {Format(parts)}, more than the budget.";
+            return;
+        }
+
+        await StoreAsync(limit, Drafts.Select(d => new SetCategoryBudgetRequest(d.Name, d.Amount)).ToList());
     }
 
     [RelayCommand]
     private Task RemoveAsync() => StoreAsync(null);
 
-    private Task StoreAsync(decimal? limit) => RunAsync(async () =>
+    private Task StoreAsync(decimal? limit, List<SetCategoryBudgetRequest>? categories = null) => RunAsync(async () =>
     {
-        if (await api.SetBudgetAsync(limit))
+        if (await api.SetBudgetAsync(limit, categories))
         {
             IsEditing = false;
             Show(await api.GetBudgetAsync());

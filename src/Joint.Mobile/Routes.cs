@@ -8,7 +8,8 @@ public static class Routes
 
     /// <summary>
     /// The Transactions tab. Takes <c>category</c> (a category's name) or
-    /// <c>uncategorized=true</c> to open it filtered.
+    /// <c>uncategorized=true</c> to open it filtered, and <c>from</c> and <c>to</c> (yyyy-MM-dd) for
+    /// the days; without them a category link lists all dates.
     /// </summary>
     public const string Transactions = "//main/transactions";
 

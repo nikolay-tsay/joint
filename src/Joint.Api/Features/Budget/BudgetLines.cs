@@ -5,6 +5,10 @@ namespace Joint.Api.Features.Budget;
 /// <summary>The rules that keep a household's category lines within its monthly budget.</summary>
 public static class BudgetLines
 {
+    /// <summary>The household's spelling of a category typed in any capitals; null when it has no such category.</summary>
+    public static string? CategoryNamed(IEnumerable<string> available, string? typed) =>
+        available.FirstOrDefault(n => string.Equals(n, typed?.Trim(), StringComparison.OrdinalIgnoreCase));
+
     /// <summary>What the budget has not yet set aside for a category, leaving out <paramref name="except"/>.</summary>
     public static decimal Unassigned(decimal limit, IEnumerable<CategoryBudget> lines, string? except = null) =>
         limit - lines
