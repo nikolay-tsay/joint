@@ -25,7 +25,7 @@ public class LunchFlowConnectorTests
         """;
 
     [Fact]
-    public async Task Fetch_maps_active_accounts_with_balance_and_booked_transactions()
+    public async Task Fetch_maps_active_accounts_with_balance_booked_and_pending_transactions()
     {
         var handler = new StubHandler(request => request.RequestUri!.AbsolutePath switch
         {
@@ -50,6 +50,10 @@ public class LunchFlowConnectorTests
         Assert.Equal(new DateOnly(2026, 11, 10), card.BookedOn);
         Assert.Equal("Albert", card.Counterparty);
         Assert.Null(account.Transactions[1].Counterparty);
+
+        // Not yet booked: kept apart, to be shown but never counted.
+        var pending = Assert.Single(account.Pending!);
+        Assert.Equal((-99m, "Bolt", new DateOnly(2026, 11, 11)), (pending.Amount, pending.Counterparty, pending.BookedOn));
     }
 
     [Fact]

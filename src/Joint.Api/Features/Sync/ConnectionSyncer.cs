@@ -9,7 +9,8 @@ namespace Joint.Api.Features.Sync;
 
 /// <summary>
 /// Pulls one connection's data from its provider and stores it: accounts are matched by
-/// the provider's id, new transactions are added, holdings are replaced. A failure leaves
+/// the provider's id, new transactions are added, holdings and pending transactions are
+/// replaced. A failure leaves
 /// the stored data untouched and is recorded on the connection for the app to show.
 /// </summary>
 public class ConnectionSyncer(
@@ -113,6 +114,24 @@ public class ConnectionSyncer(
                 Currency = transaction.Currency,
                 Counterparty = transaction.Counterparty,
                 Description = transaction.Description,
+            });
+        }
+
+        // Pending transactions are current state too: what the bank still has on hold now.
+        // Whatever was booked since arrives above as an ordinary transaction.
+        var oldPending = await db.PendingTransactions.Where(p => p.AccountId == account.Id).ToListAsync(cancellationToken);
+        db.PendingTransactions.RemoveRange(oldPending);
+        foreach (var pending in fetched.Pending ?? [])
+        {
+            db.PendingTransactions.Add(new PendingTransaction
+            {
+                Id = Guid.NewGuid(),
+                AccountId = account.Id,
+                Date = pending.BookedOn,
+                Amount = pending.Amount,
+                Currency = pending.Currency,
+                Counterparty = pending.Counterparty,
+                Description = pending.Description,
             });
         }
 

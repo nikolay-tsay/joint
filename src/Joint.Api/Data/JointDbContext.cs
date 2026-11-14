@@ -14,6 +14,7 @@ public class JointDbContext(DbContextOptions<JointDbContext> options) : DbContex
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<Holding> Holdings => Set<Holding>();
+    public DbSet<PendingTransaction> PendingTransactions => Set<PendingTransaction>();
     public DbSet<RecurringPayment> RecurringPayments => Set<RecurringPayment>();
     public DbSet<Goal> Goals => Set<Goal>();
     public DbSet<CategoryRule> CategoryRules => Set<CategoryRule>();

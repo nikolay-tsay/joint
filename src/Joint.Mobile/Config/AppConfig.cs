@@ -21,6 +21,11 @@ public static class AppConfig
     /// Redirect URLs in Supabase and match the intent filter on
     /// <c>AuthCallbackActivity</c>.
     /// </summary>
+#if DEBUG
+    // The Debug build is a separate app (see Joint.Mobile.csproj) and needs a scheme of its own.
+    public const string AuthCallbackScheme = "joint-dev";
+#else
     public const string AuthCallbackScheme = "joint";
+#endif
     public const string AuthCallbackUrl = AuthCallbackScheme + "://auth-callback";
 }

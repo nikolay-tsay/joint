@@ -30,8 +30,14 @@ public partial class TransactionItem(
 
     public bool IsIncome { get; } = isIncome;
 
-    /// <summary>Only money going out can be a subscription or a regular payment.</summary>
-    public bool CanTrack => !IsIncome;
+    /// <summary>
+    /// Not booked by the bank yet. Shown with a badge, counted in no figure, and offering no
+    /// choices, since it may change or vanish when it is booked.
+    /// </summary>
+    public bool IsPending { get; private set; }
+
+    /// <summary>Only booked money going out can be a subscription, a regular payment or given a category.</summary>
+    public bool CanTrack => !IsIncome && !IsPending;
 
     /// <summary>The tracked payment this one counts towards, if any.</summary>
     public Guid? RecurringId { get; private set; }
@@ -126,6 +132,7 @@ public partial class TransactionItem(
         item.SetRecurring(transaction.RecurringId, transaction.RecurringKind, transaction.RecurringMatch);
         item.SetCategory(transaction.Category, transaction.CategoryRuleId, transaction.CategoryMatch);
         item.IsInternalTransfer = transaction.IsInternalTransfer;
+        item.IsPending = transaction.IsPending;
         return item;
     }
 }

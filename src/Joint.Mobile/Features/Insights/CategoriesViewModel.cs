@@ -53,8 +53,8 @@ public partial class CategoriesViewModel(ApiClient api, AuthService auth) : Page
     private Task LoadAsync() => ReloadAsync(async () => Show(await api.GetCategoriesAsync(_month)));
 
     /// <summary>
-    /// Opens Transactions on that category's payments, from every kind of account, as the
-    /// ring counts them. The list is not limited to the month shown here.
+    /// Opens Transactions on that category's payments from everyday accounts, the tab's usual
+    /// view. The ring counts every kind of account and one month; the list is neither.
     /// </summary>
     [RelayCommand]
     private static Task OpenCategoryAsync(CategoryItem item) =>

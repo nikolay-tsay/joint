@@ -15,6 +15,14 @@
 		<SupportedOSPlatformVersion>24.0</SupportedOSPlatformVersion>
 	</PropertyGroup>
 
+	<!-- A Debug build is a separate app next to the released one, so installing it over USB
+	     does not replace the APK in daily use. It also signs in through its own redirect scheme
+	     (AppConfig.AuthCallbackScheme), or Android would ask which of the two to open. -->
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+		<ApplicationTitle>Joint Dev</ApplicationTitle>
+		<ApplicationId>app.joint.mobile.dev</ApplicationId>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#6D28D9" />
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#F6F4FA" BaseSize="192,192" />

@@ -63,6 +63,10 @@ public class GetCategories : IEndpoint
             .ToList();
 
         var rules = await db.CategoryRulesOf(user.HouseholdId).ToListAsync(cancellationToken);
-        return TypedResults.Ok(CategoryCalculator.Build(rows, rules, first));
+        var hidden = await db.Households
+            .Where(h => h.Id == user.HouseholdId)
+            .Select(h => h.HiddenCategories)
+            .FirstOrDefaultAsync(cancellationToken);
+        return TypedResults.Ok(CategoryCalculator.Build(rows, rules, first, hidden));
     }
 }

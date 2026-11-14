@@ -86,6 +86,39 @@ public class CategoryFilterTests
     }
 
     [Fact]
+    public async Task Deleting_a_starter_category_takes_it_off_the_list_until_it_is_used_again()
+    {
+        await using var db = NewDb();
+        var ana = Principal("ana@example.com");
+        var account = await AccountAsync(db, ana);
+        var toys = Add(db, account, "2026-11-02", -600, "Toy Shop");
+        var nursery = Add(db, account, "2026-11-01", -900, "Nursery");
+        await db.SaveChangesAsync();
+        await AssignAsync(db, ana, toys, "Kids");
+        var users = new CurrentUserService(db);
+
+        var deleted = await RemoveCategory.HandleAsync("kids", ana, users, db, CancellationToken.None);
+        var unused = await RemoveCategory.HandleAsync("Travel", ana, users, db, CancellationToken.None);
+        var twice = await RemoveCategory.HandleAsync("Travel", ana, users, db, CancellationToken.None);
+
+        Assert.IsType<NoContent>(deleted.Result);
+        Assert.IsType<NoContent>(unused.Result);
+        Assert.IsType<NotFound>(twice.Result);
+        Assert.Null((await ListAsync(db, ana, [])).Single(t => t.Id == toys.Id).Category);
+        var names = (await CategoriesAsync(db, ana)).Names;
+        Assert.DoesNotContain("Kids", names);
+        Assert.DoesNotContain("Travel", names);
+        Assert.Contains("Groceries", names);
+
+        // Typed again in other capitals, it comes back with its usual spelling and stays.
+        await AssignAsync(db, ana, nursery, "KIDS");
+        await RemoveCategoryRule.HandleAsync(
+            db.CategoryRules.Single().Id, ana, users, db, CancellationToken.None);
+        Assert.Contains("Kids", (await CategoriesAsync(db, ana)).Names);
+        Assert.DoesNotContain("Travel", (await CategoriesAsync(db, ana)).Names);
+    }
+
+    [Fact]
     public async Task A_category_can_only_be_removed_within_the_household()
     {
         await using var db = NewDb();
@@ -95,11 +128,18 @@ public class CategoryFilterTests
         await db.SaveChangesAsync();
         await AssignAsync(db, ana, albert, "Groceries");
 
-        var stranger = await RemoveCategory.HandleAsync(
-            "Groceries", Principal("ben@example.com"), new CurrentUserService(db), db, CancellationToken.None);
+        var ben = Principal("ben@example.com");
+        var users = new CurrentUserService(db);
 
-        Assert.IsType<NotFound>(stranger.Result);
+        // Ben deletes the starter from his own household's list; Ana's payee and list stay.
+        var hidden = await RemoveCategory.HandleAsync("Groceries", ben, users, db, CancellationToken.None);
+        var ownOfAna = await RemoveCategory.HandleAsync("Pets", ben, users, db, CancellationToken.None);
+
+        Assert.IsType<NoContent>(hidden.Result);
+        Assert.IsType<NotFound>(ownOfAna.Result);
         Assert.Single(db.CategoryRules);
+        Assert.Contains("Groceries", (await CategoriesAsync(db, ana)).Names);
+        Assert.DoesNotContain("Groceries", (await CategoriesAsync(db, ben)).Names);
     }
 
     private static async Task AssignAsync(JointDbContext db, ClaimsPrincipal principal, Transaction payment, string category)

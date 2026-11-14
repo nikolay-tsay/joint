@@ -115,8 +115,8 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
             IsAccountView = true;
         }
 
-        // Sent by the category chart: that category's payments, from every kind of account,
-        // since the chart counts them all.
+        // Sent by the category chart: that category's payments, from everyday accounts, which
+        // is where the tab opens anyway; the filter row can widen it to all accounts.
         var category = query.TryGetValue("category", out var named) ? named?.ToString() : null;
         var uncategorized = query.TryGetValue("uncategorized", out var none) && none?.ToString() == "true";
         if (!string.IsNullOrEmpty(category) || uncategorized)
@@ -130,8 +130,8 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
             _uncategorized = uncategorized;
             if (!IsAccountView)
             {
-                _kindFilter = null;
-                _stagedKind = null;
+                _kindFilter = AccountKinds.Current;
+                _stagedKind = AccountKinds.Current;
             }
 
             IsFilterOpen = false;
@@ -475,17 +475,34 @@ public partial class TransactionsViewModel : PageViewModel, IQueryAttributable
     {
         foreach (var transaction in page)
         {
-            var group = Groups.LastOrDefault();
-            if (group is null || group.Date != transaction.BookedOn)
+            TransactionGroup? group;
+            if (transaction.IsPending)
             {
-                group = new TransactionGroup(transaction.BookedOn);
-                Groups.Add(group);
+                // Not yet booked: one group of its own above the days.
+                group = Groups.FirstOrDefault(g => g.IsPending);
+                if (group is null)
+                {
+                    group = new TransactionGroup(transaction.BookedOn, isPending: true);
+                    Groups.Insert(0, group);
+                }
+            }
+            else
+            {
+                group = Groups.LastOrDefault();
+                if (group is null || group.IsPending || group.Date != transaction.BookedOn)
+                {
+                    group = new TransactionGroup(transaction.BookedOn);
+                    Groups.Add(group);
+                }
             }
 
             group.Add(TransactionItem.From(transaction, showAccount: _accountId is null));
         }
 
-        _loaded += page.Count;
-        _hasMore = page.Count == PageSize;
+        // The backend sends pending ones on the first page on top of a full page of booked
+        // ones, so only booked ones count towards paging.
+        var booked = page.Count(t => !t.IsPending);
+        _loaded += booked;
+        _hasMore = booked == PageSize;
     }
 }

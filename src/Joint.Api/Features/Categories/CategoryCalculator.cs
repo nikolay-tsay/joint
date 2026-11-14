@@ -12,10 +12,11 @@ public static class CategoryCalculator
     /// whose two halves straddle the month's edge is still recognised.
     /// </param>
     /// <param name="month">The first day of the month to report.</param>
+    /// <param name="hidden">Starter categories the household deleted.</param>
     public static CategoriesResponse Build(
-        IReadOnlyList<CategoryRow> rows, IReadOnlyList<CategoryRule> rules, DateOnly month)
+        IReadOnlyList<CategoryRow> rows, IReadOnlyList<CategoryRule> rules, DateOnly month, IReadOnlyList<string>? hidden = null)
     {
-        var names = CategoryNames.Available(rules.Select(r => r.Category));
+        var names = CategoryNames.Available(rules.Select(r => r.Category), hidden);
         bool IsInMonth(CategoryRow row) => row.BookedOn.Year == month.Year && row.BookedOn.Month == month.Month;
 
         // Amounts are never converted, so the breakdown follows the currency the month mostly used.

@@ -90,6 +90,15 @@ public class AssignCategory : IEndpoint
             });
         }
 
+        // A starter category the household deleted comes back once a payee is given it again.
+        var household = await db.Households.FirstAsync(h => h.Id == user.HouseholdId, cancellationToken);
+        if (household.HiddenCategories.Any(name => string.Equals(name, category, StringComparison.OrdinalIgnoreCase)))
+        {
+            household.HiddenCategories = household.HiddenCategories
+                .Where(name => !string.Equals(name, category, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return TypedResults.NoContent();
     }

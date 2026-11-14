@@ -17,5 +17,12 @@ public class Household
     /// </summary>
     public decimal? MonthlyBudget { get; set; }
 
+    /// <summary>
+    /// Starter categories the household deleted, so they are no longer offered. A category
+    /// of its own needs no entry: it exists only while a rule uses it. Giving a payee one of
+    /// these names again brings it back.
+    /// </summary>
+    public List<string> HiddenCategories { get; set; } = [];
+
     public List<User> Members { get; } = [];
 }

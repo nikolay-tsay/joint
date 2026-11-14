@@ -138,7 +138,10 @@ The app signs in with Google through Supabase Auth. Per Supabase project:
    `https://<project-ref>.supabase.co/auth/v1/callback` as an authorized redirect URI.
 2. In Supabase, enable the Google provider under Authentication and paste the client id
    and secret.
-3. In Supabase's URL configuration, add `joint://auth-callback` to Redirect URLs.
+3. In Supabase's URL configuration, add `joint://auth-callback` to Redirect URLs, and in the
+   development project also `joint-dev://auth-callback`: Debug builds are a separate app
+   ("Joint Dev", `app.joint.mobile.dev`) with a redirect of their own, so they install beside
+   the released app instead of replacing it.
 4. Fill in `src/Joint.Mobile/Config/AppConfig.cs`: the Supabase URL, the publishable key
    and the backend URL. Debug builds use the development values, Release builds production.
 

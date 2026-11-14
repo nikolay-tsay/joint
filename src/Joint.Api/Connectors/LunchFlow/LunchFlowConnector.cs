@@ -49,6 +49,7 @@ public class LunchFlowConnector(HttpClient http) : IProviderConnector
                 $"accounts/{account.Id}/transactions{from}", credential, cancellationToken);
 
             var currency = balance.Balance?.Currency ?? account.Currency ?? "";
+            var listedTransactions = transactions.Transactions ?? [];
             accounts.Add(new ProviderAccount(
                 ExternalId: account.Id.ToString(),
                 Name: account.Name ?? account.InstitutionName ?? "Account",
@@ -56,18 +57,17 @@ public class LunchFlowConnector(HttpClient http) : IProviderConnector
                 Kind: AccountKind.Current,
                 Currency: currency,
                 Balance: balance.Balance?.Amount ?? 0,
-                Transactions: (transactions.Transactions ?? [])
-                    // Pending items can change or vanish before they are booked.
+                Transactions: listedTransactions
                     .Where(t => !t.IsPending && !string.IsNullOrEmpty(t.Id))
-                    .Select(t => new ProviderTransaction(
-                        t.Id!,
-                        t.Date,
-                        t.Amount,
-                        string.IsNullOrEmpty(t.Currency) ? currency : t.Currency,
-                        NullIfBlank(t.Merchant),
-                        NullIfBlank(t.Description)))
+                    .Select(t => ToTransaction(t, t.Id!, currency))
                     .ToList(),
-                Holdings: []));
+                Holdings: [],
+                // Pending items can change or vanish before they are booked, so they travel
+                // apart and replace the last sync's; an id is not needed for that.
+                Pending: listedTransactions
+                    .Where(t => t.IsPending)
+                    .Select(t => ToTransaction(t, t.Id ?? "", currency))
+                    .ToList()));
         }
 
         return new ProviderSnapshot(accounts);
@@ -88,6 +88,15 @@ public class LunchFlowConnector(HttpClient http) : IProviderConnector
         return await response.Content.ReadFromJsonAsync<T>(cancellationToken)
             ?? throw new HttpRequestException($"Lunch Flow returned an empty response for {path}.");
     }
+
+    private static ProviderTransaction ToTransaction(TransactionDto t, string id, string accountCurrency) =>
+        new(
+            id,
+            t.Date,
+            t.Amount,
+            string.IsNullOrEmpty(t.Currency) ? accountCurrency : t.Currency,
+            NullIfBlank(t.Merchant),
+            NullIfBlank(t.Description));
 
     private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 

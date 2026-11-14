@@ -95,8 +95,8 @@ public partial class CategoryPickerViewModel(ApiClient api, AuthService auth) : 
     private static void CancelRemoveCategory(CategoryChoice choice) => choice.IsConfirmingRemove = false;
 
     /// <summary>
-    /// Removes the whole category: every payee in it goes back to having no category. One of
-    /// the household's own then leaves the list; a starter one stays, empty.
+    /// Deletes the category altogether: every payee in it goes back to having no category,
+    /// and the name leaves the list, a starter one included.
     /// </summary>
     [RelayCommand]
     private Task ConfirmRemoveCategoryAsync(CategoryChoice choice) => RunAsync(async () =>

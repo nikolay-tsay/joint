@@ -310,6 +310,10 @@
                                     FontFamily="OpenSansSemibold"
                                     VerticalOptions="Center">
                                     <Label.Triggers>
+                                        <!-- Faded while pending: not money that has moved yet. -->
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsPending}" Value="True">
+                                            <Setter Property="Opacity" Value="0.55" />
+                                        </DataTrigger>
                                         <DataTrigger TargetType="Label" Binding="{Binding IsIncome}" Value="True">
                                             <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Positive}, Dark={StaticResource PositiveDark}}" />
                                         </DataTrigger>
@@ -331,6 +335,21 @@
 
                                 <!-- What sets this payment apart: its category, and what its payee is marked as. -->
                                 <HorizontalStackLayout Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Spacing="10">
+                                    <!-- Not booked yet: in no figure, and it may still change. -->
+                                    <Border
+                                        Padding="7,1"
+                                        StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 8"
+                                        VerticalOptions="Center"
+                                        BackgroundColor="Transparent"
+                                        Stroke="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}"
+                                        IsVisible="{Binding IsPending}">
+                                        <Label
+                                            Text="⏳ Pending"
+                                            FontSize="11"
+                                            FontFamily="OpenSansSemibold"
+                                            TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                                    </Border>
                                     <Label
                                         Text="{Binding Category}"
                                         FontSize="12"

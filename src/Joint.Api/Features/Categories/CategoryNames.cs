@@ -17,8 +17,21 @@ public static partial class CategoryNames
         "Entertainment", "Travel", "Kids", "Gifts", "Fees", "Other",
     ];
 
+    /// <summary>
+    /// The starter list, less any the household deleted, followed by the household's own
+    /// names alphabetically. A name some payee still uses is always offered.
+    /// </summary>
+    public static List<string> Available(IEnumerable<string> used, IEnumerable<string>? hidden = null)
+    {
+        var usedNames = used.ToList();
+        var deleted = (hidden ?? [])
+            .Where(name => !usedNames.Contains(name, StringComparer.OrdinalIgnoreCase))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return Offered(usedNames).Where(name => !deleted.Contains(name)).ToList();
+    }
+
     /// <summary>The starter list followed by the household's own names, alphabetically.</summary>
-    public static List<string> Available(IEnumerable<string> used) =>
+    private static List<string> Offered(IEnumerable<string> used) =>
         Starter
             .Concat(used
                 .Where(name => !Starter.Contains(name, StringComparer.OrdinalIgnoreCase))
@@ -44,7 +57,8 @@ public static partial class CategoryNames
             return null;
         }
 
-        return Available(used).FirstOrDefault(known => string.Equals(known, name, StringComparison.OrdinalIgnoreCase)) ?? name;
+        // A deleted starter name typed again keeps its usual spelling.
+        return Offered(used).FirstOrDefault(known => string.Equals(known, name, StringComparison.OrdinalIgnoreCase)) ?? name;
     }
 
     [GeneratedRegex(@"\s+")]

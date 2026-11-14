@@ -90,6 +90,14 @@ public class ListTransactions : IEndpoint
             ? await query.Skip(offset).Take(count).ToListAsync(cancellationToken)
             : await InCategoriesAsync(query, wanted, user.HouseholdId, db, offset, count, cancellationToken);
 
+        // Pending transactions lead the first page and are not counted in its size, so the
+        // pages of booked ones stay as they were.
+        if (offset == 0)
+        {
+            var pending = await PendingAsync(user.HouseholdId, accountId, accountKind, wanted, db, cancellationToken);
+            transactions = [.. pending, .. transactions];
+        }
+
         transactions = await WithTransfersAsync(transactions, user.HouseholdId, db, cancellationToken);
         return TypedResults.Ok(await WithRecurringAsync(transactions, user.HouseholdId, db, cancellationToken));
     }
@@ -132,6 +140,56 @@ public class ListTransactions : IEndpoint
     }
 
     private sealed record CategoryFilter(HashSet<string> Names, bool Uncategorized);
+
+    /// <summary>
+    /// What the banks still have on hold, newest first, narrowed like the booked list. They
+    /// are shown only: no figure anywhere counts them, and they cannot be marked, since they
+    /// change or vanish when booked.
+    /// </summary>
+    private static async Task<List<TransactionResponse>> PendingAsync(
+        Guid householdId,
+        Guid? accountId,
+        AccountKind? accountKind,
+        CategoryFilter? wanted,
+        JointDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var rows = await (
+            from pending in db.PendingTransactions
+            join account in db.AccountsOf(householdId) on pending.AccountId equals account.Id
+            join connection in db.BankConnections on account.ConnectionId equals connection.Id
+            join owner in db.Users on connection.OwnerUserId equals owner.Id
+            where accountId == null || account.Id == accountId
+            where accountKind == null || account.Kind == accountKind
+            orderby pending.Date descending, pending.Id
+            select new { pending, AccountName = account.Name, owner.DisplayName, owner.AvatarUrl })
+            .ToListAsync(cancellationToken);
+
+        var listed = rows.Select(r => new TransactionResponse(
+            r.pending.Id,
+            r.pending.AccountId,
+            r.AccountName,
+            r.DisplayName,
+            r.AvatarUrl,
+            r.pending.Date,
+            r.pending.Amount,
+            r.pending.Currency,
+            r.pending.Counterparty,
+            r.pending.Description,
+            IsPending: true));
+        if (wanted is null)
+        {
+            return listed.ToList();
+        }
+
+        var matcher = new CategoryMatcher(await db.CategoryRulesOf(householdId).ToListAsync(cancellationToken));
+        return listed
+            .Where(t => t.Amount < 0)
+            .Where(t => matcher.Find(t.Counterparty, t.Description) is { } rule
+                ? wanted.Names.Contains(rule.Category)
+                : wanted.Uncategorized)
+            .ToList();
+    }
 
     /// <summary>
     /// Says which of the listed transactions the app recognises as money moved between the

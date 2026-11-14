@@ -20,6 +20,10 @@ namespace Joint.Contracts;
 /// the same amount left one account and arrived in another within two days. It is then
 /// counted as neither income nor spending.
 /// </param>
+/// <param name="IsPending">
+/// True for a transaction the bank has not booked yet. It is listed first, on the first page
+/// only, counts in no figure, and cannot be marked; its id is not a transaction's id.
+/// </param>
 public record TransactionResponse(
     Guid Id,
     Guid AccountId,
@@ -37,4 +41,5 @@ public record TransactionResponse(
     string? Category = null,
     Guid? CategoryRuleId = null,
     string? CategoryMatch = null,
-    bool IsInternalTransfer = false);
+    bool IsInternalTransfer = false,
+    bool IsPending = false);

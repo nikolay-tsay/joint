@@ -20,7 +20,10 @@ public static class GuideContent
                     + "Fio comes straight from Fio, using a watch-only token. Trading 212 comes straight from Trading 212.",
                 "Accounts are read right after you connect them and then every six hours. Lunch Flow itself "
                     + "refreshes from the bank about once a day, so a payment can show in your bank's app a day or more before it shows here.",
-                "Only booked transactions are shown. A pending card payment appears once the bank has booked it.",
+                "Transactions the bank has not booked yet, such as a card payment on hold, are listed at the top of "
+                    + "Transactions under Pending, with a Pending badge. They are not counted in any figure (balances aside, "
+                    + "which are the bank's own) and cannot be marked or given a category until they are booked. Only "
+                    + "banks connected through Lunch Flow report them; Fio shows a payment once it is booked.",
                 "Fio hands out the last 90 days of history, so that is where a Fio account starts. A Fio token "
                     + "is for one account, so each Fio account is connected separately with its own token.",
                 "Trading 212 gives balances and holdings but no transactions. It appears as up to three accounts: "
@@ -101,13 +104,14 @@ public static class GuideContent
                 "A category is separate from the subscription and regular payment marks: one payment can have both.",
                 "There is a starter list of categories. Typing a new name on the category page adds your own, and it "
                     + "stays in the list for as long as at least one payee uses it.",
-                "To remove a whole category, tap Edit above the list on the category page, then Remove next to it. "
-                    + "Every payee in it goes back to having no category. One of your own then leaves the list; a starter "
-                    + "category stays, empty.",
+                "To delete a category, tap Edit above the list on the category page, then Delete next to it. "
+                    + "Every payee in it goes back to having no category and the category leaves the list, a starter one "
+                    + "included. Giving a payee that name again brings it back.",
                 "The ring on Insights shows one calendar month: each slice is what was spent in a category, and "
                     + "\"Uncategorized\" is spending that no category matches yet. The percentages are shares of that month's spending.",
-                "Tapping a category under the ring opens Transactions with only its payments. That list covers every "
-                    + "account and all time, not just the month the ring shows.",
+                "Tapping a category under the ring opens Transactions with only its payments from everyday accounts. "
+                    + "The ring counts every account and one month; the list covers all time, and the Filter row can widen "
+                    + "it to all accounts.",
                 "In Transactions, the Filter row at the top narrows the list to a kind of account and to any number "
                     + "of categories, including payments with no category. A category filter lists payments only.",
                 "Only money going out is categorized, and transfers between your own accounts are left out first, "
