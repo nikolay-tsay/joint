@@ -9,7 +9,7 @@ using Joint.Mobile.Features.Auth;
 namespace Joint.Mobile.Features.Insights;
 
 /// <summary>
-/// Three views behind one tab. Overview: the chosen period at a glance, income against spending
+/// Three views behind one tab, in this order: Overview, Categories, Recurring. Overview: the chosen period at a glance, income against spending
 /// for it and the periods before, what was left over, its pace against the previous period's,
 /// and who spent. Overview and Categories follow the period chosen in <see cref="Period"/>.
 /// Recurring: what subscriptions and regular payments cost per month, and the list of them.
@@ -106,8 +106,8 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
         _views ??=
         [
             new InsightsView(InsightsView.Overview, this),
-            new InsightsView(InsightsView.Recurring, this),
             new InsightsView(InsightsView.Categories, this),
+            new InsightsView(InsightsView.Recurring, this),
         ];
 
     /// <summary>Spending by category, shown on the page's third tab; it loads and reports errors by itself.</summary>
@@ -123,9 +123,9 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
 
     public bool IsOverviewTab => TabIndex == 0;
 
-    public bool IsRecurringTab => TabIndex == 1;
+    public bool IsRecurringTab => TabIndex == 2;
 
-    public bool IsCategoriesTab => TabIndex == 2;
+    public bool IsCategoriesTab => TabIndex == 1;
 
     /// <summary>The period bar sits over Overview and Categories; Recurring stays by calendar month.</summary>
     public bool ShowsPeriod => !IsRecurringTab;
@@ -164,10 +164,10 @@ public partial class InsightsViewModel(ApiClient api, AuthService auth, Categori
     private void ShowOverview() => TabIndex = 0;
 
     [RelayCommand]
-    private void ShowRecurring() => TabIndex = 1;
+    private void ShowRecurring() => TabIndex = 2;
 
     [RelayCommand]
-    private void ShowCategories() => TabIndex = 2;
+    private void ShowCategories() => TabIndex = 1;
 
     /// <summary>Stops tracking a payee; its transactions stay as they are.</summary>
     [RelayCommand]

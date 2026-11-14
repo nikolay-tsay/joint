@@ -301,7 +301,7 @@
     <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
         <Label Text="Insights" FontSize="24" FontFamily="OpenSansSemibold" Margin="16,24,16,0" />
 
-        <!-- The two pages as tabs. Tapping one slides to it; so does dragging the page sideways. -->
+        <!-- The three views as tabs: Overview, Categories, Recurring. Tapping one slides to it; so does dragging the page sideways. -->
         <Grid Grid.Row="1" RowDefinitions="Auto,1" Margin="12,12,12,0">
             <Grid ColumnDefinitions="*,*,*">
                 <Grid RowDefinitions="Auto,3" RowSpacing="8" Padding="0,6,0,0">
@@ -317,7 +317,7 @@
                     </Label>
                     <BoxView Grid.Row="1" Style="{StaticResource TabLine}" IsVisible="{Binding IsOverviewTab}" />
                 </Grid>
-                <Grid Grid.Column="1" RowDefinitions="Auto,3" RowSpacing="8" Padding="0,6,0,0">
+                <Grid Grid.Column="2" RowDefinitions="Auto,3" RowSpacing="8" Padding="0,6,0,0">
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding ShowRecurringCommand}" />
                     </Grid.GestureRecognizers>
@@ -330,7 +330,7 @@
                     </Label>
                     <BoxView Grid.Row="1" Style="{StaticResource TabLine}" IsVisible="{Binding IsRecurringTab}" />
                 </Grid>
-                <Grid Grid.Column="2" RowDefinitions="Auto,3" RowSpacing="8" Padding="0,6,0,0">
+                <Grid Grid.Column="1" RowDefinitions="Auto,3" RowSpacing="8" Padding="0,6,0,0">
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding ShowCategoriesCommand}" />
                     </Grid.GestureRecognizers>
